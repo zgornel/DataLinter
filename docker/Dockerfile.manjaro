@@ -1,0 +1,20 @@
+# ArchLinux based commands
+FROM manjarolinux/base:20240804
+RUN pacman -Syyu --noconfirm && \
+    pacman -S --noconfirm julia && \
+    pacman -Scc --noconfirm && \
+    rm -f /var/cache/pacman/pkg/*
+
+# make directories
+RUN mkdir -p /tmp
+RUN mkdir -p /output
+RUN mkdir -p /workspace
+
+# Copy binaries
+WORKDIR /
+COPY ./VUBLinter ./VUBLinter
+
+
+# Prime dependencies for top level script
+WORKDIR /VUBLinter
+RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.test()'

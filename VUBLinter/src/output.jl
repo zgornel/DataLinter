@@ -1,0 +1,3 @@
+module OutputInterface
+
+end  # module
