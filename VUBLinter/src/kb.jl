@@ -22,14 +22,20 @@ function __get_rules_stump()
     #TODO: Extend this
     [(name = :no_missing_values,
       description = """ Tests that no missing values exist in variable """,
-      f = (v)->all(.!ismissing.(v)) && all(.!isnothing.(v)),
-      message = name->"M01 - Found missing values in variable '$name'",
+      f = (v, code=nothing) -> all(.!ismissing.(v)) && all(.!isnothing.(v)),
+      message = name->"M01 - Found missing values in variable '$name' (HIGH)",
       correct_if = true
       ),
      (name = :no_negative_values,
       description = """ Tests that no negative values exist in variable """,
-      f =  v-> all(Iterators.map(>=(0), (Iterators.filter(!ismissing, v)))),
-      message = name->"M02 - Found values smaller than 0 in variable '$name'",
+      f = (v, code=nothing) -> begin
+        if code==nothing
+            return all(Iterators.map(>=(0), (Iterators.filter(!ismissing, v))))
+        else
+            return true  # if we have code, we don't care about the rule
+        end
+      end,
+      message = name->"M02 - Found values smaller than 0 in variable '$name' (LOW)",
       correct_if = true
      )
      ]

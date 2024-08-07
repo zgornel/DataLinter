@@ -6,6 +6,7 @@ export AbstractLinterContext
 # Data Interface
 abstract type AbstractDataContext end
 function variabilize end  # returns an iterable Pairs(:variable_name => [vector of variable values])
+function get_code end
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
@@ -20,15 +21,17 @@ function process_output end
 function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase)
     lintout = []
     for rule in get_rules(kb, ctx)
+        code = get_code(ctx)
         for v in variabilize(ctx)
+            v_name, _ = v
             # variablize creates single variables but also combines them
             # in a way that rules may be applicable
-            result = if applicable(rule, v)
-                apply(rule, v; elementwise=ctx.elementwise)
+            result = if applicable(rule, v, code)
+                #TODO: Implement mechanism for working with ctx.code
+                apply(rule, v, code; elementwise=ctx.elementwise)
             else
                 nothing
             end
-            v_name, _ = v
             push!(lintout, (rule, v_name) => result)
         end
     end
@@ -37,17 +40,21 @@ function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase)
 end
 
 
-function apply(rule, v; elementwise=false)
+function apply(rule, v, code; elementwise=false)
     v_name, v_values = v
+    #TODO: use try-catch
+    #TODO: parse `code` usable in some way by the rules' functions
+    #      i.e. key terms, ontology concepts etc.
     out_f = if elementwise
-                rule.f.(v_values)
+                rule.f.(v_values, code)
              else
-                rule.f(v_values)
+                rule.f(v_values, code)
              end
     return out_f == rule.correct_if
 end
 
-function applicable(rule, variables)
+
+function applicable(rule, variable, code)
     #TODO: implement this
     return true
 end
