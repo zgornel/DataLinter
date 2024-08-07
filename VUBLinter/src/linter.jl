@@ -1,14 +1,18 @@
 @reexport module LinterCore
+using DataFrames
 
 export AbstractLinterContext
 
 # Data Interface
 abstract type AbstractDataContext end
-
-# Output Interface
+function variabilize end  # returns an iterable Pairs(:variable_name => [vector of variable values])
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
+function get_rules end
+
+# Output Interface
+function process_output end
 
 
 # Main linting function
@@ -24,34 +28,28 @@ function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase)
             else
                 nothing
             end
-            push!(lintout, (rule, v) => result)
+            v_name, _ = v
+            push!(lintout, (rule, v_name) => result)
         end
     end
+    process_output(lintout)
     return lintout
 end
 
+
 function apply(rule, v; elementwise=false)
-    return if elementwise
-        rule.(v)
-    else
-        rule(v)
-    end
+    v_name, v_values = v
+    out_f = if elementwise
+                rule.f.(v_values)
+             else
+                rule.f(v_values)
+             end
+    return out_f == rule.correct_if
 end
 
 function applicable(rule, variables)
     #TODO: implement this
     return true
-end
-
-
-function get_rules(kb, ctx)
-    #TODO: implement this
-    return [x->x, x->x^2]
-end
-
-
-function variabilize(ctx)
-    return (v for v in ctx.data)
 end
 
 end  # module

@@ -1,10 +1,20 @@
 @reexport module DataInterface
 
 using Reexport
-import ..LinterCore: AbstractDataContext
+using DataFrames
+import ..LinterCore: AbstractDataContext, variabilize
 
 # Data interface
 function build_data_context end
+
+
+function variabilize(ctx)
+    return __variabilize(ctx.data)
+end
+
+__variabilize(data::DataFrame) = pairs(DataFrames.DataFrameColumns(data))
+__variabilize(data::Vector{<:Vector}) = __variabilize(DataFrame(data, :auto))
+
 
 @reexport module SimpleData
 
