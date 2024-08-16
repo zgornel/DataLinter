@@ -23,7 +23,8 @@ function __get_rules_stump()
     [(name = :no_missing_values,
       description = """ Tests that no missing values exist in variable """,
       f = (v, code=nothing) -> all(.!ismissing.(v)) && all(.!isnothing.(v)),
-      message = name->"M01 - Found missing values in variable '$name' (HIGH)",
+      message = name->"found missing values in variable '$name'",
+      warn_level = "warning",
       correct_if = true
       ),
      (name = :no_negative_values,
@@ -35,7 +36,8 @@ function __get_rules_stump()
             return true  # if we have code, we don't care about the rule
         end
       end,
-      message = name->"M02 - Found values smaller than 0 in variable '$name' (LOW)",
+      message = name->"found values smaller than 0 in variable '$name'",
+      warn_level = "info",
       correct_if = true
      )
      ]
