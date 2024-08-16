@@ -1,7 +1,7 @@
 @reexport module LinterCore
 using DataFrames
 
-export AbstractLinterContext
+export AbstractLinterContext, lint
 
 # Data Interface
 abstract type AbstractDataContext end
@@ -18,7 +18,11 @@ function process_output end
 
 # Main linting function
 # 'ctx' contains data, config, etc
-function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase)
+function lint(ctx::AbstractDataContext,
+              kb::AbstractKnowledgeBase;
+              buffer=stdout,
+              show_passing=false,
+              show_stats=false)
     lintout = []
     for rule in get_rules(kb, ctx)
         code = get_code(ctx)
@@ -35,7 +39,7 @@ function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase)
             push!(lintout, (rule, v_name) => result)
         end
     end
-    process_output(lintout)
+    process_output(lintout;buffer, show_passing, show_stats)
     return lintout
 end
 
@@ -55,7 +59,9 @@ end
 
 
 function applicable(rule, variable, code)
-    #TODO: implement this
+    if rule.name == :no_negative_values && code !== nothing
+        return false
+    end
     return true
 end
 
