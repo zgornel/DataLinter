@@ -24,7 +24,7 @@ function process_output(lintout; buffer=stdout, show_stats=false, show_passing=f
     end
     if show_stats
         n_rules_ignored = length(unique(ignored_rules))
-        printstyled(buffer, "$n_failures ", bold=true)
+        printstyled(buffer, "$n_failures", bold=true)
         printstyled(buffer, " data linting issues found. $(n_rules-n_rules_ignored) (of $n_rules) rules applied.\n")
     end
 end

@@ -63,7 +63,7 @@
          `- this implies a unique data representation (values+semantics+context)
     • (2) - linter configuration information
     • (3) - knowledge i.e. rules, applicability conditions etc.
-    • (4) - linting output i.e. rules/context, data stats etc.
+    • (4) - linting output i.e. rules/context, output, data stats etc.
 =#
 module VUBLinter
 
