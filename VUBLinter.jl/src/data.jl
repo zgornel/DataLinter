@@ -9,9 +9,10 @@ export build_data_context
 
 
 # Transforms a context into an iterable of variables of form `Pair{name, values}`
+__variabilize(data::DataFrame) = pairs(DataFrames.DataFrameColumns(data))
+__variabilize(data::Vector{<:Vector}) = __variabilize(DataFrame(data, :auto))
+__variabilize(data::Vector{Any}) = __variabilize(DataFrame(data, :auto))
 function variabilize(ctx)
-    __variabilize(data::DataFrame) = pairs(DataFrames.DataFrameColumns(data))
-    __variabilize(data::Vector{<:Vector}) = __variabilize(DataFrame(data, :auto))
     return __variabilize(ctx.data)
 end
 
