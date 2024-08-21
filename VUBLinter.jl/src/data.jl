@@ -2,20 +2,18 @@
 
 using Reexport
 using DataFrames
-import ..LinterCore: AbstractDataContext, variabilize, get_code
-
-export build_data_context
+import ..LinterCore: AbstractDataContext, variabilize, context_code
 
 # Main data interface function that abstracts over data contexts
-function build_data_context end
+export build_data_context
+
 
 # Transforms a context into an iterable of variables of form `Pair{name, values}`
 function variabilize(ctx)
+    __variabilize(data::DataFrame) = pairs(DataFrames.DataFrameColumns(data))
+    __variabilize(data::Vector{<:Vector}) = __variabilize(DataFrame(data, :auto))
     return __variabilize(ctx.data)
 end
-
-__variabilize(data::DataFrame) = pairs(DataFrames.DataFrameColumns(data))
-__variabilize(data::Vector{<:Vector}) = __variabilize(DataFrame(data, :auto))
 
 
 # Simple data structure and its methods
@@ -29,15 +27,11 @@ Base.show(io::IO, ctx::SimpleDataContext) = begin
     print(io, "SimpleDataContext $mb_size MB of data")
 end
 
-
-function build_data_context(data; elementwise=false)
-    return SimpleDataContext(;data, elementwise)
-end
+build_data_context(data; elementwise=false) = SimpleDataContext(;data, elementwise)
+context_code(ctx::SimpleDataContext) = nothing
 
 
 # Simple data+code structure and its methods
-get_code(ctx::SimpleDataContext) = nothing
-
 Base.@kwdef struct SimpleCodeAndDataContext <: AbstractDataContext
     elementwise=false
     data=nothing
@@ -49,11 +43,7 @@ Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
     print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
 end
 
-
-function build_data_context(data, code; elementwise=false)
-    return SimpleCodeAndDataContext(;data, code, elementwise)
-end
-
-get_code(ctx::SimpleCodeAndDataContext) = ctx.code
+build_data_context(data, code; elementwise=false) = SimpleCodeAndDataContext(;data, code, elementwise)
+context_code(ctx::SimpleCodeAndDataContext) = ctx.code
 
 end  # module

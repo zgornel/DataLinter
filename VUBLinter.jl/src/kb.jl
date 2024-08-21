@@ -26,11 +26,11 @@ module KnowledgeBaseNative
 
     #####
     #TODO: Extend this:
-    #      - by adding more content: rules (and contexts) etc.
+    #      - by adding more content: linters (and contexts) etc.
     #      - an external data structure
     #      - something loadable into a `KnowledgeBase` object
     #
-    const DATA_LINTING_RULES = begin
+    const DATA_LINTERS = begin
         [(name = :no_missing_values,
           description = """ Tests that no missing values exist in variable """,
           f = (v, code=nothing) -> all(.!ismissing.(v)) && all(.!isnothing.(v)),
@@ -63,7 +63,7 @@ end  # module
 @reexport module KnowledgeBaseInterface
 
 using Reexport
-import ..LinterCore: AbstractKnowledgeBase, get_rules
+import ..LinterCore: AbstractKnowledgeBase, build_linters
 import ..KnowledgeBaseNative
 export kb_load
 
@@ -90,12 +90,12 @@ function kb_query(kb::KnowledgeBaseWrapper, query::String)
 end
 
 
-function get_rules(kb, ctx)
+function build_linters(kb, ctx)
     #TODO: Implement query of the knowledge base
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
-    return KnowledgeBaseNative.DATA_LINTING_RULES
+    return KnowledgeBaseNative.DATA_LINTERS
 end
 
 end  # module

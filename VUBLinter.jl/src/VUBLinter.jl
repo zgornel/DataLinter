@@ -24,18 +24,18 @@
       ---------------------
     • KB INTERFACE (`src/kb.jl`)
       `- handles communication with the knowledgebase
-      `- at this point, has the data rules embedded in code (TODO: to be updated during dev)
+      `- at this point, has the data linters embedded in code (TODO: to be updated during dev)
 
     • DATA INTERFACE (`src/data.jl`)
       `- models types of 'data contexts' = data + metadata + information over where/when the data exists
          (i.e. a context could contain data and the snippet of code which is executed over the data)
-      `- the 'context' defines how the rules (from the KB) are applied to the data
+      `- the 'context' defines how the linters (from the KB) are applied to the data
 
     • OUTPUT INTERFACE (`src/output.jl`)
       `- contains all sorts of printers and options to display data and statistics
 
     • LINTER (`src/linter.jl`)
-      `- loop over rules×variables that applies each rule to variables/sets of variables
+      `- loop over linters×variables that applies each linter to variables/sets of variables
          (depending on context) and generates results
 
 
@@ -62,8 +62,8 @@
     • (1) - data context object i.e. data, data + code);
          `- this implies a unique data representation (values+semantics+context)
     • (2) - linter configuration information
-    • (3) - knowledge i.e. rules, applicability conditions etc.
-    • (4) - linting output i.e. rules/context, output, data stats etc.
+    • (3) - knowledge i.e. linters, applicability conditions etc.
+    • (4) - linting output i.e. linters/context, output, data stats etc.
 =#
 module VUBLinter
 

@@ -10,7 +10,7 @@ data = Vector{Vector{Union{Missing, Float64}}}([rand(3) for _ in 1:5])
 data[1][1] = -1
 data[5][2] = missing
 
-code = "apply_some_classifier"  # some sample code, will activate only the missing rule
+code = "apply_some_classifier"  # some sample code, will activate only the missing linter
 
 kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")
 kb = VUBLinter.kb_load(kbpath)

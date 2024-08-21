@@ -6,11 +6,11 @@ export AbstractLinterContext, lint
 # Data Interface
 abstract type AbstractDataContext end
 function variabilize end  # returns an iterable Pairs(:variable_name => [vector of variable values])
-function get_code end
+function context_code end
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
-function get_rules end
+function build_linters end
 
 # Output Interface
 function process_output end
@@ -24,19 +24,19 @@ function lint(ctx::AbstractDataContext,
               show_passing=false,
               show_stats=false)
     lintout = []
-    for rule in get_rules(kb, ctx)
-        code = get_code(ctx)
+    for linter in build_linters(kb, ctx)
+        code = context_code(ctx)
         for v in variabilize(ctx)
             v_name, _ = v
             # variablize creates single variables but also combines them
-            # in a way that rules may be applicable
-            result = if applicable(rule, v, code)
+            # in a way that individual linters may be applicable
+            result = if applicable(linter, v, code)
                 #TODO: Implement mechanism for working with ctx.code
-                apply(rule, v, code; elementwise=ctx.elementwise)
+                apply(linter, v, code; elementwise=ctx.elementwise)
             else
                 nothing
             end
-            push!(lintout, (rule, v_name) => result)
+            push!(lintout, (linter, v_name) => result)
         end
     end
     process_output(lintout;buffer, show_passing, show_stats)
@@ -44,22 +44,22 @@ function lint(ctx::AbstractDataContext,
 end
 
 
-function apply(rule, v, code; elementwise=false)
+function apply(linter, v, code; elementwise=false)
     v_name, v_values = v
     #TODO: use try-catch
-    #TODO: parse `code` usable in some way by the rules' functions
+    #TODO: parse `code` usable in some way by the linters' functions
     #      i.e. key terms, ontology concepts etc.
     out_f = if elementwise
-                rule.f.(v_values, code)
+                linter.f.(v_values, code)
              else
-                rule.f(v_values, code)
+                linter.f(v_values, code)
              end
-    return out_f == rule.correct_if
+    return out_f == linter.correct_if
 end
 
 
-function applicable(rule, variable, code)
-    if rule.name == :no_negative_values && code !== nothing
+function applicable(linter, variable, code)
+    if linter.name == :no_negative_values && code !== nothing
         return false
     end
     return true
