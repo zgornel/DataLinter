@@ -29,11 +29,10 @@ function lint(ctx::AbstractDataContext,
         datait = data_iterables(ctx)
         # 1. Apply over columns
         for col in datait.column_iterator
-            colname, _ = col
+            (colname, _), _ = col
             result = apply(linter, col, code)
             push!(lintout, (linter, "column: $colname") => result)
         end
-
         # 2. Apply over rows
         for (i, row) in enumerate(datait.row_iterator)
             result = apply(linter, row, code)
@@ -45,7 +44,6 @@ function lint(ctx::AbstractDataContext,
                 push!(lintout, (linter, "row: $i") => result)
             end
         end
-
         # 3. Apply over whole dataset
         result = apply(linter, datait.dataref, code)
         push!(lintout, (linter, "dataset") => result)
@@ -79,6 +77,8 @@ function applicable(linter, data_type, code)
     elseif linter.name == :no_negative_values && data_type == :column && code !== nothing
         return false
     elseif linter.name == :no_missing_values && data_type != :column
+        return false
+    elseif linter.name == :int_as_float && data_type != :column
         return false
     else
         return true
