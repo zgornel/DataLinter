@@ -24,31 +24,7 @@ module KnowledgeBaseNative
         @error "KB query is not implemented"
     end
 
-    #####
-    #TODO: Extend this:
-    #      - by adding more content: linters (and contexts) etc.
-    #      - an external data structure
-    #      - something loadable into a `KnowledgeBase` object
-    #
-    const DATA_LINTERS = begin
-        [(name = :no_missing_values,
-          description = """ Tests that no missing values exist in variable """,
-          f = (v, code=nothing) -> all(.!ismissing.(v)) && all(.!isnothing.(v)),
-          failure_message = name->"found missing values in variable '$name'",
-          correct_message = name->"no missing values in variable '$name'",
-          warn_level = "warning",
-          correct_if = true
-          ),
-         (name = :no_negative_values,
-          description = """ Tests that no negative values exist in variable """,
-          f = (v, code=nothing) -> all(Iterators.map(>=(0), (Iterators.filter(!ismissing, v)))),
-          failure_message = name->"found values smaller than 0 in variable '$name'",
-          correct_message = name->"no values smaller than 0 in variable '$name'",
-          warn_level = "info",
-          correct_if = true
-         )
-         ]
-    end
+    include("kb_linters_code.jl")
 
 
 end  # module

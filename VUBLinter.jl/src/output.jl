@@ -4,28 +4,26 @@ import ..LinterCore: process_output
 
 function process_output(lintout; buffer=stdout, show_stats=false, show_passing=false)
     n_failures = 0
-    n_linters = length(unique(map(x->x[1][1].name, lintout)))
-    ignored_linters = []
-    for ((linter, v_name), result) in lintout
+    n_linters = map(lo->lo[1][1].name, lintout) |> length∘unique
+    n_linters_applied = map(lo->lo[1][1].name, filter(lo->lo[2]!=nothing, lintout)) |> length∘unique
+    for ((linter, loc_name), result) in lintout
         applicable = !isnothing(result)
-        !applicable && push!(ignored_linters, linter.name)
         #TODO: Explicitly represent dependency on linter (KB) structure
         msg, color, bold = _print_options(linter, result, applicable)
         if applicable
             if !result  # linter failed
                 n_failures+= 1
                 printstyled(buffer, "$msg\t($(linter.name))\t"; color, bold)
-                printstyled(buffer,"$(linter.failure_message(v_name))\n")
+                printstyled(buffer,"$(linter.failure_message(loc_name))\n")
             elseif show_passing
                 printstyled(buffer, "$msg\t($(linter.name))\t"; color, bold)
-                printstyled(buffer,"$(linter.correct_message(v_name))\n")
+                printstyled(buffer,"$(linter.correct_message(loc_name))\n")
             end
        end
     end
     if show_stats
-        n_linters_ignored = length(unique(ignored_linters))
         printstyled(buffer, "$n_failures", bold=true)
-        printstyled(buffer, " data linting issues found. $(n_linters-n_linters_ignored) (of $n_linters) linters applied.\n")
+        printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters_applied data linters applied.\n")
     end
 end
 

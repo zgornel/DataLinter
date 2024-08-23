@@ -5,7 +5,7 @@ export AbstractLinterContext, lint
 
 # Data Interface
 abstract type AbstractDataContext end
-function variabilize end  # returns an iterable Pairs(:variable_name => [vector of variable values])
+function data_iterables end  # returns an iterables over data
 function context_code end
 
 # KB Interface
@@ -26,43 +26,63 @@ function lint(ctx::AbstractDataContext,
     lintout = []
     for linter in build_linters(kb, ctx)
         code = context_code(ctx)
-        for v in variabilize(ctx)
-            v_name, _ = v
-            # variablize creates single variables but also combines them
-            # in a way that individual linters may be applicable
-            result = if applicable(linter, v, code)
-                #TODO: Implement mechanism for working with ctx.code
-                apply(linter, v, code; elementwise=ctx.elementwise)
-            else
-                nothing
-            end
-            push!(lintout, (linter, v_name) => result)
+        datait = data_iterables(ctx)
+        # 1. Apply over columns
+        for col in datait.column_iterator
+            colname, _ = col
+            result = apply(linter, col, code)
+            push!(lintout, (linter, "column: $colname") => result)
         end
+
+        # 2. Apply over rows
+        for (i, row) in enumerate(datait.row_iterator)
+            result = apply(linter, row, code)
+            if isnothing(result) # skip trues or nothings as there may be too many
+                continue
+            elseif result
+                continue
+            else
+                push!(lintout, (linter, "row: $i") => result)
+            end
+        end
+
+        # 3. Apply over whole dataset
+        result = apply(linter, datait.dataref, code)
+        push!(lintout, (linter, "dataset") => result)
     end
-    process_output(lintout;buffer, show_passing, show_stats)
+    process_output(lintout; buffer, show_passing, show_stats)
     return lintout
 end
 
 
-function apply(linter, v, code; elementwise=false)
-    v_name, v_values = v
-    #TODO: use try-catch
-    #TODO: parse `code` usable in some way by the linters' functions
-    #      i.e. key terms, ontology concepts etc.
-    out_f = if elementwise
-                linter.f.(v_values, code)
-             else
-                linter.f(v_values, code)
-             end
-    return out_f == linter.correct_if
+function apply(linter, data, code)
+    # Functions that extract an informal description of the data type
+    # to be used in the `applicable` function (also make checks more readable)
+    get_data_type(::Pair) = :column
+    get_data_type(::Vector{<:Pair}) = :row
+    get_data_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
+
+    data_type = get_data_type(data)
+    result = if applicable(linter, data_type, code)
+        out_f = linter.f(data, code)  # Apply the linter!
+        linter.correct_if(out_f)      # Assert correctness of result
+    else
+        nothing
+    end
+    return result
 end
 
 
-function applicable(linter, variable, code)
-    if linter.name == :no_negative_values && code !== nothing
+function applicable(linter, data_type, code)
+    if linter.name == :no_negative_values && data_type != :column
         return false
+    elseif linter.name == :no_negative_values && data_type == :column && code !== nothing
+        return false
+    elseif linter.name == :no_missing_values && data_type != :column
+        return false
+    else
+        return true
     end
-    return true
 end
 
 end  # module
