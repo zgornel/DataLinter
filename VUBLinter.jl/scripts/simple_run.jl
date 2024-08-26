@@ -2,16 +2,26 @@
 using Pkg
 Pkg.activate(joinpath(dirname(@__FILE__),".."))  # we assume that this file lies in ./scripts
 
+using Random
+using Dates
 using VUBLinter
 
-data = Vector{Vector{Union{Missing, Float64}}}([rand(3) for _ in 1:5])
+n = 1_000
+data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
+push!(data, ones(Union{Missing,Float64}, n))
+push!(data, [string.(Dates.now()) for _ in 1:n])
+push!(data, [(randstring(3)*" "*randstring(2)) for _ in 1:n])
+push!(data, [string(rand()) for _ in 1:n])
 
 # Alter data to produce linting output
 data[1][1] = -1
-data[5][2] = missing          # add a missing values warning
-push!(data, [1.0, 2.0, 3.0])  # add an int as float warning
+data[3][2] = missing
+empty_row=10
+for col in data
+    col[empty_row] = ifelse(typeof(col[empty_row])<:Number, missing, "")
+end
 
-code = "apply_some_classifier"  # some sample code, will activate only the missing linter
+code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
 kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")
 kb = VUBLinter.kb_load(kbpath)
@@ -21,8 +31,10 @@ buf =stdout
 ctx_no_code = VUBLinter.build_data_context(data)
 lintout = VUBLinter.lint(ctx_no_code, kb, buffer=buf, show_stats=true, show_passing=false);
 
+println("------------")
+
 # Second case, print to buffer (and print the buffer), linting on data+code
-buf = IOBuffer();
+buf=stdout; #buf = IOBuffer();
 ctx_code = VUBLinter.build_data_context(data, code)
-lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=false);
-VUBLinter.OutputInterface.print_buffer(buf)
+@time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=false);
+buf isa IOBuffer &&VUBLinter.OutputInterface.print_buffer(buf);
