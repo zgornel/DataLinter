@@ -71,7 +71,8 @@ function build_linters(kb, ctx)
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
-    return KnowledgeBaseNative.DATA_LINTERS
+    return vcat(KnowledgeBaseNative.GOOGLE_DATA_LINTERS,
+                KnowledgeBaseNative.ADDITIONAL_DATA_LINTERS)
 end
 
 end  # module

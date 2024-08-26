@@ -56,12 +56,12 @@ end
 function apply(linter, data, code)
     # Functions that extract an informal description of the data type
     # to be used in the `applicable` function (also make checks more readable)
-    get_data_type(::Pair) = :column
-    get_data_type(::Vector{<:Pair}) = :row
-    get_data_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
+    get_iterable_type(::Pair) = :column
+    get_iterable_type(::Vector{<:Pair}) = :row
+    get_iterable_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
 
-    data_type = get_data_type(data)
-    result = if applicable(linter, data_type, code)
+    iterable_type = get_iterable_type(data)
+    result = if applicable(linter, iterable_type, code)
         out_f = linter.f(data, code)  # Apply the linter!
         linter.correct_if(out_f)      # Assert correctness of result
     else
@@ -71,14 +71,22 @@ function apply(linter, data, code)
 end
 
 
-function applicable(linter, data_type, code)
-    if linter.name == :no_negative_values && data_type != :column
+function applicable(linter, iterable_type, code)
+    if linter.name == :negative_values && iterable_type != :column
         return false
-    elseif linter.name == :no_negative_values && data_type == :column && code !== nothing
+    elseif linter.name == :negative_values && iterable_type == :column && code !== nothing
         return false
-    elseif linter.name == :no_missing_values && data_type != :column
+    elseif linter.name == :missing_values && iterable_type != :column
         return false
-    elseif linter.name == :int_as_float && data_type != :column
+    elseif linter.name == :int_as_float && iterable_type != :column
+        return false
+    elseif linter.name == :datetime_as_string && iterable_type != :column
+        return false
+    elseif linter.name == :tokenizable_string && iterable_type != :column
+        return false
+    elseif linter.name == :number_as_string && iterable_type != :column
+        return false
+    elseif linter.name == :empty_example && iterable_type != :row
         return false
     else
         return true

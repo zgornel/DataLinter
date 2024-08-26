@@ -13,10 +13,10 @@ function process_output(lintout; buffer=stdout, show_stats=false, show_passing=f
         if applicable
             if !result  # linter failed
                 n_failures+= 1
-                printstyled(buffer, "$msg\t($(linter.name))\t"; color, bold)
+                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
                 printstyled(buffer,"$(linter.failure_message(loc_name))\n")
             elseif show_passing
-                printstyled(buffer, "$msg\t($(linter.name))\t"; color, bold)
+                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
                 printstyled(buffer,"$(linter.correct_message(loc_name))\n")
             end
        end
@@ -36,6 +36,7 @@ _print_options(linter, result, applicable) = begin
         if !result
             (linter.warn_level == "warning") && ( return (msg="× warn", color=:yellow, bold=true) )
             (linter.warn_level == "info") && ( return (msg="• info", color=:cyan, bold=true) )
+            (linter.warn_level == "error") && ( return (msg="• error", color=:red, bold=true) )
         else
             # linter passed
             return (msg="∨ pass", color=:default, bold=true)
