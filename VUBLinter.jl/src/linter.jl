@@ -22,7 +22,8 @@ function lint(ctx::AbstractDataContext,
               kb::AbstractKnowledgeBase;
               buffer=stdout,
               show_passing=false,
-              show_stats=false)
+              show_stats=false,
+              show_na=false)
     lintout = []
     for linter in build_linters(kb, ctx)
         code = context_code(ctx)
@@ -48,7 +49,7 @@ function lint(ctx::AbstractDataContext,
         result = apply(linter, datait.dataref, code)
         push!(lintout, (linter, "dataset") => result)
     end
-    process_output(lintout; buffer, show_passing, show_stats)
+    process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout
 end
 
@@ -72,24 +73,38 @@ end
 
 
 function applicable(linter, iterable_type, code)
-    if linter.name == :negative_values && iterable_type != :column
-        return false
-    elseif linter.name == :negative_values && iterable_type == :column && code !== nothing
-        return false
-    elseif linter.name == :missing_values && iterable_type != :column
-        return false
-    elseif linter.name == :int_as_float && iterable_type != :column
-        return false
-    elseif linter.name == :datetime_as_string && iterable_type != :column
-        return false
-    elseif linter.name == :tokenizable_string && iterable_type != :column
-        return false
-    elseif linter.name == :number_as_string && iterable_type != :column
-        return false
-    elseif linter.name == :empty_example && iterable_type != :row
-        return false
-    else
+    if linter.name == :negative_values && iterable_type == :column && code !== nothing
         return true
+    elseif linter.name == :missing_values && iterable_type == :column
+        return true
+    elseif linter.name == :int_as_float && iterable_type == :column
+        return true
+    elseif linter.name == :datetime_as_string && iterable_type == :column
+        return true
+    elseif linter.name == :tokenizable_string && iterable_type == :column
+        return true
+    elseif linter.name == :number_as_string && iterable_type == :column
+        return true
+    elseif linter.name == :empty_example && iterable_type == :row
+        return true
+    elseif linter.name == :zipcodes_as_values && iterable_type == :column
+        return true
+    elseif linter.name == :duplicate_examples && iterable_type == :dataset
+        return true
+    elseif linter.name == :large_outliers && iterable_type == :column
+        return true
+    elseif linter.name == :enum_detector && iterable_type == :column
+        return true
+    elseif linter.name == :uncommon_signs && iterable_type == :column
+        return true
+    elseif linter.name == :tailed_distribution && iterable_type == :column
+        return true
+    elseif linter.name == :circular_domain && iterable_type == :column
+        return true
+    elseif linter.name == :uncommon_list_lengths && iterable_type == :column
+        return true
+    else
+        return false
     end
 end
 
