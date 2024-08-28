@@ -47,7 +47,7 @@ function lint(ctx::AbstractDataContext,
         end
         # 3. Apply over whole dataset
         result = apply(linter, datait.dataref, code)
-        push!(lintout, (linter, "dataset") => result)
+        push!(lintout, (linter, "whole dataset") => result)
     end
     process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout

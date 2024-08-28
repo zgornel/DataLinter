@@ -18,14 +18,17 @@ function process_output(lintout;
             if !result  # linter failed
                 n_failures+= 1
                 printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20))"; color=color, bold=true)
                 printstyled(buffer,"$(linter.failure_message(loc_name))\n")
             elseif show_passing
                 printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20))"; color=color, bold=true)
                 printstyled(buffer,"$(linter.correct_message(loc_name))\n")
             end
         else
             if show_na
                 printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20))"; color=color, bold=true)
                 printstyled(buffer,"linter not applicable for $(loc_name)\n")
             end
         end

@@ -1,18 +1,47 @@
 #TODO: Move the logic from code into a knowledge-base object of some sort#
 using DataFrames
+using StatsBase
+
+#TODO: Remove column from input arguments, add eltype traits
+#1. Add the types:
+#  NumericColumEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
+#  StringColumEltype = Union{<:AbstractString, Union{Missing, <:AbstractString}}
+#  ListColumnEltype = Union{Any, Vector{Any}}
+#
+#2. Add signatures of the type:
+#  is_int_as_float(::T, v, vm, args...) where T<:NumericColumnEltype = ...
+#  is_int_as_float(::T, v, vm, args...) where T<:StringColumnEltype = ...
+#
+#3. In the linter data structure replace functions with pipelines:
+#     f --> f ∘ select_specific_inputs ∘ destructure_column
+#     f should take only minimal arguments
 
 destructure_column(column) = begin
-    (n, t), v = column
-    return n, t, v
+    (_name, _eltype), _values = column
+    _vs = skipmissing(_values)
+    # TODO: move iterators and perhaps statistics (i.e. counts)
+    #       to the column iterator in `src/data.jl`
+    return _name, _eltype, _values, _vs
 end
 
+check_correctness(check_against) =
+    (result)->begin
+        if result === nothing
+            return nothing
+        elseif result==check_against
+            return true
+        else
+            return false
+        end
+    end
+
 function is_int_as_float(column, args...)
-    n,t,v = destructure_column(column)
+    _, t, _, vm = destructure_column(column)
     if !(t <: AbstractFloat || t <: Union{Missing, <:AbstractFloat})
-        return false
+        return nothing
     else try
-            for vi in skipmissing(v)
-                Int(vi)
+            for v in vm
+                Int(v)
             end
             return true
         catch e;
@@ -44,33 +73,34 @@ function is_datetime_as_string(column, args...)
         r"^([0-9]{4})-?(1[0-2]|0[1-9])-?(3[01]|0[1-9]|[12][0-9]) (2[0-3]|[01][0-9]):?([0-5][0-9]):?([0-5][0-9])$", # ISO 8601 date with hours, minutes, and seconds like 2020-12-29 19:30:45 or 20201229 193045
         r"^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\.[0-9]+)?(Z|[+-](?:2[0-3]|[01][0-9]):[0-5][0-9])?$",  # ISO 8601 date with optional fractional seconds and time zone like 2020-12-29T19:30:45 or 2020-12-29T19:30:45.123Z
     ]
-    n, t, v = destructure_column(column)
+    _, t, _, vm = destructure_column(column)
     if !( t <: AbstractString || t <: Union{Missing, <:AbstractString})
-        return false  # if column is not string, don't bother, check passes
+        return nothing  # if column is not string, don't bother, check passes
     end
+    _vm = collect(vm)
     matches = Dict{Int, Int}()
     for (i, rdt) in enumerate(DATETIME_REGEXES)
         # count how many matches of the expression are in the column
-        push!(matches, i => sum(.!isnothing.(match.(rdt, v))))
+        push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
     # TODO: Improve the logic here
     # Strinct output, needs at least one expression to fully match the column
-    return any(count_matches > 0.9 * length(v) for count_matches in values(matches))
+    return any(count_matches > 0.9 * length(_vm) for count_matches in values(matches))
 end
-
 
 function is_tokenizable_string(column, args...)
     TOKENIZABLE_REGEXES = [
         r"\s+"
     ]
-    n, t, v = destructure_column(column)
+    _, t, _, vm = destructure_column(column)
     if !( t <: AbstractString || t <: Union{Missing, <:AbstractString})
-        return false  # if column is not string, don't bother, check passes
+        return nothing  # if column is not string, don't bother, check passes
     end
+    _vm = collect(vm)
     matches = Dict{Int, Int}()
     for (i, rdt) in enumerate(TOKENIZABLE_REGEXES)
         # count how many matches of the expression are in the column
-        push!(matches, i => sum(.!isnothing.(match.(rdt, v))))
+        push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
     return any(count_matches > 0 for count_matches in values(matches))
 end
@@ -80,18 +110,18 @@ function is_number_as_string(column, args...)
          # Regex from https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#12643073
         r"^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
     ]
-    n, t, v = destructure_column(column)
+    _, t, _, vm = destructure_column(column)
     if !( t <: AbstractString || t <: Union{Missing, <:AbstractString})
-        return false  # if column is not string, don't bother, check passes
+        return nothing  # if column is not string, don't bother, check passes
     end
+    _vm = collect(vm)
     matches = Dict{Int, Int}()
     for (i, rdt) in enumerate(NUMBER_REGEXES)
         # count how many matches of the expression are in the column
-        push!(matches, i => sum(.!isnothing.(match.(rdt, v))))
+        push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > 0.9 * length(v) for count_matches in values(matches))
+    return any(count_matches > 0.9 * length(_vm) for count_matches in values(matches))
 end
-
 
 function is_empty_example(row, args...)
     NUMBER_REGEXES = [
@@ -118,32 +148,50 @@ NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080
 STR_ZIPCODES = string.(NUM_ZIPCODES)
 #TODO: Make lists of zipcodes, make them configurable (there are many numbers)
 function is_zipcode(column, args...)
-    n, t, v = destructure_column(column)
-    _count_in_zipcode(v) = sum(vi in NUM_ZIPCODES for vi in v if !ismissing(vi))
-    _count_in_zipcode(v::Vector{<:AbstractString}) = sum(vi in STR_ZIPCODES for vi in v if !ismissing(vi))
-    _count_in_zipcode(v::Vector{Union{Missing, <:AbstractString}}) = sum(vi in STR_ZIPCODES for vi in v if !ismissing(vi))
-    return _count_in_zipcode(v) >= 0.9 * length(v)
+    _, t, _, vm = destructure_column(column)
+    _count_in_zipcode(v) = sum(z in NUM_ZIPCODES for z in v)
+    _count_in_zipcode(v::Vector{<:AbstractString}) = sum(z in STR_ZIPCODES for z in v)
+    _count_in_zipcode(v::Vector{Union{Missing, <:AbstractString}}) = sum(z in STR_ZIPCODES for z in v)
+    return _count_in_zipcode(vm) >= 0.9 * length(collect(vm))
 end
-
 
 has_duplicates(dfref, args...) = sum(nonunique(dfref[])) != 0
 
 function has_large_outliers(column, args...)
-    #TODO: Implement
-    return false
+    n, t, _, vm = destructure_column(column)
+    if !( t <: Number || t <: Union{Missing, <:Number})
+        return nothing
+    end
+    # simple logic: if we remove X% (X~1%) of the values:
+    # the maxmimum changes 'a lot' (more than 2x) as we
+    # remove the smallest and largest absolute values
+    trim_maxs = Float64[]
+    for t in [0, 0.01, 1, 5, 10]
+        if t > 0 && t < 1
+            try
+                push!(trim_maxs, maximum(abs.(trim(collect(vm), prop=t))))
+            catch
+            end
+        else
+            try
+                push!(trim_maxs, maximum(abs.(trim(collect(vm), count=Int(t)))))
+            catch
+            end
+        end
+    end
+    return maximum(trim_maxs) >= 2 * minimum(trim_maxs)
 end
 
 function enum_detector(column, args...)
-    n, t, v = destructure_column(column)
+    _, _, _, vm = destructure_column(column)
     # if unique values < tol% of the total number => we have an enum
-    return length(unique(v)) <= floor(0.01 * length(v)) + 1
+    return length(unique(vm)) <= floor(0.01 * length(collect(vm))) + 1
 end
-
 
 function has_uncommon_signs(column, args...)
     n, t, v = destructure_column(column)
     if !( t <: Number || t <: Union{Missing, <:Number})
-        return false  # if column is not string, don't bother, check passes
+        return nothing  # if column is not string, don't bother, check passes
     end
     sgns = sign.(skipmissing(v))
     zs = sum(sgns.== 0)
@@ -163,20 +211,25 @@ function has_uncommon_signs(column, args...)
     return any(cnt in 1:r_outlier for cnt in (zs, negs, poss, nans))
 end
 
-
 function has_tailed_distribution(column, args...)
     #TODO: Implement
 end
-
 
 function has_circular_domain(column, args...)
     #TODO: Implement
 end
 
 function has_uncommon_list_lengths(column, args...)
-    #TODO: Implement
+    _, t, _, vm = destructure_column(column)
+    lens = map(length, vm)
+    # t == Any marks that the type was not correctly inferred
+    are_lists = t == Any && (length(collect(Iterators.flatten(vm))) != length(collect(vm)))
+    if are_lists && length(unique(lens)) > 1
+        return true
+    else
+        return false
+    end
 end
-
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
 const GOOGLE_DATA_LINTERS = [
@@ -187,7 +240,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"most of the string values of '$name' can be converted to times/dates",
       correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 2. Tokenizable string i.e. too long, with spaces
@@ -197,7 +250,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"the values of '$name' could be tokenizable i.e. contain spaces",
       correct_message = name->"the values of '$name' are not tokenizable i.e. no spaces",
       warn_level = "info",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 3. Number wrongly encoded as string
@@ -207,7 +260,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"most of the string values of '$name' can be converted to numbers",
       correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
       warn_level = "info",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
@@ -217,18 +270,18 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"many of the values of '$name' could be zipcodes",
       correct_message = name->"many the values of '$name' don't look like zipcodes",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 5. Large outliers
-     ###(name = :large_outliers,
-     ### description = """ Tests that the values of a numerical variable do not contain large outliers """,
-     ### f = has_large_outliers,
-     ### failure_message = name->"the values of '$name' contain large outliers",
-     ### correct_message = name->"there do not seem to be large outliers in '$name'",
-     ### warn_level = "warning",
-     ### correct_if = x->x==false
-     ### ),
+     (name = :large_outliers,
+      description = """ Tests that the values of a numerical variable do not contain large outliers """,
+      f = has_large_outliers,
+      failure_message = name->"the values of '$name' contain large outliers",
+      correct_message = name->"there do not seem to be large outliers in '$name'",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
 
      # 6. Int-as-float wrong encoding
      (name = :int_as_float,
@@ -237,7 +290,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"the values of '$name' are floating point but can be integers",
       correct_message = name->"no int-as-float in '$name'",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
@@ -247,18 +300,18 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"just a few distinct values in '$name', it could be an enum",
       correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 8. uncommon list length
-     ###(name = :uncommon_list_lengths,
-     ### description = """ Tests that the variable does not contain uncommon list lengths in its values """,
-     ### f = has_uncommon_list_lengths,
-     ### failure_message = name->"values in '$name' are lists inconsistent in length",
-     ### correct_message = name->"'$name' does not contain lists incosistent in length",
-     ### warn_level = "warn",
-     ### correct_if = x->x==false
-     ### ),
+     (name = :uncommon_list_lengths,
+      description = """ Tests that the variable does not contain uncommon list lengths in its values """,
+      f = has_uncommon_list_lengths,
+      failure_message = name->"values in '$name' are lists inconsistent in length",
+      correct_message = name->"'$name' does not contain lists incosistent in length",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
 
      # 9. duplicate examples (row based, not column based)
      (name = :duplicate_examples,
@@ -267,7 +320,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"dataset contains duplicates",
       correct_message = name->"the dataset does not contain duplicates",
       warn_level = "info",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 10. empty examples
@@ -277,7 +330,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"the example at '$name' looks empty",
       correct_message = name->"the example at '$name' is not empty",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 11. uncommon sign i.e. +/-/0/nan
@@ -287,7 +340,7 @@ const GOOGLE_DATA_LINTERS = [
       failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
       correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
       warn_level = "warning",
-      correct_if = x->x==false
+      correct_if = check_correctness(false)
       ),
 
      # 12. tailed distribution i.e. extrema that affects the mean
@@ -297,7 +350,7 @@ const GOOGLE_DATA_LINTERS = [
      ### failure_message = name->"The distribution for '$name' has 'long tails'",
      ### correct_message = name->"No 'long tails' in the distribution of variable '$name'",
      ### warn_level = "warning",
-     ### correct_if = x->x==false
+     ### correct_if = check_correctness(false)
      ### ),
 
      # 13. circular domain detector i.e. angles, hours, latitude/longitude
@@ -307,41 +360,42 @@ const GOOGLE_DATA_LINTERS = [
      ### failure_message = name->"values in '$name' may have a circular domain",
      ### correct_message = name->"values in '$name' do not look like having a circular domain",
      ### warn_level = "warning",
-     ### correct_if = x->x==false
+     ### correct_if = check_correctness(false)
      ### ),
 ]
 
 
 function is_many_missings(column, args...)
-    n,t,v = destructure_column(column)
+    _, _, v, _ = destructure_column(column)
     return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) >= 0.9 * 2 * length(v)
 end
 
-function check_smaller_zero(column, args...)
-    n,t,v = destructure_column(column)
-    if t <: AbstractString || t <: Union{Missing, <:AbstractString}
-        return true  # ignore string columns
+function has_negative_values(column, args...)
+    _, t, _, vm = destructure_column(column)
+    if !(t <: Number || t <: Union{Missing, <:Number})
+        return nothing
     end
-    return all(Iterators.map(>=(0), (Iterators.filter(!ismissing, v))))
+    return !all(Iterators.map(>(0), vm))
 end
 
 const ADDITIONAL_DATA_LINTERS = [
      # No missing values in the column
-     (name = :missing_values,
-      description = """ Tests that few missing values exist in variable """,
-      f = is_many_missings,
-      failure_message = name->"found many missing values in '$name'",
-      correct_message = name->"few or no missing values in '$name'",
-      warn_level = "warning",
-      correct_if = x->x==true
-      ),
+     ###(name = :missing_values,
+     ### description = """ Tests that few missing values exist in variable """,
+     ### f = is_many_missings,
+     ### failure_message = name->"found many missing values in '$name'",
+     ### correct_message = name->"few or no missing values in '$name'",
+     ### warn_level = "warning",
+     ### correct_if = check_correctness(false)
+     ### ),
+
      # No negative values in the column
      (name = :negative_values,
       description = """ Tests that no negative values exist in variable """,
-      f = check_smaller_zero,
+      f = has_negative_values,
       failure_message = name->"found values smaller than 0 in '$name'",
       correct_message = name->"no values smaller than 0 in '$name'",
       warn_level = "error",
-      correct_if = x->x==true
+      correct_if = check_correctness(false)
      )
 ]

@@ -15,7 +15,7 @@ push!(data, [string.(Date(Dates.now())) for _ in 1:n])
 push!(data, [(randstring(3)*" "*randstring(2)) for _ in 1:n])
 push!(data, [string(rand()) for _ in 1:n])
 # Alter data to produce linting output
-data[1][1] = -1
+data[1][1] = -10
 data[3][2] = missing
 empty_row=10
 for col in data
@@ -27,6 +27,7 @@ for (srow, drow) in duplicates
         col[drow] = col[srow]
     end
 end
+push!(data, rand(["a","b", ["a","b"]], n))
 code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
 kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")
@@ -42,3 +43,5 @@ buf=stdout; #buf = IOBuffer();
 ctx_code = VUBLinter.build_data_context(data, code)
 @time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=false, show_na=false);
 buf isa IOBuffer &&VUBLinter.OutputInterface.print_buffer(buf);
+#df = DataFrame(data, :auto);
+#dfc=df[rand(1:size(df,1), 10), :];#dfc |> VUBLinter.build_data_context |> x->lint(x,kb;show_passing=false);
