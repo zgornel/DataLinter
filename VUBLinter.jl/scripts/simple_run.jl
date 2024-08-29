@@ -17,6 +17,7 @@ push!(data, [string(rand()) for _ in 1:n])
 # Alter data to produce linting output
 data[1][1] = -10
 data[3][2] = missing
+push!(data, rand(["a","b", ["a","b"]], n))
 empty_row=10
 for col in data
     col[empty_row] = ifelse(typeof(col[empty_row])<:Number, missing, "")
@@ -27,7 +28,6 @@ for (srow, drow) in duplicates
         col[drow] = col[srow]
     end
 end
-push!(data, rand(["a","b", ["a","b"]], n))
 code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
 kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")

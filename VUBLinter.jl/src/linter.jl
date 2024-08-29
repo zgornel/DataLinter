@@ -97,7 +97,7 @@ function applicable(linter, iterable_type, code)
         return true
     elseif linter.name == :uncommon_signs && iterable_type == :column
         return true
-    elseif linter.name == :tailed_distribution && iterable_type == :column
+    elseif linter.name == :long_tailed_distrib && iterable_type == :column
         return true
     elseif linter.name == :circular_domain && iterable_type == :column
         return true

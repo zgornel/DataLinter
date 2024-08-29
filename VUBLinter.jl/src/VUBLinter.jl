@@ -68,10 +68,15 @@
 module VUBLinter
 
 using Reexport
+using PrecompileTools: @setup_workload, @compile_workload
 
 include("linter.jl")  # linter core
 include("data.jl")    # data interface
 include("output.jl")  # output interface
 include("kb.jl")      # kb interface
+
+@compile_workload begin
+    include("workload.jl")
+end
 
 end # module VUBLinter
