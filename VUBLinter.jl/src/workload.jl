@@ -1,7 +1,7 @@
 using Dates
 using Random
 
-function _generate_workload_data(n=1_000)
+function _generate_workload_data(n=100)
     data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
     push!(data, Vector{Union{Missing, Float64}}(ones(n).*1000))
     push!(data, [string.(Date(Dates.now())) for _ in 1:n])

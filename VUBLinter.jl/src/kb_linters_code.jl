@@ -124,7 +124,7 @@ function is_empty_example(row, args...)
     ]
     is_empty = Bool[]
     #TODO: Improve logic, checks below
-    for (k,v) in row
+    for v in row  # name of column is ommitted
         if ismissing(v)
             push!(is_empty, true)
         elseif typeof(v) <: Number || typeof(v) <: Union{Missing, <:Number}

@@ -2,6 +2,7 @@
 
 using Reexport
 using DataFrames
+using Tables
 import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code
 
 # Main data interface function that abstracts over data contexts
@@ -14,7 +15,8 @@ build_data_iterator(df::DataFrame) = begin
      coltype_dict = Dict(x["variable"]=>x["eltype"] for x in eachrow(describe(df)))
      return DataIterator(
          column_iterator = ((name, coltype_dict[name]) => vals for (name, vals) in pairs(eachcol(df))),
-         row_iterator = (collect(pairs(r)) for r in eachrow(df)),
+         #row_iterator = (collect(pairs(r)) for r in eachrow(df)),  # too slow
+         row_iterator = Tables.rows(Tables.columntable(df)),
          coltype_iterator = (k=>v for (k,v) in coltype_dict),
          metadata = describe(df),
          dataref = Ref(df)

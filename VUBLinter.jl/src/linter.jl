@@ -33,10 +33,10 @@ function lint(ctx::AbstractDataContext,
               show_na=false)
     lintout = []  # TODO: Improve this structure to something more workable
                   #       that includes timings, outputs, easy referencing i.e. Dict
+    datait = build_data_iterator(ctx)
     for linter in build_linters(kb, ctx)
         _t = @timed begin
                 code = context_code(ctx)
-                datait = build_data_iterator(ctx)
                 # 1. Apply over columns
                 for col in datait.column_iterator
                     (colname, _), _ = col
@@ -70,7 +70,7 @@ function apply(linter, data, code)
     # Functions that extract an informal description of the data type
     # to be used in the `applicable` function (also make checks more readable)
     get_iterable_type(::Pair) = :column
-    get_iterable_type(::Vector{<:Pair}) = :row
+    get_iterable_type(::Tables.ColumnsRow) = :row
     get_iterable_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
 
     iterable_type = get_iterable_type(data)
