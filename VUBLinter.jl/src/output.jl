@@ -29,13 +29,13 @@ function process_output(lintout;
             if show_na
                 printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
                 printstyled(buffer, "$(rpad(loc_name,20))"; color=color, bold=true)
-                printstyled(buffer,"linter not applicable for $(loc_name)\n")
+                printstyled(buffer,"linter not applicable for '$(loc_name)'\n")
             end
         end
     end
     if show_stats
         printstyled(buffer, "$n_failures", bold=true)
-        printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters_applied data linters applied.\n")
+        printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters_applied (of $n_linters) data linters applied.\n")
     end
 end
 

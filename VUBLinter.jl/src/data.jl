@@ -2,42 +2,33 @@
 
 using Reexport
 using DataFrames
-import ..LinterCore: AbstractDataContext, data_iterables, context_code
+import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code
 
 # Main data interface function that abstracts over data contexts
-export build_data_context, DataStructure
+export build_data_context
 
-
-### # TODO: See if makes sense to use this (as return type from `data_iterables`)
-### @Base.kwargs struct LinterDataIterator
-###     column_iterator
-###     row_iterator
-###     coltype_iterator
-###     metadata
-### end
 
 # Function that returns a DataStructure ammendable for use in the data linters.
 # It contains a row iterator, a column iterator, metadata
-data_iterables(df::DataFrame) = begin
+build_data_iterator(df::DataFrame) = begin
      coltype_dict = Dict(x["variable"]=>x["eltype"] for x in eachrow(describe(df)))
-     return (
-         # Iterator over columns, each element is a Pair{Symbol, Vector} like :x1 => [x1₁, x1₂, ..., x1ₙ]
+     return DataIterator(
          column_iterator = ((name, coltype_dict[name]) => vals for (name, vals) in pairs(eachcol(df))),
-
-         # Iterator over rows, each element is a Vector{Pair} [:x1=>x1ᵢ, :x2=>x2ᵢ, ..., :xm=>xmᵢ]
          row_iterator = (collect(pairs(r)) for r in eachrow(df)),
-
-         # Iterator over column types, each element is a Pair{Symbol, DataType} like :x1=>Float64
-         coltype_iterator = Iterators.map(x->x["variable"]=>x["eltype"], eachrow(describe(df))),
-
+         coltype_iterator = (k=>v for (k,v) in coltype_dict),
          metadata = describe(df),
-
          dataref = Ref(df)
         )
 end
-data_iterables(data::Vector{<:Vector}) = data_iterables(DataFrame(data, :auto))
-data_iterables(data::Vector{Any}) = data_iterables(DataFrame(data, :auto))
-data_iterables(ctx::AbstractDataContext) = data_iterables(ctx.data)
+build_data_iterator(data::Vector{<:Vector}) = build_data_iterator(DataFrame(data, :auto))
+build_data_iterator(data::Vector{Any}) = build_data_iterator(DataFrame(data, :auto))
+build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
+
+Base.show(io::IO, datait::DataIterator) = begin
+    m, n = size(datait.dataref[])
+    mb_size = Base.summarysize(datait.dataref)/(1024^2)
+    print(io, "DataIterator over $m samples, $n variables, $mb_size MB of data")
+end
 
 
 # Simple data structure and its methods

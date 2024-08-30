@@ -8,7 +8,7 @@ using DataFrames
 using Revise
 using VUBLinter
 
-n = 1_000
+n = 10_000
 data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
 push!(data, Vector{Union{Missing, Float64}}(ones(n).*1000))
 push!(data, [string.(Date(Dates.now())) for _ in 1:n])
@@ -41,7 +41,7 @@ println("------------")
 # Second case, print to buffer (and print the buffer), linting on data+code
 buf=stdout; #buf = IOBuffer();
 ctx_code = VUBLinter.build_data_context(data, code)
-@time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=false, show_na=false);
+@time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=true, show_na=true);
 buf isa IOBuffer &&VUBLinter.OutputInterface.print_buffer(buf);
 #df = DataFrame(data, :auto);
 #dfc=df[rand(1:size(df,1), 10), :];#dfc |> VUBLinter.build_data_context |> x->lint(x,kb;show_passing=false);

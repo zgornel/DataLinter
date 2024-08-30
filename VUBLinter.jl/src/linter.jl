@@ -5,8 +5,15 @@ export AbstractLinterContext, lint
 
 # Data Interface
 abstract type AbstractDataContext end
-function data_iterables end  # returns an iterables over data
+function build_data_iterator end  # returns an iterables over data
 function context_code end
+@Base.kwdef struct DataIterator
+    column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
+    row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
+    coltype_iterator    # iterate over column eltypes with elements `name => eltype`
+    metadata            # metadata of the DataFrame
+    dataref             # reference to the DataFrame
+end
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
@@ -24,30 +31,35 @@ function lint(ctx::AbstractDataContext,
               show_passing=false,
               show_stats=false,
               show_na=false)
-    lintout = []
+    lintout = []  # TODO: Improve this structure to something more workable
+                  #       that includes timings, outputs, easy referencing i.e. Dict
     for linter in build_linters(kb, ctx)
-        code = context_code(ctx)
-        datait = data_iterables(ctx)
-        # 1. Apply over columns
-        for col in datait.column_iterator
-            (colname, _), _ = col
-            result = apply(linter, col, code)
-            push!(lintout, (linter, "column: $colname") => result)
-        end
-        # 2. Apply over rows
-        for (i, row) in enumerate(datait.row_iterator)
-            result = apply(linter, row, code)
-            if isnothing(result) # skip trues or nothings as there may be too many
-                continue
-            elseif result
-                continue
-            else
-                push!(lintout, (linter, "row: $i") => result)
-            end
-        end
-        # 3. Apply over whole dataset
-        result = apply(linter, datait.dataref, code)
-        push!(lintout, (linter, "whole dataset") => result)
+        _t = @timed begin
+                code = context_code(ctx)
+                datait = build_data_iterator(ctx)
+                # 1. Apply over columns
+                for col in datait.column_iterator
+                    (colname, _), _ = col
+                    result = apply(linter, col, code)
+                    push!(lintout, (linter, "column: $colname") => result)
+                end
+                # 2. Apply over rows
+                for (i, row) in enumerate(datait.row_iterator)
+                    result = apply(linter, row, code)
+                    if isnothing(result) # skip trues or nothings as there may be too many
+                        continue
+                    elseif result
+                        continue
+                    else
+                        push!(lintout, (linter, "row: $i") => result)
+                    end
+                end
+                # 3. Apply over whole dataset
+                result = apply(linter, datait.dataref, code)
+                push!(lintout, (linter, "whole dataset") => result)
+        end;
+        #_, _time, _bytes, _gctime, _ = _t;
+        #@show linter.name, _time, _bytes, _gctime
     end
     process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout

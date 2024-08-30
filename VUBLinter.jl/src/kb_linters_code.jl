@@ -38,21 +38,14 @@ is_int_as_float(::Type{<:StringEltype}, args...) = nothing
 is_int_as_float(::Type{<:ListEltype}, args...) = nothing
 is_int_as_float(::Type{<:NumericEltype}, args...) = nothing
 
-function is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...)
-    try
-        [Int(v) for v in vm]
-        return true
-    catch e;
-        return false
-    end
-end
+is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...) = all(isinteger.(vm))
 
 
 is_datetime_as_string(::Type{<:ListEltype}, args...) = nothing
 is_datetime_as_string(::Type{<:NumericEltype}, args...) = nothing
 is_datetime_as_string(::Type{<:FloatEltype}, args...) = nothing
 
-function is_datetime_as_string(::Type{StringEltype}, v, vm, name, args...)
+function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...)
     DATETIME_REGEXES = [
         # RFC 2822 Date Format Regular Expression from https://regexpattern.com/rfc-2822-date/
         r"^(?:(Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+)?(0[1-9]|[1-2]?[0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(19[0-9]{2}|[2-9][0-9]{3})\s+(2[0-3]|[0-1][0-9]):([0-5][0-9])(?::(60|[0-5][0-9]))?\s+([-\+][0-9]{2}[0-5][0-9]|(?:UT|GMT|(?:E|C|M|P)(?:ST|DT)|[A-IK-Z]))(\s+|\(([^\(\)]+|\\\(|\\\))*\))*$",
@@ -147,17 +140,15 @@ end
 
 
 is_zipcode(::Type{<:ListEltype}, args...) = nothing
-is_zipcode(::Type{<:NumericEltype}, args...) = nothing
 is_zipcode(::Type{<:FloatEltype}, args...) = nothing
 
-function is_zipcode(::T, v, vm, name, args...) where T
+function is_zipcode(typ::Type{T}, v, vm, name, args...) where T<:Union{<:StringEltype, <:NumericEltype}
     #TODO: Make lists of zipcodes, make them configurable (there are many numbers)
     NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
     STR_ZIPCODES = string.(NUM_ZIPCODES)
-    _count_in_zipcode(v) = sum(z in NUM_ZIPCODES for z in v)
-    _count_in_zipcode(v::Vector{<:AbstractString}) = sum(z in STR_ZIPCODES for z in v)
-    _count_in_zipcode(v::Vector{Union{Missing, <:AbstractString}}) = sum(z in STR_ZIPCODES for z in v)
-    return _count_in_zipcode(vm) >= 0.9 * length(collect(vm))
+    _count_in_zipcode(::Type{<:NumericEltype}, vm) = sum(z in NUM_ZIPCODES for z in vm)
+    _count_in_zipcode(::Type{<:StringEltype}, vm) = sum(z in STR_ZIPCODES for z in vm)
+    return _count_in_zipcode(typ, vm) >= 0.9 * length(collect(vm))
 end
 
 
@@ -200,7 +191,7 @@ has_uncommon_signs(::Type{<:StringEltype}, args...) = nothing
 has_uncommon_signs(::T, args...) where T= nothing
 
 function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...)
-    sgns = sign.(skipmissing(v))
+    sgns = sign.(vm)
     zs = sum(sgns.== 0)
     negs = sum(sgns.< 0)
     poss = sum(sgns.> 0)
@@ -374,8 +365,8 @@ const GOOGLE_DATA_LINTERS = [
      (name = :long_tailed_distrib,
       description = """ Tests if the distribution of the variable has long tails """,
       f = splat(has_tailed_distribution) ∘ destructure_column,
-      failure_message = name->"The distribution for '$name' has 'long tails'",
-      correct_message = name->"No 'long tails' in the distribution of '$name'",
+      failure_message = name->"the distribution for '$name' has 'long tails'",
+      correct_message = name->"no 'long tails' in the distribution of '$name'",
       warn_level = "warning",
       correct_if = check_correctness(false)
       ),
@@ -393,26 +384,26 @@ const GOOGLE_DATA_LINTERS = [
 
 
 function has_many_missings(::T, v, vm, name, args...) where T
-    return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) >= 0.9 * 2 * length(v)
+    return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) <= 0.9 * 2 * length(v)
 end
 
 
 has_negative_values(::Type{<:ListEltype}, args...) = nothing
 has_negative_values(::Type{<:StringEltype}, args...) = nothing
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = begin
-    !all(Iterators.map(>(0), vm))
+    !all(>(0), vm)
 end
 
 const ADDITIONAL_DATA_LINTERS = [
      # No missing values in the column
-     ###(name = :missing_values,
-     ### description = """ Tests that few missing values exist in variable """,
-     ### f = splat(has_many_missings) ∘ destructure_column,
-     ### failure_message = name->"found many missing values in '$name'",
-     ### correct_message = name->"few or no missing values in '$name'",
-     ### warn_level = "warning",
-     ### correct_if = check_correctness(false)
-     ### ),
+     (name = :missing_values,
+      description = """ Tests that few missing values exist in variable """,
+      f = splat(has_many_missings) ∘ destructure_column,
+      failure_message = name->"found many missing values in '$name'",
+      correct_message = name->"few or no missing values in '$name'",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
 
      # No negative values in the column
      (name = :negative_values,
