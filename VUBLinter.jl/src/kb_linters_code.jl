@@ -6,7 +6,7 @@ using StatsBase
 # TODO: move iterators and perhaps statistics (i.e. counts)
 #       to the column iterator in `src/data.jl`
 destructure_column(column, args...) = begin
-    (column_name, column_eltype), column_values = column
+    column_name, column_eltype, column_values = column
     # For this reason, the column values functions have the signature
     # `foo(::Type{column_eltype}, v, vm, name, args...)`
     # In the linter data structure, `foo` needs to be combined with destructure column:

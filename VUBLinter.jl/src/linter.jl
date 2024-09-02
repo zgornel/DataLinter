@@ -10,10 +10,9 @@ function context_code end
 @Base.kwdef struct DataIterator
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
     row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
-    coltype_iterator    # iterate over column eltypes with elements `name => eltype`
-    metadata            # metadata of the DataFrame
     dataref             # reference to the DataFrame
 end
+function columnname end # Returns the name of a 'column' element of the `DataIterator`
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
@@ -39,9 +38,8 @@ function lint(ctx::AbstractDataContext,
                 code = context_code(ctx)
                 # 1. Apply over columns
                 for col in datait.column_iterator
-                    (colname, _), _ = col
                     result = apply(linter, col, code)
-                    push!(lintout, (linter, "column: $colname") => result)
+                    push!(lintout, (linter, "column: $(columnname(col))") => result)
                 end
                 # 2. Apply over rows
                 for (i, row) in enumerate(datait.row_iterator)
@@ -69,7 +67,7 @@ end
 function apply(linter, data, code)
     # Functions that extract an informal description of the data type
     # to be used in the `applicable` function (also make checks more readable)
-    get_iterable_type(::Pair) = :column
+    get_iterable_type(::Tuple) = :column
     get_iterable_type(::Tables.ColumnsRow) = :row
     get_iterable_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
 

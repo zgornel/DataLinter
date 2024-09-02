@@ -3,7 +3,7 @@
 using Reexport
 using DataFrames
 using Tables
-import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code
+import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code, columnname
 
 # Main data interface function that abstracts over data contexts
 export build_data_context
@@ -12,13 +12,10 @@ export build_data_context
 # Function that returns a DataStructure ammendable for use in the data linters.
 # It contains a row iterator, a column iterator, metadata
 build_data_iterator(df::DataFrame) = begin
-     coltype_dict = Dict(x["variable"]=>x["eltype"] for x in eachrow(describe(df)))
+     tbl = Tables.columntable(df)
      return DataIterator(
-         column_iterator = ((name, coltype_dict[name]) => vals for (name, vals) in pairs(eachcol(df))),
-         #row_iterator = (collect(pairs(r)) for r in eachrow(df)),  # too slow
-         row_iterator = Tables.rows(Tables.columntable(df)),
-         coltype_iterator = (k=>v for (k,v) in coltype_dict),
-         metadata = describe(df),
+         column_iterator =((name, Tables.columntype(tbl, name), getproperty(tbl, name)) for name in Tables.columnnames(tbl)),
+         row_iterator = Tables.rows(tbl),
          dataref = Ref(df)
         )
 end
@@ -30,6 +27,10 @@ Base.show(io::IO, datait::DataIterator) = begin
     m, n = size(datait.dataref[])
     mb_size = Base.summarysize(datait.dataref)/(1024^2)
     print(io, "DataIterator over $m samples, $n variables, $mb_size MB of data")
+end
+
+function columnname(column)
+    return first(column)
 end
 
 
