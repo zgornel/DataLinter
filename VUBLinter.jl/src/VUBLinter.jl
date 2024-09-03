@@ -76,7 +76,7 @@ include("output.jl")  # output interface
 include("kb.jl")      # kb interface
 
 @compile_workload begin
-    include("workload.jl")
+    include("workflows.jl")
 end
 
 end # module VUBLinter

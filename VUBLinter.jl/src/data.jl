@@ -62,4 +62,15 @@ end
 build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
 context_code(ctx::SimpleCodeAndDataContext) = ctx.code
 
+
+### CSV Related stuff (not yet another module/submodule)
+using CSV
+
+#Note: we assume the implicit interface for this bit `build_data_context`
+build_data_context(filepath::AbstractString) = begin
+    #TODO: make extension checks here and dispatch to specific
+    #      file format handlers
+    build_data_context(CSV.read(filepath, DataFrame))
+end
+
 end  # module
