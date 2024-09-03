@@ -1,7 +1,7 @@
 #using Revise
-using Pkg
-Pkg.activate(joinpath(dirname(@__FILE__),".."))  # we assume that this file lies in ./scripts
-
+#using Pkg
+#Pkg.activate(joinpath(dirname(@__FILE__),".."))  # we assume that this file lies in ./scripts
+Base.set_active_project(joinpath(dirname(@__FILE__),"..","Project.toml"))
 using Random
 using Dates
 using DataFrames

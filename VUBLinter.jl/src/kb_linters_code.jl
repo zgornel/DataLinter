@@ -118,24 +118,17 @@ end
 
 
 function is_empty_example(row, args...)
-    NUMBER_REGEXES = [
-        # Regex from https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#12643073
-        r"^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
-    ]
-    is_empty = Bool[]
     #TODO: Improve logic, checks below
+    empty_checker(::Missing) = true
+    empty_checker(v::FloatEltype) = isnan(v)
+    empty_checker(v::NumericEltype) = isnan(v)
+    empty_checker(v) = isempty(v)
+    out = true
     for v in row  # name of column is ommitted
-        if ismissing(v)
-            push!(is_empty, true)
-        elseif typeof(v) <: Number || typeof(v) <: Union{Missing, <:Number}
-            push!(is_empty, isnan(v))
-        elseif typeof(v) <: AbstractString || typeof(v) <: Union{Missing, <:AbstractString}
-            push!(is_empty, isempty(v))
-        else
-            push!(is_empty , isempty(v))
-        end
+        !out && break  # stop if encountered a value
+        out &= empty_checker(v)
     end
-    return all(is_empty)
+    return out
 end
 
 
@@ -158,26 +151,47 @@ has_duplicates(dfref, args...) = sum(nonunique(dfref[])) != 0
 has_large_outliers(::Type{<:ListEltype}, args...) = nothing
 has_large_outliers(::Type{<:StringEltype}, args...) = nothing
 
-function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...)
-    # simple logic: if we remove X% (X~1%) of the values:
-    # the maxmimum changes 'a lot' (more than 2x) as we
-    # remove the smallest and largest absolute values
-    trim_maxs = Float64[]
-    for t in [0, 0.01, 1, 5, 10]
-        if t > 0 && t < 1
-            try
-                push!(trim_maxs, maximum(abs.(trim(collect(vm), prop=t))))
-            catch
-            end
-        else
-            try
-                push!(trim_maxs, maximum(abs.(trim(collect(vm), count=Int(t)))))
-            catch
-            end
-        end
-    end
-    return maximum(trim_maxs) >= 2 * minimum(trim_maxs)
+"""
+    tukey_fences(data; k=1.5)
+
+Compute the values beyond which elements of `data` are considered anomalous by
+to Tukey (1977; John W, Exploratory Data Analysis, Addison-Wesley, ISBN
+0-201-07616-0, OCLC 3058187).  Larger values of `k` consider fewer elements
+to be anomalous.
+"""
+function tukey_fences(data; k=1.5)
+    q1,q3 = quantile(data,[0.25,0.75])
+    iqr = q3-q1
+    fence = k*iqr
+    q1-fence, q3+fence
 end
+
+function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...)
+	minf, maxf = tukey_fences(vm)
+	return any(x->((x < minf) | (x > maxf)), vm)
+end
+
+# This is slow.
+###function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...)
+###    # simple logic: if we remove X% (X~1%) of the values:
+###    # the maxmimum changes 'a lot' (more than 2x) as we
+###    # remove the smallest and largest absolute values
+###    trim_maxs = Float64[]
+###    for t in [0, 0.01, 1, 5, 10]
+###        if t > 0 && t < 1
+###            try
+###                push!(trim_maxs, maximum(abs.(trim(collect(vm), prop=t))))
+###            catch
+###            end
+###        else
+###            try
+###                push!(trim_maxs, maximum(abs.(trim(collect(vm), count=Int(t)))))
+###            catch
+###            end
+###        end
+###    end
+###    return maximum(trim_maxs) >= 2 * minimum(trim_maxs)
+###end
 
 
 function enum_detector(::T, v, vm, name, args...) where T
@@ -390,9 +404,8 @@ end
 
 has_negative_values(::Type{<:ListEltype}, args...) = nothing
 has_negative_values(::Type{<:StringEltype}, args...) = nothing
-has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = begin
-    !all(>(0), vm)
-end
+has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = any(<(0), vm)
+
 
 const ADDITIONAL_DATA_LINTERS = [
      # No missing values in the column

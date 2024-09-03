@@ -37,26 +37,30 @@ function lint(ctx::AbstractDataContext,
         _t = @timed begin
                 code = context_code(ctx)
                 # 1. Apply over columns
-                for col in datait.column_iterator
-                    result = apply(linter, col, code)
-                    push!(lintout, (linter, "column: $(columnname(col))") => result)
+                if applicable(linter, :column, code)
+                    for col in datait.column_iterator
+                        result = apply(linter, col, code)
+                        push!(lintout, (linter, "column: $(columnname(col))") => result)
+                    end
                 end
                 # 2. Apply over rows
-                for (i, row) in enumerate(datait.row_iterator)
-                    result = apply(linter, row, code)
-                    if isnothing(result) # skip trues or nothings as there may be too many
-                        continue
-                    elseif result
-                        continue
-                    else
-                        push!(lintout, (linter, "row: $i") => result)
+                if applicable(linter, :row, code)
+                    irow = 1
+                    for row in datait.row_iterator
+                        result = apply(linter, row, code)
+                        if !isnothing(result) && !result  # skip trues or nothings as there may be too many
+                            push!(lintout, (linter, "row: $irow") => result)
+                        end
+                        irow+= 1
                     end
                 end
                 # 3. Apply over whole dataset
-                result = apply(linter, datait.dataref, code)
-                push!(lintout, (linter, "whole dataset") => result)
+                if applicable(linter, :dataset, code)
+                    result = apply(linter, datait.dataref, code)
+                    push!(lintout, (linter, "dataset") => result)
+                end
         end;
-        #_, _time, _bytes, _gctime, _ = _t;
+        _, _time, _bytes, _gctime, _ = _t;
         #@show linter.name, _time, _bytes, _gctime
     end
     process_output(lintout; buffer, show_passing, show_stats, show_na)
@@ -64,22 +68,7 @@ function lint(ctx::AbstractDataContext,
 end
 
 
-function apply(linter, data, code)
-    # Functions that extract an informal description of the data type
-    # to be used in the `applicable` function (also make checks more readable)
-    get_iterable_type(::Tuple) = :column
-    get_iterable_type(::Tables.ColumnsRow) = :row
-    get_iterable_type(::Base.RefValue{DataFrames.DataFrame}) = :dataset
-
-    iterable_type = get_iterable_type(data)
-    result = if applicable(linter, iterable_type, code)
-        out_f = linter.f(data, code)  # Apply the linter!
-        linter.correct_if(out_f)      # Assert correctness of result
-    else
-        nothing
-    end
-    return result
-end
+apply(linter, data, code) = linter.correct_if(linter.f(data, code))  # Apply the linter!
 
 
 function applicable(linter, iterable_type, code)
