@@ -1,0 +1,2 @@
+# VUB Data linter documentation
+
