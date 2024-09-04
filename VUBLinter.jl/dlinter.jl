@@ -6,19 +6,14 @@ Base.set_active_project(abspath(joinpath(dirname(@__FILE__), "Project.toml")))
 
 using Logging
 using ArgParse
-using PrecompileTools: @setup_workload, @compile_workload
 using VUBLinter
 
-@compile_workload begin
-    include(abspath(joinpath(dirname(@__FILE__), "src", "workflows.jl")))
-end
-
-# Support for parsing to Symbol for the ArgParse package
-import ArgParse: parse_item
-function ArgParse.parse_item(::Type{Symbol}, x::AbstractString)
-    return Symbol(x)
-end
-
+###using PrecompileTools: @setup_workload, @compile_workload
+###@compile_workload begin
+###    kb = VUBLinter.kb_load(abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")))
+###    ctx = VUBLinter.DataInterface.build_data_context(abspath(joinpath(dirname(@__FILE__), "..", "..", "data", "churn_mini.csv")))
+###    lintout = lint(ctx, kb, buffer=IOBuffer(), show_stats=true, show_passing=false, show_na=false);
+###end
 
 # Function that parses Garamond's unix-socket client arguments
 function get_arguments(args::Vector{String})

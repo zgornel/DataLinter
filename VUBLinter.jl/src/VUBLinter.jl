@@ -74,9 +74,10 @@ include("linter.jl")  # linter core
 include("data.jl")    # data interface
 include("output.jl")  # output interface
 include("kb.jl")      # kb interface
+include("workflows.jl")      # kb interface
 
 @compile_workload begin
-    include("workflows.jl")
+    include("workload.jl")
 end
 
 end # module VUBLinter
