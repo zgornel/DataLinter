@@ -1,5 +1,7 @@
 using Dates
 using Random
+using DataFrames
+using CSV
 
 function _generate_workload_data(n=100)
     data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
@@ -24,31 +26,37 @@ function _generate_workload_data(n=100)
     return data
 end
 
-code = "apply_some_classifier"  # some sample code, will activate only the missing rule
-kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")
-kb = VUBLinter.kb_load(kbpath)
 
 # First case, print to stdout linting on data
 function _workload_1(data, kb)
     ctx_no_code = VUBLinter.build_data_context(data)
-    lintout = VUBLinter.lint(ctx_no_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=false);
+    lintout = VUBLinter.lint(ctx_no_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=true);
     return nothing
 end
 
 # Second case, print to buffer (and print the buffer), linting on data+code
 function _workload_2(data, kb, code)
     ctx_code = VUBLinter.build_data_context(data, code)
-    lintout = VUBLinter.lint(ctx_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=false, show_na=false);
+    lintout = VUBLinter.lint(ctx_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=true, show_na=true);
     return nothing
 end
 
+function _csv_workload(csvpath, kb, code)
+    ctx_code = VUBLinter.build_data_context(CSV.read(csvpath, DataFrame), code)
+    lintout = VUBLinter.lint(ctx_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=true, show_na=true);
+    return nothing
+end
 
 # Run workloads
-_workload_1(_generate_workload_data(),
-            VUBLinter.kb_load(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
-            )
+kb = VUBLinter.kb_load(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
+data = _generate_workload_data()
+code = "some_code_w_classifier"
+_workload_1(data, kb)
+_workload_2(data, kb, code)
 
-_workload_2(_generate_workload_data(),
-            VUBLinter.kb_load(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")),
-            "apply_some_classifier"  # some random code
-            )
+# Disassebmbed cli_linting_workflow
+kb = VUBLinter.kb_load(abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")))
+dfpath = abspath(joinpath(dirname(@__FILE__), "..", "workload", "churn_mini.csv"))
+df = CSV.read(dfpath, DataFrame)
+ctx = VUBLinter.DataInterface.build_data_context(df)
+lintout = lint(ctx, kb, buffer=IOBuffer(), show_stats=true, show_passing=false, show_na=false);
