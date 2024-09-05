@@ -8,13 +8,6 @@ using Logging
 using ArgParse
 using VUBLinter
 
-###using PrecompileTools: @setup_workload, @compile_workload
-###@compile_workload begin
-###    kb = VUBLinter.kb_load(abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")))
-###    ctx = VUBLinter.DataInterface.build_data_context(abspath(joinpath(dirname(@__FILE__), "..", "..", "data", "churn_mini.csv")))
-###    lintout = lint(ctx, kb, buffer=IOBuffer(), show_stats=true, show_passing=false, show_na=false);
-###end
-
 # Function that parses Garamond's unix-socket client arguments
 function get_arguments(args::Vector{String})
 	s = ArgParseSettings()

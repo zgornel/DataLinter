@@ -3,8 +3,7 @@
 A data linter written in Julia at the Vrije Universiteit Brussel.
 
 [![License](http://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat)](LICENSE.md)
-[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://zgornel.github.io/VUBLinter.jl/stable)
-[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/VUBLinter.jl/dev)
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/VUBLinter/dev)
 
 
 ## Installation
