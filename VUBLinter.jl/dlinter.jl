@@ -8,6 +8,8 @@ using Logging
 using ArgParse
 using VUBLinter
 
+
+
 # Function that parses Garamond's unix-socket client arguments
 function get_arguments(args::Vector{String})
 	s = ArgParseSettings()
@@ -95,7 +97,7 @@ function real_main()
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;
-                println("  Completed in $_time seconds, $(_bytes) bytes allocated, $(100*_gctime)% gc time")
+                println("  Completed in $_time seconds, $((_bytes/1024^2)) MB allocated, $(100*_gctime)% gc time")
             end
         catch e
             if print_exceptions

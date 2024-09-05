@@ -39,7 +39,7 @@ function lint(ctx::AbstractDataContext,
                 # 1. Apply over columns
                 if applicable(linter, :column, code)
                     for col in datait.column_iterator
-                        result = apply(linter, col, code)
+                        result = linter.correct_if(linter.f(col..., code))  # Apply the linter!
                         push!(lintout, (linter, "column: $(columnname(col))") => result)
                     end
                 end
@@ -47,7 +47,7 @@ function lint(ctx::AbstractDataContext,
                 if applicable(linter, :row, code)
                     irow = 1
                     for row in datait.row_iterator
-                        result = apply(linter, row, code)
+                        result = linter.correct_if(linter.f(row, code))  # Apply the linter!
                         if !isnothing(result) && !result  # skip trues or nothings as there may be too many
                             push!(lintout, (linter, "row: $irow") => result)
                         end
@@ -56,7 +56,7 @@ function lint(ctx::AbstractDataContext,
                 end
                 # 3. Apply over whole dataset
                 if applicable(linter, :dataset, code)
-                    result = apply(linter, datait.dataref, code)
+                    result = linter.correct_if(linter.f(datait.dataref, code))
                     push!(lintout, (linter, "dataset") => result)
                 end
         #end;
@@ -66,9 +66,6 @@ function lint(ctx::AbstractDataContext,
     process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout
 end
-
-
-apply(linter, data, code) = linter.correct_if(linter.f(data, code))  # Apply the linter!
 
 
 function applicable(linter, iterable_type, code)

@@ -14,7 +14,11 @@ export build_data_context
 build_data_iterator(df::DataFrame) = begin
      tbl = Tables.columntable(df)
      return DataIterator(
-         column_iterator =((name, Tables.columntype(tbl, name), getproperty(tbl, name)) for name in Tables.columnnames(tbl)),
+         column_iterator =((Tables.columntype(tbl, name),        # column eltype
+                            getproperty(tbl, name),              # column values
+                            skipmissing(getproperty(tbl, name)), # skipmissing on values
+                            name,                                # column name
+                           ) for name in Tables.columnnames(tbl)),
          row_iterator = Tables.rows(tbl),
          dataref = Ref(df)
         )
@@ -30,9 +34,8 @@ Base.show(io::IO, datait::DataIterator) = begin
 end
 
 function columnname(column)
-    return first(column)
+    return last(column)
 end
-
 
 # Simple data structure and its methods
 Base.@kwdef struct SimpleDataContext <: AbstractDataContext

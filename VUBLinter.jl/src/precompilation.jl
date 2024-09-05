@@ -38,6 +38,7 @@ end
 #TODO: Improve performance when using scripts:
 # https://timholy.github.io/SnoopCompile.jl/stable/tutorials/invalidations/
 
+using PrecompileTools: @setup_workload, @compile_workload
 @setup_workload begin
     @compile_workload begin
     using CSV
@@ -45,7 +46,6 @@ end
     using Tables
     using StatsBase
     # Workload 1
-    @debug "Pre-compiling workload ..."
     kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
     kb = VUBLinter.kb_load(kbpath)
     df = DataFrame(_generate_workload_data(), :auto)
@@ -53,4 +53,3 @@ end
     VUBLinter.lint(ctx, kb; buffer=IOBuffer(), show_passing=false);
     end
 end
-

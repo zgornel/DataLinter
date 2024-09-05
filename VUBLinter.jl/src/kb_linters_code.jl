@@ -3,18 +3,7 @@
 using DataFrames
 using StatsBase
 
-# TODO: move iterators and perhaps statistics (i.e. counts)
-#       to the column iterator in `src/data.jl`
-destructure_column(column, args...) = begin
-    column_name, column_eltype, column_values = column
-    # For this reason, the column values functions have the signature
-    # `foo(::Type{column_eltype}, v, vm, name, args...)`
-    # In the linter data structure, `foo` needs to be combined with destructure column:
-    #   `foo∘destructure_column` so that we call `foo(destructure_column(column))`
-    return column_eltype, column_values, skipmissing(column_values), column_name, args...
-end
 
-#
 # Meta-types for varius column element types
 NumericEltype = Union{<:Number, Union{Missing, <:Number}}
 FloatEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
@@ -263,139 +252,6 @@ function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...)
     end
 end
 
-# Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
-const GOOGLE_DATA_LINTERS = [
-     # 1. DateTime wrongly encoded as string
-     (name = :datetime_as_string,
-      description = """ Tests that the values string variable could be Date/DateTime(s) """,
-      f = splat(is_datetime_as_string) ∘ destructure_column,
-      failure_message = name->"most of the string values of '$name' can be converted to times/dates",
-      correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 2. Tokenizable string i.e. too long, with spaces
-     (name = :tokenizable_string,
-      description = """ Tests if the values of the string variable are tokenizable i.e. contain spaces """,
-      f = splat(is_tokenizable_string) ∘ destructure_column,
-      failure_message = name->"the values of '$name' could be tokenizable i.e. contain spaces",
-      correct_message = name->"the values of '$name' are not tokenizable i.e. no spaces",
-      warn_level = "info",
-      correct_if = check_correctness(false)
-      ),
-
-     # 3. Number wrongly encoded as string
-     (name = :number_as_string,
-      description = """ Tests if the values of the string variable could be parsed as numbers """,
-      f = splat(is_number_as_string) ∘ destructure_column,
-      failure_message = name->"most of the string values of '$name' can be converted to numbers",
-      correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
-      warn_level = "info",
-      correct_if = check_correctness(false)
-      ),
-
-     # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
-     (name = :zipcodes_as_values,
-      description = """ Tests if the values of the numerical variable could be zipcodes """,
-      f = splat(is_zipcode) ∘ destructure_column,
-      failure_message = name->"many of the values of '$name' could be zipcodes",
-      correct_message = name->"many the values of '$name' don't look like zipcodes",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 5. Large outliers
-     (name = :large_outliers,
-      description = """ Tests that the values of a numerical variable do not contain large outliers """,
-      f = splat(has_large_outliers) ∘ destructure_column,
-      failure_message = name->"the values of '$name' contain large outliers",
-      correct_message = name->"there do not seem to be large outliers in '$name'",
-      warn_level = "info",
-      correct_if = check_correctness(false)
-      ),
-
-     # 6. Int-as-float wrong encoding
-     (name = :int_as_float,
-      description = """ Tests that no the values of a floating point variable can be converted to integers """,
-      f = splat(is_int_as_float) ∘ destructure_column,
-      failure_message = name->"the values of '$name' are floating point but can be integers",
-      correct_message = name->"no int-as-float in '$name'",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
-     (name = :enum_detector,
-      description = """ Tests that a variable has few variables and could be an enum """,
-      f = splat(enum_detector) ∘ destructure_column,
-      failure_message = name->"just a few distinct values in '$name', it could be an enum",
-      correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 8. uncommon list length
-     (name = :uncommon_list_lengths,
-      description = """ Tests that the variable does not contain uncommon list lengths in its values """,
-      f = splat(has_uncommon_list_lengths) ∘ destructure_column,
-      failure_message = name->"values in '$name' are lists inconsistent in length",
-      correct_message = name->"'$name' does not contain lists incosistent in length",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 9. duplicate examples (row based, not column based)
-     (name = :duplicate_examples,
-      description = """ Tests that the dataset does not contain duplicates """,
-      f = has_duplicates,
-      failure_message = name->"dataset contains duplicates",
-      correct_message = name->"the dataset does not contain duplicates",
-      warn_level = "info",
-      correct_if = check_correctness(false)
-      ),
-
-     # 10. empty examples
-     (name = :empty_example,
-      description = """ Tests that no example is completely empty """,
-      f = is_empty_example,
-      failure_message = index->"the example at '$index' looks empty",
-      correct_message = index->"the example at '$index' is not empty",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 11. uncommon sign i.e. +/-/0/nan
-     (name = :uncommon_signs,
-      description = """ Tests for the existence of uncommon signs (+/-/NaN) in the variable """,
-      f = splat(has_uncommon_signs) ∘ destructure_column,
-      failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
-      correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 12. tailed distribution i.e. extrema that affects the mean
-     (name = :long_tailed_distrib,
-      description = """ Tests if the distribution of the variable has long tails """,
-      f = splat(has_tailed_distribution) ∘ destructure_column,
-      failure_message = name->"the distribution for '$name' has 'long tails'",
-      correct_message = name->"no 'long tails' in the distribution of '$name'",
-      warn_level = "warning",
-      correct_if = check_correctness(false)
-      ),
-
-     # 13. circular domain detector i.e. angles, hours, latitude/longitude
-     (name = :circular_domain,
-      description = """ Tests if the domain of the variable may be circular""",
-      f = splat(has_circular_domain) ∘ destructure_column,
-      failure_message = name->"the name of '$name' indicates its values may have a circular domain",
-      correct_message = name->"the name of '$name' do not indicate its values having a circular domain",
-      warn_level = "info",
-      correct_if = check_correctness(false)
-      ),
-]
-
 
 function has_many_missings(::T, v, vm, name, args...) where T
     return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) <= 0.9 * 2 * length(v)
@@ -407,21 +263,170 @@ has_negative_values(::Type{<:StringEltype}, args...) = nothing
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = any(<(0), vm)
 
 
+@Base.kwdef struct Linter{F}
+    name::Symbol
+    description::String
+    f::F
+    failure_message::Function
+    correct_message::Function
+    warn_level::String
+    correct_if::Function
+end
+
+Base.show(io::IO, linter::Linter{F}) where {F} = begin
+    func = last(split(string(F),"."))
+    print(io, "Linter{$func}")
+end
+
+# Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
+const GOOGLE_DATA_LINTERS = [
+    # 1. DateTime wrongly encoded as string
+    Linter(name = :datetime_as_string,
+      description = """ Tests that the values string variable could be Date/DateTime(s) """,
+      f = is_datetime_as_string,
+      failure_message = name->"most of the string values of '$name' can be converted to times/dates",
+      correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 2. Tokenizable string i.e. too long, with spaces
+    Linter(name = :tokenizable_string,
+      description = """ Tests if the values of the string variable are tokenizable i.e. contain spaces """,
+      f = is_tokenizable_string,
+      failure_message = name->"the values of '$name' could be tokenizable i.e. contain spaces",
+      correct_message = name->"the values of '$name' are not tokenizable i.e. no spaces",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
+
+    # 3. Number wrongly encoded as string
+    Linter(name = :number_as_string,
+      description = """ Tests if the values of the string variable could be parsed as numbers """,
+      f = is_number_as_string,
+      failure_message = name->"most of the string values of '$name' can be converted to numbers",
+      correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
+
+    # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
+    Linter(name = :zipcodes_as_values,
+      description = """ Tests if the values of the numerical variable could be zipcodes """,
+      f = is_zipcode,
+      failure_message = name->"many of the values of '$name' could be zipcodes",
+      correct_message = name->"many the values of '$name' don't look like zipcodes",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 5. Large outliers
+    Linter(name = :large_outliers,
+      description = """ Tests that the values of a numerical variable do not contain large outliers """,
+      f = has_large_outliers,
+      failure_message = name->"the values of '$name' contain large outliers",
+      correct_message = name->"there do not seem to be large outliers in '$name'",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
+
+    # 6. Int-as-float wrong encoding
+    Linter(name = :int_as_float,
+      description = """ Tests that no the values of a floating point variable can be converted to integers """,
+      f = is_int_as_float,
+      failure_message = name->"the values of '$name' are floating point but can be integers",
+      correct_message = name->"no int-as-float in '$name'",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
+    Linter(name = :enum_detector,
+      description = """ Tests that a variable has few variables and could be an enum """,
+      f = enum_detector,
+      failure_message = name->"just a few distinct values in '$name', it could be an enum",
+      correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+     # 8. uncommon list length
+    Linter(name = :uncommon_list_lengths,
+      description = """ Tests that the variable does not contain uncommon list lengths in its values """,
+      f = has_uncommon_list_lengths,
+      failure_message = name->"values in '$name' are lists inconsistent in length",
+      correct_message = name->"'$name' does not contain lists incosistent in length",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+     # 9. duplicate examples (row based, not column based)
+    Linter(name = :duplicate_examples,
+      description = """ Tests that the dataset does not contain duplicates """,
+      f = has_duplicates,
+      failure_message = name->"dataset contains duplicates",
+      correct_message = name->"the dataset does not contain duplicates",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
+
+    # 10. empty examples
+    Linter(name = :empty_example,
+      description = """ Tests that no example is completely empty """,
+      f = is_empty_example,
+      failure_message = index->"the example at '$index' looks empty",
+      correct_message = index->"the example at '$index' is not empty",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 11. uncommon sign i.e. +/-/0/nan
+    Linter(name = :uncommon_signs,
+      description = """ Tests for the existence of uncommon signs (+/-/NaN) in the variable """,
+      f = has_uncommon_signs,
+      failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
+      correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 12. tailed distribution i.e. extrema that affects the mean
+    Linter(name = :long_tailed_distrib,
+      description = """ Tests if the distribution of the variable has long tails """,
+      f = has_tailed_distribution,
+      failure_message = name->"the distribution for '$name' has 'long tails'",
+      correct_message = name->"no 'long tails' in the distribution of '$name'",
+      warn_level = "warning",
+      correct_if = check_correctness(false)
+      ),
+
+    # 13. circular domain detector i.e. angles, hours, latitude/longitude
+    Linter(name = :circular_domain,
+      description = """ Tests if the domain of the variable may be circular""",
+      f = has_circular_domain,
+      failure_message = name->"the name of '$name' indicates its values may have a circular domain",
+      correct_message = name->"the name of '$name' do not indicate its values having a circular domain",
+      warn_level = "info",
+      correct_if = check_correctness(false)
+      ),
+]
+
+
 const ADDITIONAL_DATA_LINTERS = [
-     # No missing values in the column
-     (name = :missing_values,
+    # No missing values in the column
+    Linter(name = :missing_values,
       description = """ Tests that few missing values exist in variable """,
-      f = splat(has_many_missings) ∘ destructure_column,
+      f = has_many_missings,
       failure_message = name->"found many missing values in '$name'",
       correct_message = name->"few or no missing values in '$name'",
       warn_level = "warning",
       correct_if = check_correctness(false)
       ),
 
-     # No negative values in the column
-     (name = :negative_values,
+    # No negative values in the column
+    Linter(name = :negative_values,
       description = """ Tests that no negative values exist in variable """,
-      f = splat(has_negative_values) ∘ destructure_column,
+      f = has_negative_values,
       failure_message = name->"found values smaller than 0 in '$name'",
       correct_message = name->"no values smaller than 0 in '$name'",
       warn_level = "error",

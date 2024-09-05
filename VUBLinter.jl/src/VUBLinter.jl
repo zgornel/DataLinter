@@ -68,7 +68,6 @@
 module VUBLinter
 
 using Reexport
-using PrecompileTools: @setup_workload, @compile_workload
 
 include("linter.jl")    # linter core
 include("data.jl")      # data interface
