@@ -1,6 +1,6 @@
 #!/bin/julia
 #
-module dlinter
+module vublinter
 
 Base.set_active_project(abspath(joinpath(dirname(@__FILE__), "Project.toml")))
 
