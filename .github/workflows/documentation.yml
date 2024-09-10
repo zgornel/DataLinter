@@ -22,9 +22,9 @@ jobs:
           version: '1'
       - uses: julia-actions/cache@v2
       - name: Install dependencies
-        run: julia --project=VUBLinter/docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path="VUBLinter")); Pkg.instantiate()'
+        run: julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=".")); Pkg.instantiate()'
       - name: Build and deploy
         env:
           GITHUB_TOKEN: ${{ secrets.VUBLINTER_GITHUB_TOKEN }} # If authenticating with GitHub Actions token
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }} # If authenticating with SSH deploy key
-        run: julia --project=VUBLinter/docs/ VUBLinter/docs/make.jl
+        run: julia --project=docs/ docs/make.jl
