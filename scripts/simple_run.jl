@@ -30,7 +30,7 @@ for (srow, drow) in duplicates
 end
 code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
-kbpath = expanduser("~/vub/code/vublinter/VUBLinter.jl/knowledge/linting.toml")
+kbpath = joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")
 kb = VUBLinter.kb_load(kbpath)
 
 # First case, print to stdout linting on data

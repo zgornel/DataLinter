@@ -9,24 +9,3 @@ RUN pacman -Syyu --noconfirm && \
 RUN mkdir -p /tmp
 RUN mkdir -p /output
 RUN mkdir -p /workspace
-
-COPY .t /data/churn_mini.csv /tmp
-
-# Install julia
-RUN curl -fsSL https://install.julialang.org | sh -s -- -y --default-channel 1.10
-# Install juliascript
-RUN curl --create-dirs -o /root/.julia/juliaup/bin/juliascript -fsSL 'https://raw.githubusercontent.com/jolin-io/JuliaScript.jl/main/bin/juliascript'
-RUN ln -s /root/.julia/juliaup/bin/juliascript /bin/juliascript
-RUN ln -s /root/.julia/juliaup/julia-1.10.5+0.x64.linux.gnu/bin/julia /bin/julia
-RUN chmod +x /root/.julia/juliaup/bin/juliascript
-
-# Copy binaries
-WORKDIR /
-COPY ./VUBLinter.jl ./VUBLinter.jl
-
-
-# Prime dependencies for top level script
-WORKDIR /VUBLinter.jl
-RUN julia --project -e 'using Pkg; Pkg.instantiate();'
-RUN juliascript ./vublinter.jl /tmp/churn_mini.csv --kb-path ./knowledge/linting.toml --log-level warn --
-#ENTRYPOINT ["juliascript", "vublinter.jl"]

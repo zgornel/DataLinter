@@ -2,7 +2,9 @@
 #
 module vublinter
 
-Base.set_active_project(abspath(joinpath(dirname(@__FILE__), "Project.toml")))
+using Pkg
+project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:end-4]...))
+Pkg.activate(project_root_path)
 
 using Logging
 using ArgParse
