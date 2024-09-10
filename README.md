@@ -18,7 +18,7 @@ This code has an GPL license and therefore it is free as beer.
 
 ## Reporting Bugs
 
-Please [file an issue](https://github.com/zgornel/VUBLinter.jl/issues/new) to report a bug or request a feature.
+Please [file an issue](https://github.com/zgornel/VUBLinter/issues/new) to report a bug or request a feature.
 
 
 ## References

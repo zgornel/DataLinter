@@ -16,10 +16,10 @@ COPY ./build.jl ./
 COPY ./Project.toml ./
 
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.10/julia-1.10.5-musl-x86_64.tar.gz
-RUN tar zxf julia-1.10.5-musl-x86_64.tar.gz
-RUN ln -s /julia-1.10.5 /julia
-RUN rm julia-1.10.5-musl-x86_64.tar.gz
+RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.10/julia-1.10.3-musl-x86_64.tar.gz
+RUN tar zxf julia-1.10.3-musl-x86_64.tar.gz
+RUN ln -s /julia-1.10.3 /julia
+RUN rm julia-1.10.3-musl-x86_64.tar.gz
 
 # WARNING!
 #   The container needs to be run with --volume:build:/VUBLinter/build

@@ -16,4 +16,3 @@ COPY ./knowledge/linting.toml ./vublinter/knowledge
 
 # Prime dependencies for top level script
 RUN vublinter/bin/vublinter /vublinter/workload/data.csv --kb-path /vublinter/knowledge/linting.toml > /dev/null
-RUN echo 'run complete.'
