@@ -103,9 +103,9 @@ function real_main()
             end
         catch e
             if print_exceptions
-                @warn "Linting failed for '$filepath':\n$(repeat("-",10))\n$e"
+                @error "Linting failed for '$filepath':\n$(repeat("-",10))\n$e"
             else
-                @warn "Linting failed for '$filepath'. Use '--print-exceptions' for more info."
+                @error "Linting failed for '$filepath'. Use '--print-exceptions' for more info."
             end
         end
     end
