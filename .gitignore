@@ -2,4 +2,5 @@ _*
 _*/
 Manifest.toml
 data/
+build/
 docs/build

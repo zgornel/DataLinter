@@ -1,0 +1,26 @@
+# Alpine Linux based commands
+FROM alpine:3.20.0
+RUN apk add --update --no-cache ca-certificates wget gcc g++ jq curl make tar gzip npm nodejs python3
+
+RUN mkdir -p /VUBLinter/build
+
+# Directory in container should be /
+# Directory in host should be VUBLinter root
+WORKDIR /VUBLinter
+COPY ./.git ./.git/
+COPY ./apps ./apps/
+COPY ./src ./src/
+COPY ./test ./test/
+COPY ./build_all.sh ./
+COPY ./build.jl ./
+COPY ./Project.toml ./
+
+WORKDIR /
+RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.10/julia-1.10.5-musl-x86_64.tar.gz
+RUN tar zxf julia-1.10.5-musl-x86_64.tar.gz
+RUN ln -s /julia-1.10.5 /julia
+RUN rm julia-1.10.5-musl-x86_64.tar.gz
+
+# WARNING!
+#   The container needs to be run with --volume:build:/VUBLinter/build
+#   `docker run --volume=./build:/VUBLinter/build ghcr.io/zgornel/vublinter-builder:alpine sh /VUBLinter/build_all.sh`

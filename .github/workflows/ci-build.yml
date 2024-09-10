@@ -1,0 +1,57 @@
+name: Build on push
+env:
+  REPOSITORY_DIR: "./${{ github.event.repository.name }}"  # inside runner
+on:
+  push:
+    branches:
+      - master
+    tags: '*'
+jobs:
+  build:
+    name: Build VUBLinter (${{ github.event_name }})
+    runs-on: [self-hosted]
+    steps:
+      - name: Get current date
+        id: dateb64
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S' | base64)"
+
+      - name: Checkout current project repository
+        uses: actions/checkout@v3
+        with:
+          path: ${{ env.REPOSITORY_DIR }}-${{steps.dateb64.outputs.date}}
+
+      - id: build_builder_image
+        name: Build vublinter-builder image
+        run: |
+          cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
+          docker build --no-cache -f ./docker/Dockerfile.vublinter-builder.alpine -t ghcr.io/zgornel/vublinter-builder:alpine .  
+          docker tag ghcr.io/zgornel/vublinter-builder:alpine ghcr.io/zgornel/vublinter-builder:latest
+
+      - id: test_vublinter
+        name: Test VUBLinter
+        run: |
+          docker run --rm ghcr.io/zgornel/vublinter-builder:latest /julia/bin/julia -e 'using Pkg; Pkg.activate("/VUBLinter"); Pkg.test()' 
+
+      - id: build_vublinter
+        name:  Build VUBLinter
+        run: |
+          cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
+          docker run --rm --volume=./build:/VUBLinter/build ghcr.io/zgornel/vublinter-builder:latest sh /VUBLinter/build_all.sh
+
+      - id: build_vublinter-compiled_image
+        name:  Build vublinter-compiled image
+        run: |
+          cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
+          docker build --no-cache -f ./docker/Dockerfile.vublinter-compiled.alpine -t ghcr.io/zgornel/vublinter-compiled:alpine .  
+          docker tag ghcr.io/zgornel/vublinter-compiled:alpine ghcr.io/zgornel/vublinter-compiled:latest
+
+      - id: push_vublinter-compiled_image
+        name:  Push to ghcr.io vublinter-compiled image
+        run: |
+          docker push ghcr.io/zgornel/vublinter-compiled:latest
+
+      - id: cleanup
+        name: Cleanup of Docker containers and images
+        run: |
+          docker container prune --force
+          docker image prune --force
