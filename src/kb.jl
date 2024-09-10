@@ -16,7 +16,13 @@ module KnowledgeBaseNative
     end
 
     function load(filepath)
-        KnowledgeBase(TOML.parse(open(filepath)))
+        data = try
+            TOML.parse(open(filepath))
+        catch
+            @warn "Could not load KB@$filepath. Returning empty Dict()."
+            Dict{String, String}()
+        end
+        return KnowledgeBase(data)
     end
 
     # TODO: Implement functionality for query/retrieval of knowledge
