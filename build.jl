@@ -20,7 +20,8 @@ const PACKAGE_REVS = Dict(                                              # Packag
     #"PackageCompiler"=>("https://github.com/JuliaLang/PackageCompiler.jl", "master"),
    )
 const CPU_TARGET = "generic"
-
+const PRECOMPILE_JL = "precompile.jl"                                   # File which contains code from which precompilation statements should be recorded
+const PRECOMPILE_FILES = map(Base.Fix2(joinpath, PRECOMPILE_JL), TARGETS_PATHS)
 
 ##############
 ### Checks ###
@@ -135,6 +136,7 @@ else
         printstyled("• Building: $(uppercase(target)) ...\n", color=:green, bold=true)
         create_app(target,
                    joinpath(COMPILED_PATH, target);
+                   precompile_execution_file=PRECOMPILE_FILES,
                    force=true,
                    cpu_target=CPU_TARGET)
     end
