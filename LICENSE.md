@@ -1,4 +1,4 @@
-VUBLINTER.JL - A data linter written at the VUB AI Lab
+VUBLINTER - A data linter written at the VUB AI Lab
 Copyright (C) 2024  Corneliu Cofaru
 
 This program is free software: you can redistribute it and/or modify
