@@ -8,11 +8,12 @@ RUN mkdir -p /output
 RUN mkdir -p /workspace
 RUN mkdir -p /vublinter/workload
 RUN mkdir -p /vublinter/knowledge
+
 # Copy binaries
 WORKDIR /
 COPY ./build/vublinter ./vublinter
-COPY ./workload/data.csv ./vublinter/workload
-COPY ./knowledge/linting.toml ./vublinter/knowledge
+COPY ./workload ./vublinter/workload
+COPY ./knowledge ./vublinter/knowledge
 
 # Prime dependencies for top level script
 RUN vublinter/bin/vublinter /vublinter/workload/data.csv --kb-path /vublinter/knowledge/linting.toml > /dev/null

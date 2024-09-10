@@ -11,6 +11,8 @@ COPY ./.git ./.git/
 COPY ./apps ./apps/
 COPY ./src ./src/
 COPY ./test ./test/
+COPY ./knowledge ./knowledge
+COPY ./workload ./workload
 COPY ./build_all.sh ./
 COPY ./build.jl ./
 COPY ./Project.toml ./
