@@ -1,0 +1,8 @@
+name = "vublinter"
+uuid = "1c60c992-bb9d-4404-95b0-08c73534b203"
+authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
+version = "0.1.0"
+
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"

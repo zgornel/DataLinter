@@ -9,9 +9,8 @@ RUN mkdir -p /workspace
 
 # Copy binaries
 WORKDIR /
-COPY ./VUBLinter.jl ./VUBLinter.jl
+COPY ./ ./
 
 
 # Prime dependencies for top level script
-WORKDIR /VUBLinter.jl
-RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.test()'
+WORKDIR /
