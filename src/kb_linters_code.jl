@@ -108,6 +108,7 @@ end
 
 function is_empty_example(row, args...)
     #TODO: Improve logic, checks below
+    #TODO: Improve performance, very slow!
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)
@@ -134,8 +135,9 @@ function is_zipcode(typ::Type{T}, v, vm, name, args...) where T<:Union{<:StringE
 end
 
 
-has_duplicates(dfref, args...) = sum(nonunique(dfref[])) != 0
-
+function has_duplicates(dfref, args...)
+    length(unique(hash(r) for r in eachrow(dfref[])))!=size(dfref[],1)
+end
 
 has_large_outliers(::Type{<:ListEltype}, args...) = nothing
 has_large_outliers(::Type{<:StringEltype}, args...) = nothing
@@ -263,19 +265,19 @@ has_negative_values(::Type{<:StringEltype}, args...) = nothing
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = any(<(0), vm)
 
 
-@Base.kwdef struct Linter{F}
+@Base.kwdef struct Linter
     name::Symbol
     description::String
-    f::F
+    f::Function
     failure_message::Function
     correct_message::Function
     warn_level::String
     correct_if::Function
 end
 
-Base.show(io::IO, linter::Linter{F}) where {F} = begin
-    func = last(split(string(F),"."))
-    print(io, "Linter{$func}")
+Base.show(io::IO, linter::Linter) = begin
+    func = last(split(string(linter.f),"."))
+    print(io, "Linter (func=$func")
 end
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf

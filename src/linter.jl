@@ -34,7 +34,7 @@ function lint(ctx::AbstractDataContext,
                   #       that includes timings, outputs, easy referencing i.e. Dict
     datait = build_data_iterator(ctx)
     for linter in build_linters(kb, ctx)
-        #_t = @timed begin
+        _t = @timed begin
                 code = context_code(ctx)
                 # 1. Apply over columns
                 if applicable(linter, :column, code)
@@ -59,9 +59,9 @@ function lint(ctx::AbstractDataContext,
                     result = linter.correct_if(linter.f(datait.dataref, code))
                     push!(lintout, (linter, "dataset") => result)
                 end
-        #end;
-        #_, _time, _bytes, _gctime, _ = _t;
-        #@show linter.name, _time, _bytes, _gctime
+        end;
+        _, _time, _bytes, _gctime, _ = _t;
+        @show linter.name, _time, _bytes, _gctime
     end
     process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout
