@@ -43,7 +43,7 @@
        ------------------
     • data
       `-input data - at this point no external data is supported
-      `- the internal representation supports `DataFrames.DataFrame`
+      `- the internal representation supports the `Tables` intferface
 
     • config
       `-keeps configuration of the linter (TODO: to be updated during dev)

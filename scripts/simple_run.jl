@@ -4,7 +4,7 @@
 Base.set_active_project(joinpath(dirname(@__FILE__),"..","Project.toml"))
 using Random
 using Dates
-using DataFrames
+using Tables
 using Revise
 using VUBLinter
 
@@ -43,5 +43,3 @@ buf=stdout; #buf = IOBuffer();
 ctx_code = VUBLinter.build_data_context(data, code)
 @time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=true, show_na=true);
 buf isa IOBuffer &&VUBLinter.OutputInterface.print_buffer(buf);
-#df = DataFrame(data, :auto);
-#dfc=df[rand(1:size(df,1), 10), :];#dfc |> VUBLinter.build_data_context |> x->lint(x,kb;show_passing=false);

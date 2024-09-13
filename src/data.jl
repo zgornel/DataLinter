@@ -17,9 +17,8 @@ build_data_iterator(tbl::Tables.Columns) = begin
                 )
 end
 
-build_data_iterator(data::Vector{<:Vector}) = begin
-    build_data_iterator(Tables.Columns(Dict(Symbol("x$i")=>data[i])
-                                           for i in 1:length(data)))
+build_data_iterator(data::AbstractVector) = begin
+    build_data_iterator(Tables.Columns(Dict(Symbol("x$i")=>v for (i,v) in enumerate(data))))
 end
 
 build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
