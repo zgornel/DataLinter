@@ -1,7 +1,7 @@
 using Dates
 using Random
-using DataFrames
 using CSV
+using Tables
 
 function _generate_workload_data(n=100)
     data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
@@ -23,7 +23,7 @@ function _generate_workload_data(n=100)
             col[drow] = col[srow]
         end
     end
-    return data
+    return Dict(Symbol("x$i")=>data[i] for i in 1:length(data))
 end
 
 
@@ -42,14 +42,13 @@ using PrecompileTools: @setup_workload, @compile_workload
 @setup_workload begin
     @compile_workload begin
     using CSV
-    using DataFrames
     using Tables
     using StatsBase
     # Workload 1
     kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
     kb = VUBLinter.kb_load(kbpath)
-    df = DataFrame(_generate_workload_data(), :auto)
-    ctx = VUBLinter.build_data_context(df);
+    tbl = Tables.Columns(_generate_workload_data())
+    ctx = VUBLinter.build_data_context(tbl);
     VUBLinter.lint(ctx, kb; buffer=IOBuffer(), show_passing=false);
     end
 end
