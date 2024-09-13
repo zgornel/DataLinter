@@ -1,5 +1,6 @@
 #TODO: Fix `large_outliers` and `long_tailed_distrib` for small samples (overly-agressive)
 #TODO: Move the logic from code into a knowledge-base object of some sort#
+using Dates
 using StatsBase
 using Tables
 
@@ -8,6 +9,7 @@ using Tables
 NumericEltype = Union{<:Number, Union{Missing, <:Number}}
 FloatEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
 StringEltype = Union{<:AbstractString, Union{Missing, <:AbstractString}}
+TimeEltype = Union{<:Dates.AbstractTime, Union{Missing, <:Dates.AbstractTime}}
 ListEltype = Union{Any, Vector{Any}}
 
 
@@ -244,6 +246,7 @@ end
 
 has_uncommon_list_lengths(::Type{<:NumericEltype}, args...) = nothing
 has_uncommon_list_lengths(::Type{<:StringEltype}, args...) = nothing
+has_uncommon_list_lengths(::Type{<:TimeEltype}, args...) = nothing
 
 function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...)
     lens = map(length, vm)
