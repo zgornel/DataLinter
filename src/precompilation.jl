@@ -23,7 +23,7 @@ function _generate_workload_data(n=100)
             col[drow] = col[srow]
         end
     end
-    return Dict(Symbol("x$i")=>data[i] for i in 1:length(data))
+    return Tables.Columns(Dict(Symbol("x$i")=>data[i] for i in 1:length(data)))
 end
 
 
@@ -47,8 +47,7 @@ using PrecompileTools: @setup_workload, @compile_workload
     # Workload 1
     kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
     kb = VUBLinter.kb_load(kbpath)
-    tbl = Tables.Columns(_generate_workload_data())
-    ctx = VUBLinter.build_data_context(tbl);
+    ctx = VUBLinter.build_data_context(_generate_workload_data());
     VUBLinter.lint(ctx, kb; buffer=IOBuffer(), show_passing=false);
     end
 end
