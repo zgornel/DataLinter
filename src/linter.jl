@@ -1,6 +1,5 @@
 @reexport module LinterCore
-using DataFrames
-
+using Tables
 export AbstractLinterContext, lint, version
 
 # Data Interface
@@ -10,9 +9,10 @@ function context_code end
 @Base.kwdef struct DataIterator
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
     row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
-    dataref             # reference to the DataFrame
+    tblref              # reference to the input data
 end
 function columnname end # Returns the name of a 'column' element of the `DataIterator`
+function columntype end # Returns the type of a 'column' element of the `DataIterator`
 
 # KB Interface
 abstract type AbstractKnowledgeBase end
@@ -38,9 +38,11 @@ function lint(ctx::AbstractDataContext,
                 code = context_code(ctx)
                 # 1. Apply over columns
                 if applicable(linter, :column, code)
-                    for col in datait.column_iterator
-                        result = linter.correct_if(linter.f(col..., code))  # Apply the linter!
-                        push!(lintout, (linter, "column: $(columnname(col))") => result)
+                    for (i, col) in enumerate(datait.column_iterator)
+                        _name = columnname(datait, i)
+                        _type = columntype(datait, i)
+                        result = linter.correct_if(linter.f(_type, col, skipmissing(col), _name, code))  # Apply the linter!
+                        push!(lintout, (linter, "column: $_name") => result)
                     end
                 end
                 # 2. Apply over rows
@@ -56,7 +58,7 @@ function lint(ctx::AbstractDataContext,
                 end
                 # 3. Apply over whole dataset
                 if applicable(linter, :dataset, code)
-                    result = linter.correct_if(linter.f(datait.dataref, code))
+                    result = linter.correct_if(linter.f(datait.tblref, code))
                     push!(lintout, (linter, "dataset") => result)
                 end
         end;

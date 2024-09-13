@@ -1,7 +1,7 @@
 #TODO: Fix `large_outliers` and `long_tailed_distrib` for small samples (overly-agressive)
 #TODO: Move the logic from code into a knowledge-base object of some sort#
-using DataFrames
 using StatsBase
+using Tables
 
 
 # Meta-types for varius column element types
@@ -135,8 +135,9 @@ function is_zipcode(typ::Type{T}, v, vm, name, args...) where T<:Union{<:StringE
 end
 
 
-function has_duplicates(dfref, args...)
-    length(unique(hash(r) for r in eachrow(dfref[])))!=size(dfref[],1)
+function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...)
+    _rows = Tables.rows(tblref[])
+    length(unique(hash(r) for r in _rows)) != length(_rows)
 end
 
 has_large_outliers(::Type{<:ListEltype}, args...) = nothing

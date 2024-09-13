@@ -1,9 +1,7 @@
 @reexport module DataInterface
-
 using Reexport
-using DataFrames
 using Tables
-import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code, columnname
+import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code, columnname, columntype
 
 # Main data interface function that abstracts over data contexts
 export build_data_context
@@ -11,30 +9,34 @@ export build_data_context
 
 # Function that returns a DataStructure ammendable for use in the data linters.
 # It contains a row iterator, a column iterator, metadata
-build_data_iterator(df::DataFrame) = begin
-     tbl = Tables.columntable(df)
-     return DataIterator(
-         column_iterator =((Tables.columntype(tbl, name),        # column eltype
-                            getproperty(tbl, name),              # column values
-                            skipmissing(getproperty(tbl, name)), # skipmissing on values
-                            name,                                # column name
-                           ) for name in Tables.columnnames(tbl)),
-         row_iterator = Tables.rows(tbl),
-         dataref = Ref(df)
-        )
+build_data_iterator(tbl::Tables.Columns) = begin
+    DataIterator(
+                 column_iterator=Tables.columns(tbl),
+                 row_iterator=Tables.rows(tbl),
+                 tblref=Ref(tbl)
+                )
 end
-build_data_iterator(data::Vector{<:Vector}) = build_data_iterator(DataFrame(data, :auto))
-build_data_iterator(data::Vector{Any}) = build_data_iterator(DataFrame(data, :auto))
+
+build_data_iterator(data::Vector{<:Vector}) = begin
+    build_data_iterator(Tables.Columns(Dict(Symbol("x$i")=>data[i])
+                                           for i in 1:length(data)))
+end
+
 build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
 
 Base.show(io::IO, datait::DataIterator) = begin
-    m, n = size(datait.dataref[])
-    mb_size = Base.summarysize(datait.dataref)/(1024^2)
+    m, n = length(datait.row_iterator), length(datait.column_iterator)
+    mb_size = Base.summarysize(datait.tblref)/(1024^2)
     print(io, "DataIterator over $m samples, $n variables, $mb_size MB of data")
 end
 
-function columnname(column)
-    return last(column)
+function columnname(it::DataIterator, i::Int)
+    return Tables.columnnames(it.column_iterator)[i]
+end
+
+function columntype(it::DataIterator, i::Int)
+    name = columnname(it, i)
+    return Tables.columntype(it.column_iterator, name)
 end
 
 # Simple data structure and its methods
@@ -73,7 +75,7 @@ using CSV
 build_data_context(filepath::AbstractString) = begin
     #TODO: make extension checks here and dispatch to specific
     #      file format handlers
-    build_data_context(CSV.read(filepath, DataFrame))
+    build_data_context(CSV.read(filepath, Tables.Columns))
 end
 
 end  # module
