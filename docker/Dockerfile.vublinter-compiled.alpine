@@ -17,3 +17,6 @@ COPY ./knowledge ./vublinter/knowledge
 
 # Prime dependencies for top level script
 RUN vublinter/bin/vublinter /vublinter/workload/data.csv --kb-path /vublinter/knowledge/linting.toml > /dev/null
+
+# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
+### ENTRYPOINT ["/vublinter/bin/vublinter", "--kb-path /vublinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
