@@ -42,7 +42,7 @@ if isfile(project_file)
         exit()
     end
 else
-    printstyled("× $project_ile for $PROJECT_NAME does not exist. Exiting...\n", color=:red, bold=true)
+    printstyled("× $project_file for $PROJECT_NAME does not exist. Exiting...\n", color=:red, bold=true)
     exit()
 end
 
