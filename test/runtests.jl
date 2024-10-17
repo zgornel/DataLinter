@@ -1,5 +1,5 @@
 using Test
-using VUBLinter
+using DataLinter
 
 
 @test true  # test stump

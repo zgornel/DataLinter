@@ -1,0 +1,22 @@
+# Alpine Linux based commands
+FROM alpine:3.20.0
+RUN apk add --update --no-cache jq curl tar gzip make
+
+# make directories
+RUN mkdir -p /tmp
+RUN mkdir -p /output
+RUN mkdir -p /workspace
+RUN mkdir -p /datalinter/workload
+RUN mkdir -p /datalinter/knowledge
+
+# Copy binaries
+WORKDIR /
+COPY ./build/datalinter ./datalinter
+COPY ./workload ./datalinter/workload
+COPY ./knowledge ./datalinter/knowledge
+
+# Prime dependencies for top level script
+RUN datalinter/bin/datalinter /datalinter/workload/data.csv --kb-path /datalinter/knowledge/linting.toml > /dev/null
+
+# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
+### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]

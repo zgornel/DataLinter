@@ -1,4 +1,4 @@
-name = "VUBLinter"
+name = "DataLinter"
 uuid = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
 authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
 version = "0.1.0"

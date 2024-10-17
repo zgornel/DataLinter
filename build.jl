@@ -5,7 +5,7 @@ using TOML
 # This file must be ran inside the build/ directory of the project. It is assumed that
 # the upper directory i.e. ../ is the main project directory where the Project.toml and
 # Manifest.toml files reside.
-const PROJECT_NAME = "VUBLinter"
+const PROJECT_NAME = "DataLinter"
 const PROJECT_DIR = dirname(@__FILE__)                                    # root project directory
 const BASE_ENV_PATH = joinpath(ENV["HOME"], ".julia", "environments",
                                "v" * string(Int(Base.VERSION.major)) * "." *
@@ -27,7 +27,7 @@ const PRECOMPILE_FILES = map(Base.Fix2(joinpath, PRECOMPILE_JL), TARGETS_PATHS)
 ### Checks ###
 ##############
 
-# Check that the upper directory has a Project.toml and the project is VUBLinter
+# Check that the upper directory has a Project.toml and the project is DataLinter
 project_file = joinpath(PROJECT_DIR, "Project.toml")
 if isfile(project_file)
     key_name = "name"
@@ -102,7 +102,7 @@ for pkg in REQUIRED_PACKAGES
 end
 printstyled("• Installed dependencies\n", bold=true)
 
-# Re-add VUBLinter to vublinter dependencies (i.e. re-build Manifest.toml)
+# Re-add DataLinter to datalinter dependencies (i.e. re-build Manifest.toml)
 # to make sure it is up to date
 for (target, target_path) in zip(TARGETS, TARGETS_PATHS)
     cd(target_path)

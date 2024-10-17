@@ -2,11 +2,11 @@
 FROM alpine:3.20.0
 RUN apk add --update --no-cache ca-certificates wget gcc g++ jq curl make tar gzip npm nodejs python3
 
-RUN mkdir -p /VUBLinter/build
+RUN mkdir -p /DataLinter/build
 
 # Directory in container should be /
-# Directory in host should be VUBLinter root
-WORKDIR /VUBLinter
+# Directory in host should be DataLinter root
+WORKDIR /DataLinter
 COPY ./.git ./.git/
 COPY ./apps ./apps/
 COPY ./src ./src/
@@ -24,5 +24,5 @@ RUN ln -s /julia-1.10.3 /julia
 RUN rm julia-1.10.3-musl-x86_64.tar.gz
 
 # WARNING!
-#   The container needs to be run with --volume:build:/VUBLinter/build
-#   `docker run --volume=./build:/VUBLinter/build ghcr.io/zgornel/vublinter-builder:alpine sh /VUBLinter/build_all.sh`
+#   The container needs to be run with --volume:build:/DataLinter/build
+#   `docker run --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:alpine sh /DataLinter/build_all.sh`

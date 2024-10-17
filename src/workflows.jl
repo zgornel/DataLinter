@@ -4,7 +4,7 @@ function cli_linting_workflow(filepath,
                               show_stats=true,
                               show_passing=false,
                               show_na=false)
-    kb = VUBLinter.kb_load(kbpath)
-    ctx = VUBLinter.DataInterface.build_data_context(filepath)
+    kb = DataLinter.kb_load(kbpath)
+    ctx = DataLinter.DataInterface.build_data_context(filepath)
     lintout = lint(ctx, kb; buffer, show_stats, show_passing, show_na);
 end

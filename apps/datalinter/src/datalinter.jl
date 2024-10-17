@@ -1,6 +1,6 @@
 #!/bin/julia
 #
-module vublinter
+module datalinter
 
 using Pkg
 project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:end-4]...))
@@ -8,7 +8,7 @@ Pkg.activate(project_root_path)
 
 using Logging
 using ArgParse
-using VUBLinter
+using DataLinter
 
 
 
@@ -75,7 +75,7 @@ function real_main()
     # If version present, print and exit
     ask_version = args["version"]
     if ask_version
-        print("VUB data linter v$(VUBLinter.version()).\n")
+        print("Data linter v$(DataLinter.version()).\n")
         return 0
     end
     print_exceptions = args["print-exceptions"]
@@ -95,7 +95,7 @@ function real_main()
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
-                VUBLinter.cli_linting_workflow(filepath, kbpath)
+                DataLinter.cli_linting_workflow(filepath, kbpath)
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;

@@ -1,4 +1,4 @@
-name = "vublinter"
+name = "datalinter"
 uuid = "1c60c992-bb9d-4404-95b0-08c73534b203"
 authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
 version = "0.1.0"
@@ -7,4 +7,4 @@ version = "0.1.0"
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-VUBLinter = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
+DataLinter = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"

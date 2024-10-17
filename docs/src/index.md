@@ -1,2 +1,2 @@
-# VUB Data linter documentation
+# DataLinter documentation
 

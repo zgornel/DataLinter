@@ -6,7 +6,7 @@ using Random
 using Dates
 using Tables
 using Revise
-using VUBLinter
+using DataLinter
 
 n = 10_000
 data = Vector{Any}(Vector{Union{Missing, Float64}}[rand(n) for _ in 1:3])
@@ -31,15 +31,15 @@ end
 code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
 kbpath = joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")
-kb = VUBLinter.kb_load(kbpath)
+kb = DataLinter.kb_load(kbpath)
 
 # First case, print to stdout linting on data
 buf =stdout
-ctx_no_code = VUBLinter.build_data_context(data)
-lintout = VUBLinter.lint(ctx_no_code, kb, buffer=buf, show_stats=true, show_passing=false);
+ctx_no_code = DataLinter.build_data_context(data)
+lintout = DataLinter.lint(ctx_no_code, kb, buffer=buf, show_stats=true, show_passing=false);
 println("------------")
 # Second case, print to buffer (and print the buffer), linting on data+code
 buf=stdout; #buf = IOBuffer();
-ctx_code = VUBLinter.build_data_context(data, code)
-@time lintout = VUBLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=true, show_na=true);
-buf isa IOBuffer &&VUBLinter.OutputInterface.print_buffer(buf);
+ctx_code = DataLinter.build_data_context(data, code)
+@time lintout = DataLinter.lint(ctx_code, kb, buffer=buf, show_stats=true, show_passing=true, show_na=true);
+buf isa IOBuffer && DataLinter.OutputInterface.print_buffer(buf);

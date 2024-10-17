@@ -1,6 +1,6 @@
 #=
- The architecture for VUBLinter
- ------------------------------
+ The architecture for DataLinter
+ -------------------------------
 
  NOTE: This is living documentation and should be updated as the linter
        lives over time. Up to date as per commit: 01ad74d
@@ -65,7 +65,7 @@
     • (3) - knowledge i.e. linters, applicability conditions etc.
     • (4) - linting output i.e. linters/context, output, data stats etc.
 =#
-module VUBLinter
+module DataLinter
 
 using Reexport
 
@@ -76,4 +76,4 @@ include("kb.jl")        # kb interface
 include("workflows.jl") # workflows
 include("precompilation.jl")  # precompilation
 
-end # module VUBLinter
+end # module DataLinter

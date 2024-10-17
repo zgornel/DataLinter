@@ -2,16 +2,16 @@ using Pkg
 Pkg.add("Documenter")
 
 using Documenter
-using VUBLinter
+using DataLinter
 
 # Make src directory available
 push!(LOAD_PATH,"../src/")
 
 # Make documentation
 makedocs(
-    #modules = [VUBLinter],
+    #modules = [DataLinter],
     format = Documenter.HTML(),
-    sitename = "VUB Data Linter",
+    sitename = "A Data Linter",
     authors = "Corneliu Cofaru, Vrije Universiteit Brussel",
     clean = true,
     debug = true,
@@ -20,13 +20,13 @@ makedocs(
         "Usage examples" => "examples.md",
         "API Reference" => "api.md"
     ],
-    repo = "github.com:zgornel/VUBLinter.git",
+    repo = "github.com:zgornel/DataLinter.git",
 )
 
 # Deploy documentation
 deploydocs(
     #remotes=nothing,
-    repo = "github.com/zgornel/VUBLinter.git",
+    repo = "github.com/zgornel/DataLinter.git",
     target = "build",
     deps = nothing,
     make = nothing

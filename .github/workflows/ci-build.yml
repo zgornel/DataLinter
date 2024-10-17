@@ -8,7 +8,7 @@ on:
     tags: '*'
 jobs:
   build:
-    name: Build VUBLinter (${{ github.event_name }})
+    name: Build DataLinter (${{ github.event_name }})
     runs-on: [self-hosted]
     steps:
       - name: Get current date
@@ -21,34 +21,34 @@ jobs:
           path: ${{ env.REPOSITORY_DIR }}-${{steps.dateb64.outputs.date}}
 
       - id: build_builder_image
-        name: Build vublinter-builder image
+        name: Build datalinter-builder image
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker build --no-cache -f ./docker/Dockerfile.vublinter-builder.alpine -t ghcr.io/zgornel/vublinter-builder:alpine .  
-          docker tag ghcr.io/zgornel/vublinter-builder:alpine ghcr.io/zgornel/vublinter-builder:latest
+          docker build --no-cache -f ./docker/Dockerfile.datalinter-builder.alpine -t ghcr.io/zgornel/datalinter-builder:alpine .
+          docker tag ghcr.io/zgornel/datalinter-builder:alpine ghcr.io/zgornel/datalinter-builder:latest
 
-      - id: test_vublinter
-        name: Test VUBLinter
+      - id: test_datalinter
+        name: Test DataLinter
         run: |
-          docker run --rm ghcr.io/zgornel/vublinter-builder:latest /julia/bin/julia -e 'using Pkg; Pkg.activate("/VUBLinter"); Pkg.test()' 
+          docker run --rm ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia -e 'using Pkg; Pkg.activate("/DataLinter"); Pkg.test()'
 
-      - id: build_vublinter
-        name:  Build VUBLinter
-        run: |
-          cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker run --rm --volume=./build:/VUBLinter/build ghcr.io/zgornel/vublinter-builder:latest sh /VUBLinter/build_all.sh
-
-      - id: build_vublinter-compiled_image
-        name:  Build vublinter-compiled image
+      - id: build_datalinter
+        name:  Build DataLinter
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker build --no-cache -f ./docker/Dockerfile.vublinter-compiled.alpine -t ghcr.io/zgornel/vublinter-compiled:alpine .  
-          docker tag ghcr.io/zgornel/vublinter-compiled:alpine ghcr.io/zgornel/vublinter-compiled:latest
+          docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest sh /DataLinter/build_all.sh
 
-      - id: push_vublinter-compiled_image
-        name:  Push to ghcr.io vublinter-compiled image
+      - id: build_datalinter-compiled_image
+        name:  Build datalinter-compiled image
         run: |
-          docker push ghcr.io/zgornel/vublinter-compiled:latest
+          cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
+          docker build --no-cache -f ./docker/Dockerfile.datalinter-compiled.alpine -t ghcr.io/zgornel/datalinter-compiled:alpine .
+          docker tag ghcr.io/zgornel/datalinter-compiled:alpine ghcr.io/zgornel/datalinter-compiled:latest
+
+      - id: push_datalinter-compiled_image
+        name:  Push to ghcr.io datalinter-compiled image
+        run: |
+          docker push ghcr.io/zgornel/datalinter-compiled:latest
 
       - id: cleanup
         name: Cleanup of Docker containers and images
