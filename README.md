@@ -11,6 +11,14 @@ A data linter written in Julia at the Vrije Universiteit Brussel.
 
 The installation can be done by manually by cloning the repository or installing it through the julia `REPL`.
 
+The Docker image can be installed with `docker pull ghcr.io/zgornel/datalinter-compiled:latest`. A sample timed run on the `churn.csv` dataset would require:
+```
+$ time docker run -it --rm --volume=.:/tmp \
+    ghcr.io/zgornel/datalinter-compiled:latest \
+        /vublinter/bin/datalinter /tmp/_data/churn.csv \
+            --kb-path /tmp/knowledge/linting.toml \
+            --log-level warn
+```
 
 ## License
 
