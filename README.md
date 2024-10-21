@@ -2,7 +2,7 @@
 
 A data linter written in Julia at the Vrije Universiteit Brussel.
 
-[![Build Status](https://github.com/zgornel/DataLinter/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/CI.yml?query=branch%3Amaster)
+[![Build Status](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml?query=branch%3Amaster)
 [![License](http://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/DataLinter/dev)
 
