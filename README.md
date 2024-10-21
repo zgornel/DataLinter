@@ -2,7 +2,7 @@
 
 A data linter written in Julia at the Vrije Universiteit Brussel.
 
-[![Build Status](https://github.com/zgornel/DataLinter/actions/workflows/ci-build.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/ci-build.yml?query=branch%3Amaster)
+[![Build Status](https://github.com/zgornel/DataLinter/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/CI.yml?query=branch%3Amaster)
 [![License](http://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/DataLinter/dev)
 
@@ -15,7 +15,7 @@ The Docker image can be installed with `docker pull ghcr.io/zgornel/datalinter-c
 ```
 $ time docker run -it --rm --volume=.:/tmp \
     ghcr.io/zgornel/datalinter-compiled:latest \
-        /vublinter/bin/datalinter /tmp/_data/churn.csv \
+        /datalinter/bin/datalinter /tmp/_data/churn.csv \
             --kb-path /tmp/knowledge/linting.toml \
             --log-level warn
 ```
@@ -34,4 +34,4 @@ Please [file an issue](https://github.com/zgornel/DataLinter/issues/new) to repo
 
 [1] https://en.wikipedia.org/wiki/Lint_(software)
 
-For other interesting data linting solutions, check out also [this work](https://github.com/brain-research/data-linter) from Google brain research.
+The initial version of DataLinter is inspired by [this work](https://github.com/brain-research/data-linter) written by Google brain research.
