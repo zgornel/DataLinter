@@ -1,0 +1,72 @@
+# Section `linters` enables or disables linters. The format is:
+# ```
+#   [linters]
+#     [linter_name_1] = value_1
+#     [linter_name_2] = value_2
+#     ...
+# ```
+# Linters are specified through their name and allowed values are those which can be converted to booleans i.e. `true`/`false` or `0`/`1`.
+[linters]
+    # Google linters
+    datetime_as_string = true
+    tokenizable_string = true
+    number_as_string = true
+    zipcodes_as_values = true
+    large_outliers = true
+    int_as_float = true
+    enum_detector = true
+    uncommon_list_lengths = true
+    duplicate_examples = true
+    empty_example = true
+    uncommon_signs = true
+    long_tailed_distrib = true
+    circular_domain = true
+
+    # Additional linters
+    missing_values = true
+    negative_values = true
+
+
+# Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
+# ```
+#   [parameters]
+#       [parameters.linter_name]
+#           kwarg_1 = value_1
+#           kwarg_2 = value_2
+#           ...
+# ```
+# where `kwarg_1`, `kwarg_2` and so on are keyword arguments of the function of the linter named `linter_name`.
+[parameters]
+    # Google linters
+    [parameters.datetime_as_string]
+        # function is `is_datetime_as_string`, no keyword arguments
+
+    [parameters.tokenizable_string]
+
+    [parameters.number_as_string]
+
+    [parameters.zipcodes_as_values]
+
+    [parameters.large_outliers]
+
+    [parameters.int_as_float]
+        # function is `is_int_as_float`, no keyword arguments
+
+    [parameters.enum_detector]
+
+    [parameters.uncommon_list_lengths]
+
+    [parameters.duplicate_examples]
+
+    [parameters.empty_example]
+
+    [parameters.uncommon_signs]
+
+    [parameters.long_tailed_distrib]
+
+    [parameters.circular_domain]
+
+    # Additional linters
+    [parameters.missing_values]
+
+    [parameters.negative_values]

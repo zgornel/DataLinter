@@ -281,7 +281,7 @@ end
 
 Base.show(io::IO, linter::Linter) = begin
     func = last(split(string(linter.f),"."))
-    print(io, "Linter (func=$func")
+    print(io, "Linter (name=$(linter.name), f=$func)")
 end
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf

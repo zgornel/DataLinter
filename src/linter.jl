@@ -21,35 +21,50 @@ function build_linters end
 # Output Interface
 function process_output end
 
+# Config Interface
+function load_config end
+function linter_is_enabled end
+function get_linter_params end
 
 # Main linting function
 # 'ctx' contains data, config, etc
 function lint(ctx::AbstractDataContext,
               kb::AbstractKnowledgeBase;
+              config=nothing,
               buffer=stdout,
               show_passing=false,
               show_stats=false,
               show_na=false)
-    lintout = []  # TODO: Improve this structure to something more workable
-                  #       that includes timings, outputs, easy referencing i.e. Dict
+    # TODO: Improve the `lintout` structure to something more workable
+    #       that includes timings, outputs, easy referencing i.e. Dict
+    lintout = []
     datait = build_data_iterator(ctx)
     for linter in build_linters(kb, ctx)
         _t = @timed begin
                 code = context_code(ctx)
                 # 1. Apply over columns
-                if applicable(linter, :column, code)
+                if applicable(linter, :column, code) && linter_is_enabled(config, linter)
                     for (i, col) in enumerate(datait.column_iterator)
                         _name = columnname(datait, i)
                         _type = columntype(datait, i)
-                        result = linter.correct_if(linter.f(_type, col, skipmissing(col), _name, code))  # Apply the linter!
+                        result = linter.correct_if(
+                                    linter.f(_type, col, skipmissing(col), _name, code;
+                                             get_linter_params(config, linter)...
+                                            )
+                                 )  # Apply the linter!
                         push!(lintout, (linter, "column: $_name") => result)
                     end
                 end
                 # 2. Apply over rows
-                if applicable(linter, :row, code)
+                if applicable(linter, :row, code) && linter_is_enabled(config, linter)
                     irow = 1
                     for row in datait.row_iterator
-                        result = linter.correct_if(linter.f(row, code))  # Apply the linter!
+                        result = linter.correct_if(
+                                    linter.f(row,
+                                             code;
+                                             get_linter_params(config, linter)...
+                                            )
+                                    )  # Apply the linter!
                         if !isnothing(result) && !result  # skip trues or nothings as there may be too many
                             push!(lintout, (linter, "row: $irow") => result)
                         end
@@ -57,8 +72,13 @@ function lint(ctx::AbstractDataContext,
                     end
                 end
                 # 3. Apply over whole dataset
-                if applicable(linter, :dataset, code)
-                    result = linter.correct_if(linter.f(datait.tblref, code))
+                if applicable(linter, :dataset, code) && linter_is_enabled(config, linter)
+                    result = linter.correct_if(
+                                linter.f(datait.tblref,
+                                         code;
+                                         get_linter_params(config, linter)...
+                                        )
+                                )
                     push!(lintout, (linter, "dataset") => result)
                 end
         end;
