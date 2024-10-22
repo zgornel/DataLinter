@@ -25,18 +25,19 @@ check_correctness(check_against) =
     end
 
 
-is_int_as_float(::Type{<:StringEltype}, args...) = nothing
-is_int_as_float(::Type{<:ListEltype}, args...) = nothing
-is_int_as_float(::Type{<:NumericEltype}, args...) = nothing
+is_int_as_float(::Type{<:StringEltype}, args...; kwargs...) = nothing
+is_int_as_float(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_int_as_float(::Type{<:NumericEltype}, args...; kwargs...) = nothing
 
-is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...) = all(isinteger.(vm))
+is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...; kwargs...) = all(isinteger.(vm))
 
 
-is_datetime_as_string(::Type{<:ListEltype}, args...) = nothing
-is_datetime_as_string(::Type{<:NumericEltype}, args...) = nothing
-is_datetime_as_string(::Type{<:FloatEltype}, args...) = nothing
+is_datetime_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_datetime_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
+is_datetime_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...)
+const DATETIME_MATCH_PERC=0.9
+function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc=DATETIME_MATCH_PERC)
     DATETIME_REGEXES = [
         # RFC 2822 Date Format Regular Expression from https://regexpattern.com/rfc-2822-date/
         r"^(?:(Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+)?(0[1-9]|[1-2]?[0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(19[0-9]{2}|[2-9][0-9]{3})\s+(2[0-3]|[0-1][0-9]):([0-5][0-9])(?::(60|[0-5][0-9]))?\s+([-\+][0-9]{2}[0-5][0-9]|(?:UT|GMT|(?:E|C|M|P)(?:ST|DT)|[A-IK-Z]))(\s+|\(([^\(\)]+|\\\(|\\\))*\))*$",
@@ -67,33 +68,33 @@ function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...)
     end
     # TODO: Improve the logic here
     # Strinct output, needs at least one expression to fully match the column
-    return any(count_matches > 0.9 * length(_vm) for count_matches in values(matches))
+    return any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
 end
 
 
-is_tokenizable_string(::Type{<:ListEltype}, args...) = nothing
-is_tokenizable_string(::Type{<:NumericEltype}, args...) = nothing
-is_tokenizable_string(::Type{<:FloatEltype}, args...) = nothing
+is_tokenizable_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_tokenizable_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
+is_tokenizable_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-function is_tokenizable_string(::Type{<:StringEltype}, v, vm, name, args...)
-    TOKENIZABLE_REGEXES = [
-        r"\s+"
-    ]
+const TOKENIZABLE_REGEXES = [r"\s+"]
+const MIN_TOKENS = 2
+function is_tokenizable_string(::Type{<:StringEltype}, v, vm, name, args...; regexes=TOKENIZABLE_REGEXES, min_tokens=MIN_TOKENS)
     _vm = collect(vm)
     matches = Dict{Int, Int}()
-    for (i, rdt) in enumerate(TOKENIZABLE_REGEXES)
+    for (i, rdt) in enumerate(regexes)
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > 0 for count_matches in values(matches))
+    return any(count_matches > min_tokens-1 for count_matches in values(matches))
 end
 
 
-is_number_as_string(::Type{<:ListEltype}, args...) = nothing
-is_number_as_string(::Type{<:NumericEltype}, args...) = nothing
-is_number_as_string(::Type{<:FloatEltype}, args...) = nothing
+is_number_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_number_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
+is_number_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...)
+const NUMBER_AS_STRING_MATCH_PERC=0.9
+function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc=NUMBER_AS_STRING_MATCH_PERC)
     NUMBER_REGEXES = [
          # Regex from https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#12643073
         r"^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
@@ -104,11 +105,11 @@ function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...)
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > 0.9 * length(_vm) for count_matches in values(matches))
+    return any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
 end
 
 
-function is_empty_example(row, args...)
+function is_empty_example(row, args...; kwargs...)
     #TODO: Improve logic, checks below
     #TODO: Improve performance, very slow!
     empty_checker(::Missing) = true
@@ -117,33 +118,35 @@ function is_empty_example(row, args...)
     empty_checker(v) = isempty(v)
     out = true
     for v in row  # name of column is ommitted
-        !out && break  # stop if encountered a value
         out &= empty_checker(v)
+        !out && break  # stop if encountered a false value
     end
     return out
 end
 
 
-is_zipcode(::Type{<:ListEltype}, args...) = nothing
-is_zipcode(::Type{<:FloatEltype}, args...) = nothing
+is_zipcode(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-function is_zipcode(typ::Type{T}, v, vm, name, args...) where T<:Union{<:StringEltype, <:NumericEltype}
-    #TODO: Make lists of zipcodes, make them configurable (there are many numbers)
-    NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
-    STR_ZIPCODES = string.(NUM_ZIPCODES)
-    _count_in_zipcode(::Type{<:NumericEltype}, vm) = sum(z in NUM_ZIPCODES for z in vm)
-    _count_in_zipcode(::Type{<:StringEltype}, vm) = sum(z in STR_ZIPCODES for z in vm)
-    return _count_in_zipcode(typ, vm) >= 0.9 * length(collect(vm))
+const NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
+const ZIPCODES_MATCH_PERC = 0.99
+function is_zipcode(typ::Type{T}, v, vm, name, args...;
+                    match_perc=ZIPCODES_MATCH_PERC,
+                    zipcodes=NUM_ZIPCODES) where T<:Union{<:StringEltype, <:NumericEltype}
+    zipcodes_strings = string.(zipcodes)
+    _count_in_zipcode(::Type{<:NumericEltype}, vm) = sum(z in zipcodes for z in vm)
+    _count_in_zipcode(::Type{<:StringEltype}, vm) = sum(z in zipcodes_strings for z in vm)
+    return _count_in_zipcode(typ, vm) >= match_perc * length(collect(vm))
 end
 
 
-function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...)
+function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...; kwargs...)
     _rows = Tables.rows(tblref[])
     length(unique(hash(r) for r in _rows)) != length(_rows)
 end
 
-has_large_outliers(::Type{<:ListEltype}, args...) = nothing
-has_large_outliers(::Type{<:StringEltype}, args...) = nothing
+has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = nothing
 
 """
     tukey_fences(data; k=1.5)
@@ -160,13 +163,14 @@ function tukey_fences(data; k=1.5)
     q1-fence, q3+fence
 end
 
-function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...)
+#TODO: Add kwargs parameters
+function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
 	minf, maxf = tukey_fences(vm)
 	return any(x->((x < minf) | (x > maxf)), vm)
 end
 
 # This is slow.
-###function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...)
+###function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
 ###    # simple logic: if we remove X% (X~1%) of the values:
 ###    # the maxmimum changes 'a lot' (more than 2x) as we
 ###    # remove the smallest and largest absolute values
@@ -188,17 +192,19 @@ end
 ###end
 
 
-function enum_detector(::T, v, vm, name, args...) where T
+#TODO: Add kwargs parameters
+function enum_detector(::T, v, vm, name, args...; kwargs...) where T
     # if unique values < tol% of the total number => we have an enum
     return length(unique(vm)) <= floor(0.01 * length(collect(vm))) + 1
 end
 
 
-has_uncommon_sings(::Type{<:ListEltype}, args...) = nothing
-has_uncommon_signs(::Type{<:StringEltype}, args...) = nothing
-has_uncommon_signs(::T, args...) where T= nothing
+has_uncommon_sings(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_uncommon_signs(::T, args...; kwargs...) where T= nothing
 
-function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...)
+#TODO: Add kwargs parameters
+function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
     sgns = sign.(vm)
     zs = sum(sgns.== 0)
     negs = sum(sgns.< 0)
@@ -218,10 +224,11 @@ function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...)
 end
 
 
-has_tailed_distribution(::Type{<:ListEltype}, args...) = nothing
-has_tailed_distribution(::Type{<:StringEltype}, args...) = nothing
+has_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = nothing
 
-function has_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...)
+#TODO: Add kwargs parameters
+function has_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
     v = collect(vm)
     vt = trim(v, prop=0.1)
     μ, σ = mean_and_std(vt)
@@ -231,7 +238,7 @@ function has_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...)
 end
 
 
-function has_circular_domain(::T, v, vm, name, args...) where T
+function has_circular_domain(::T, v, vm, name, args...; kwargs...) where T
     # This one looks only at column name. Courtesy of:
     # `https://github.com/brain-research/data-linter/blob/master/linters.py#L966C3-L973C1`
     CIRCULAR_NAME_REGEXES = [
@@ -244,11 +251,11 @@ function has_circular_domain(::T, v, vm, name, args...) where T
 end
 
 
-has_uncommon_list_lengths(::Type{<:NumericEltype}, args...) = nothing
-has_uncommon_list_lengths(::Type{<:StringEltype}, args...) = nothing
-has_uncommon_list_lengths(::Type{<:TimeEltype}, args...) = nothing
+has_uncommon_list_lengths(::Type{<:NumericEltype}, args...; kwargs...) = nothing
+has_uncommon_list_lengths(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_uncommon_list_lengths(::Type{<:TimeEltype}, args...; kwargs...) = nothing
 
-function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...)
+function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...; kwargs...)
     lens = map(length, vm)
     are_lists = length(collect(Iterators.flatten(vm))) != length(collect(vm))
     if are_lists && length(unique(lens)) > 1
@@ -259,14 +266,15 @@ function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...)
 end
 
 
-function has_many_missings(::T, v, vm, name, args...) where T
+#TODO: Add kwargs parameters
+function has_many_missings(::T, v, vm, name, args...; kwargs...) where T
     return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) <= 0.9 * 2 * length(v)
 end
 
 
-has_negative_values(::Type{<:ListEltype}, args...) = nothing
-has_negative_values(::Type{<:StringEltype}, args...) = nothing
-has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...) = any(<(0), vm)
+has_negative_values(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_negative_values(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = any(<(0), vm)
 
 
 @Base.kwdef struct Linter

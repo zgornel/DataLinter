@@ -10,6 +10,7 @@ function process_output(lintout;
     n_failures = 0
     n_linters = map(lo->lo[1][1].name, lintout) |> length∘unique
     n_linters_applied = map(lo->lo[1][1].name, filter(lo->lo[2]!=nothing, lintout)) |> length∘unique
+    n_linters_na = n_linters - n_linters_applied
     for ((linter, loc_name), result) in lintout
         applicable = !isnothing(result)
         #TODO: Explicitly represent dependency on linter (KB) structure
@@ -35,7 +36,7 @@ function process_output(lintout;
     end
     if show_stats
         printstyled(buffer, "$n_failures", bold=true)
-        printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found, $n_linters_applied (of $n_linters) data linters applied.\n")
+        printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters linters applied ($n_linters_applied OK, $n_linters_na N/A) .\n")
     end
 end
 
