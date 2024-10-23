@@ -1,4 +1,3 @@
-#TODO: Fix `large_outliers` and `long_tailed_distrib` for small samples (overly-agressive)
 #TODO: Move the logic from code into a knowledge-base object of some sort#
 using Dates
 using StatsBase
@@ -66,8 +65,7 @@ function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; mat
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    # TODO: Improve the logic here
-    # Strinct output, needs at least one expression to fully match the column
+    # Strict output, needs at least one expression to fully match the column
     return any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
 end
 
@@ -110,8 +108,7 @@ end
 
 
 function is_empty_example(row, args...; kwargs...)
-    #TODO: Improve logic, checks below
-    #TODO: Improve performance, very slow!
+    #TODO: improve performance
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)
@@ -145,6 +142,7 @@ function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...; kwargs
     length(unique(hash(r) for r in _rows)) != length(_rows)
 end
 
+
 has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = nothing
 
@@ -157,15 +155,15 @@ to Tukey (1977; John W, Exploratory Data Analysis, Addison-Wesley, ISBN
 to be anomalous.
 """
 function tukey_fences(data; k=1.5)
-    q1,q3 = quantile(data,[0.25,0.75])
+    q1,q3 = quantile(data, [0.25,0.75])
     iqr = q3-q1
     fence = k*iqr
     q1-fence, q3+fence
 end
 
-#TODO: Add kwargs parameters
-function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
-	minf, maxf = tukey_fences(vm)
+const TUKEY_FENCES_K=1.5
+function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; tukey_fences_k=TUKEY_FENCES_K)
+	minf, maxf = tukey_fences(vm; k=tukey_fences_k)
 	return any(x->((x < minf) | (x > maxf)), vm)
 end
 
@@ -192,10 +190,15 @@ end
 ###end
 
 
-#TODO: Add kwargs parameters
-function enum_detector(::T, v, vm, name, args...; kwargs...) where T
-    # if unique values < tol% of the total number => we have an enum
-    return length(unique(vm)) <= floor(0.01 * length(collect(vm))) + 1
+const ENUM_DETECTOR_DISTINCT_RATIO=0.001
+const ENUM_DETECTOR_MAX_LIMIT=5
+function enum_detector(::T, v, vm, name, args...;
+                       distinct_ratio=ENUM_DETECTOR_DISTINCT_RATIO,
+                       distinct_max_limit=ENUM_DETECTOR_MAX_LIMIT) where T
+    # if unique values < distinct_ratio % of the total number => we have an enum
+    n_uniques = length(unique(vm))
+    n = length(collect(vm))
+    return (n_uniques <= floor(distinct_ratio * n) + 1 ) | (n_uniques < distinct_max_limit)
 end
 
 
@@ -203,37 +206,41 @@ has_uncommon_sings(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = nothing
 has_uncommon_signs(::T, args...; kwargs...) where T= nothing
 
-#TODO: Add kwargs parameters
+#TODO: See if it makes sense to make this configurable through kwargs
 function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
     sgns = sign.(vm)
     zs = sum(sgns.== 0)
     negs = sum(sgns.< 0)
     poss = sum(sgns.> 0)
     nans = sum(sgns.== NaN)
-    # dataset dimension range => max outlier number
-    # TODO: Revise heuristic
+    # dataset dimension range => max number of positive, negative, zeros, NaNs
+    # that may count as uncommon signs given the dimension of the data
+    # i.e. if the dataset has 100 samples one '-', '+' or 'NaN' would trigger the linter
     ranges = [1:1000 => 2,
               1001=>100_000 => 5,
               100_000:1_000_000 => 10];
     r_outlier = try
             first(v for (k,v) in ranges if length(v) in k)
-        catch # bounds error, over no range found
+        catch # bounds error, many samples
             20
         end
     return any(cnt in 1:r_outlier for cnt in (zs, negs, poss, nans))
 end
 
 
-has_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = nothing
-has_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_long_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_long_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = nothing
 
-#TODO: Add kwargs parameters
-function has_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
+const LTD_DROP_PROPORTION=0.001
+const LTD_ZSCORE_MULTIPLIER=1.0
+function has_long_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...;
+                                      drop_proportion=LTD_DROP_PROPORTION,
+                                      zscore_multiplier=LTD_ZSCORE_MULTIPLIER)
     v = collect(vm)
-    vt = trim(v, prop=0.1)
+    vt = trim(v, prop=drop_proportion)
     μ, σ = mean_and_std(vt)
     zs = abs.(zscore(v, μ, σ))
-    n_outliers = sum(zs .>= 5 * mean(zs))  #TODO: revise this parameter (it can probably be learned as well)
+    n_outliers = sum(zs .>= zscore_multiplier * mean(zs))
     return n_outliers > 0
 end
 
@@ -266,9 +273,13 @@ function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...; k
 end
 
 
-#TODO: Add kwargs parameters
-function has_many_missings(::T, v, vm, name, args...; kwargs...) where T
-    return ( sum(.!ismissing.(v)) + sum(.!isnothing.(v)) ) <= 0.9 * 2 * length(v)
+const MISSING_VALUES_THRESHOLD = 0.9
+function has_many_missing_values(::T, v, vm, name, args...; threshold=MISSING_VALUES_THRESHOLD) where T
+    n_missings = sum(ismissing.(v))
+    n_nothings = sum(isnothing.(v))
+    n = length(v)
+    return (n_missings >= threshold * n) | (n_nothings >= threshold * n) |
+           (n_missings + n_nothings >= threshold * n)
 end
 
 
@@ -407,7 +418,7 @@ const GOOGLE_DATA_LINTERS = [
     # 12. tailed distribution i.e. extrema that affects the mean
     Linter(name = :long_tailed_distrib,
       description = """ Tests if the distribution of the variable has long tails """,
-      f = has_tailed_distribution,
+      f = has_long_tailed_distribution,
       failure_message = name->"the distribution for '$name' has 'long tails'",
       correct_message = name->"no 'long tails' in the distribution of '$name'",
       warn_level = "warning",
@@ -428,9 +439,9 @@ const GOOGLE_DATA_LINTERS = [
 
 const ADDITIONAL_DATA_LINTERS = [
     # No missing values in the column
-    Linter(name = :missing_values,
+    Linter(name = :many_missing_values,
       description = """ Tests that few missing values exist in variable """,
-      f = has_many_missings,
+      f = has_many_missing_values,
       failure_message = name->"found many missing values in '$name'",
       correct_message = name->"few or no missing values in '$name'",
       warn_level = "warning",

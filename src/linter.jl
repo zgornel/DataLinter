@@ -97,7 +97,7 @@ end
 function applicable(linter, iterable_type, code)
     if linter.name == :negative_values && iterable_type == :column && code !== nothing
         return true
-    elseif linter.name == :missing_values && iterable_type == :column
+    elseif linter.name == :many_missing_values && iterable_type == :column
         return true
     elseif linter.name == :int_as_float && iterable_type == :column
         return true
