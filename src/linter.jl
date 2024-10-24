@@ -17,6 +17,21 @@ function columntype end # Returns the type of a 'column' element of the `DataIte
 # KB Interface
 abstract type AbstractKnowledgeBase end
 function build_linters end
+@Base.kwdef struct Linter
+    name::Symbol
+    description::String
+    f::Function
+    failure_message::Function
+    correct_message::Function
+    warn_level::String
+    correct_if::Function
+end
+
+Base.show(io::IO, linter::Linter) = begin
+    func = last(split(string(linter.f),"."))
+    print(io, "Linter (name=$(linter.name), f=$func)")
+end
+
 
 # Output Interface
 function process_output end

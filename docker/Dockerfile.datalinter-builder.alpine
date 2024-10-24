@@ -1,6 +1,6 @@
 # Alpine Linux based commands
 FROM alpine:3.20.0
-RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip npm nodejs python3
+RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip python3
 
 RUN mkdir -p /DataLinter/build
 
@@ -17,10 +17,10 @@ COPY ./Project.toml ./
 
 # Install julia in /julia
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.10/julia-1.10.3-musl-x86_64.tar.gz
-RUN tar zxf julia-1.10.3-musl-x86_64.tar.gz
-RUN ln -s /julia-1.10.3 /julia
-RUN rm julia-1.10.3-musl-x86_64.tar.gz
+RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.10/julia-1.10.4-musl-x86_64.tar.gz
+RUN tar zxf julia-1.10.4-musl-x86_64.tar.gz
+RUN ln -s /julia-1.10.4 /julia
+RUN rm julia-1.10.4-musl-x86_64.tar.gz
 
 RUN git clone https://github.com/zgornel/julia_app_builder
 
