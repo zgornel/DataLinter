@@ -45,7 +45,7 @@ end  # module
 @reexport module KnowledgeBaseInterface
 
 using Reexport
-import ..LinterCore: AbstractKnowledgeBase, build_linters
+import ..LinterCore: AbstractKnowledgeBase, build_linters, Linter
 import ..KnowledgeBaseNative
 export kb_load
 
@@ -77,8 +77,10 @@ function build_linters(kb, ctx)
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
-    return vcat(KnowledgeBaseNative.GOOGLE_DATA_LINTERS,
-                KnowledgeBaseNative.ADDITIONAL_DATA_LINTERS)
+    linters = [Linter(nt...) for nt in vcat(KnowledgeBaseNative.GOOGLE_DATA_LINTERS,
+                                            KnowledgeBaseNative.ADDITIONAL_DATA_LINTERS)
+              ]
+    return linters
 end
 
 end  # module

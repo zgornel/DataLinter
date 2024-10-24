@@ -11,7 +11,6 @@ using ArgParse
 using DataLinter
 
 
-
 # Function that parses Garamond's unix-socket client arguments
 function get_arguments(args::Vector{String})
 	s = ArgParseSettings()
@@ -26,10 +25,10 @@ function get_arguments(args::Vector{String})
             help = "Path to knowledge base '.toml' file"
             default = ""
             arg_type = String
-        ###"--config-path"
-        ###    help = "Path to linter configuration '.toml' file"
-        ###    default = ""
-        ###    arg_type = String
+        "--config-path"
+            help = "Path to linter configuration '.toml' file"
+            default = ""
+            arg_type = String
         ###"--output-type"
         ###    help = "Type of output; available: 'text', 'json', 'html'"
         ###    arg_type = Symbol
@@ -91,11 +90,12 @@ function real_main()
     global_logger(logger)
     ### Lint input(s)
     kbpath = args["kb-path"]
+    configpath = args["config-path"]
     filepaths = unique!(args["input(s)"])
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
-                DataLinter.cli_linting_workflow(filepath, kbpath)
+                DataLinter.cli_linting_workflow(filepath, kbpath, configpath)
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;
