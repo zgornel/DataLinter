@@ -8,12 +8,16 @@ RUN mkdir -p /output
 RUN mkdir -p /workspace
 RUN mkdir -p /datalinter/workload
 RUN mkdir -p /datalinter/knowledge
+RUN mkdir -p /datalinter/config
+RUN mkdir -p /_config
+RUN mkdir -p /_data
 
 # Copy binaries
 WORKDIR /
-COPY ./build/datalinter ./datalinter
-COPY ./workload ./datalinter/workload
-COPY ./knowledge ./datalinter/knowledge
+COPY ./build/datalinter /datalinter
+COPY ./workload /datalinter/workload
+COPY ./knowledge /datalinter/knowledge
+COPY ./config /datalinter/config
 
 # Prime dependencies for top level script
 RUN datalinter/bin/datalinter /datalinter/workload/data.csv --kb-path /datalinter/knowledge/linting.toml > /dev/null
