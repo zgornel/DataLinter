@@ -36,10 +36,13 @@ kb = DataLinter.kb_load(kbpath)
 # First case, print to stdout linting on data
 buf =stdout
 ctx_no_code = DataLinter.build_data_context(data)
-lintout = DataLinter.lint(ctx_no_code, kb, config=nothing, buffer=buf, show_stats=true, show_passing=false);
+lintout = DataLinter.lint(ctx_no_code, kb; config=nothing);
+DataLinter.LinterCore.process_output(lintout; buffer=buf, show_stats=true, show_passing=false)
+
 println("------------")
 # Second case, print to buffer (and print the buffer), linting on data+code
 buf=stdout; #buf = IOBuffer();
 ctx_code = DataLinter.build_data_context(data, code)
-@time lintout = DataLinter.lint(ctx_code, kb, config=nothing, buffer=buf, show_stats=true, show_passing=true, show_na=true);
+@time lintout = DataLinter.lint(ctx_code, kb; config=nothing);
+DataLinter.LinterCore.process_output(lintout; buffer=buf, show_stats=true, show_passing=true, show_na=true)
 buf isa IOBuffer && DataLinter.OutputInterface.print_buffer(buf);

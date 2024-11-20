@@ -63,6 +63,7 @@ Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
     print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
 end
 
+#TODO: Add documentation for: `build_data_context`
 build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
 context_code(ctx::SimpleCodeAndDataContext) = ctx.code
 

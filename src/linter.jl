@@ -1,6 +1,6 @@
 @reexport module LinterCore
 using Tables
-export AbstractLinterContext, lint, version
+export AbstractLinterContext, lint, version, process_output
 
 # Data Interface
 abstract type AbstractDataContext end
@@ -41,15 +41,14 @@ function load_config end
 function linter_is_enabled end
 function get_linter_kwargs end
 
-# Main linting function
-# 'ctx' contains data, config, etc
-function lint(ctx::AbstractDataContext,
-              kb::AbstractKnowledgeBase;
-              config=nothing,
-              buffer=stdout,
-              show_passing=false,
-              show_stats=false,
-              show_na=false)
+"""
+    lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing)
+
+Main linting function. Lints the data provided by `ctx` using
+knowledge from `kb`. A configuration for the available linters
+can be provided in `config`.
+"""
+function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing)
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
     lintout = []
@@ -104,7 +103,6 @@ function lint(ctx::AbstractDataContext,
             @show linter.name, _time, _bytes, _gctime
         end
     end
-    process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout
 end
 

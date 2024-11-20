@@ -95,7 +95,13 @@ function real_main()
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
-                DataLinter.cli_linting_workflow(filepath, kbpath, configpath)
+                DataLinter.cli_linting_workflow(filepath,
+                                                kbpath,
+                                                configpath;
+                                                buffer=stdout,
+                                                show_stats=true,
+                                                show_passing=false,
+                                                show_na=false)
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;

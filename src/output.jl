@@ -2,6 +2,7 @@ module OutputInterface
 
 import ..LinterCore: process_output
 
+#TODO: Add documentation for: `process_output`
 function process_output(lintout;
                         buffer=stdout,
                         show_stats=false,
@@ -38,6 +39,7 @@ function process_output(lintout;
         printstyled(buffer, "$n_failures", bold=true)
         printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters linters applied ($n_linters_applied OK, $n_linters_na N/A) .\n")
     end
+    return nothing
 end
 
 

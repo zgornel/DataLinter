@@ -3,7 +3,7 @@
  -------------------------------
 
  NOTE: This is living documentation and should be updated as the linter
-       lives over time. Up to date as per commit: 01ad74d
+       lives over time. Up to date as per commit: 089a3a5
 
   I. Dataflow diagram:
      ----------------
@@ -16,8 +16,8 @@
                   .----------------.        .---------.        .-----------------.
        (data) --> | DATA INTERFACE | -(1)-> | LINTER  | -(4)-> |OUTPUT INTERFACE | --> (output)
                   `----------------'        `---------'        `-----------------'
-                       ^                         ^                   ^
-       (config) -------'------(2)----------------'-------------------'
+                                                 ^
+       (config) --------------(2)----------------'
 
 
   II. Functional components:

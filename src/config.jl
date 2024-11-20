@@ -7,6 +7,7 @@ import ..LinterCore: load_config, linter_is_enabled, get_linter_kwargs
 const FALLBACK_CONFIG = nothing
 
 
+#TODO: Add documentation for: `load_config`
 # Function that loads the configuration for the linter
 load_config(::Nothing) = FALLBACK_CONFIG
 load_config(io::IO) = TOML.parse(io)
