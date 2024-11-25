@@ -4,7 +4,7 @@ module datalinter
 
 using Pkg
 project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:end-4]...))
-Pkg.activate(project_root_path)
+Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
 
 using Logging
 using ArgParse
@@ -29,18 +29,14 @@ function get_arguments(args::Vector{String})
             help = "Path to linter configuration '.toml' file"
             default = ""
             arg_type = String
-        ###"--output-type"
-        ###    help = "Type of output; available: 'text', 'json', 'html'"
-        ###    arg_type = Symbol
-        ###    default = :text
-        ###"--lint-level"
-        ###    help = "linting level (info/warn/error)"
-        ###    default = "info"
         "--log-level"
             help = "logging level"
             default = "error"
         "--version", "-v"
             help = "prints version"
+            action = :store_true
+        "--progress"
+            help = "shows progress"
             action = :store_true
         "--timed", "-t"
             help = "prints timings"
@@ -77,6 +73,7 @@ function real_main()
         print("Data linter v$(DataLinter.version()).\n")
         return 0
     end
+    progress = args["progress"]
     print_exceptions = args["print-exceptions"]
     _timed = args["timed"]
     # Logging
@@ -101,7 +98,8 @@ function real_main()
                                                 buffer=stdout,
                                                 show_stats=true,
                                                 show_passing=false,
-                                                show_na=false)
+                                                show_na=false,
+                                                progress=progress)
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;
