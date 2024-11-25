@@ -41,13 +41,17 @@ function linter_is_enabled end
 function get_linter_kwargs end
 
 """
-    lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing)
+    lint(ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false)
 
 Main linting function. Lints the data provided by `ctx` using
 knowledge from `kb`. A configuration for the available linters
-can be provided in `config`.
+can be provided in `config`. If `debug=true`, performance information
+for each linter are shown.
 """
-function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing, debug=false)
+function lint(ctx::AbstractDataContext,
+              kb::Union{Nothing, AbstractKnowledgeBase};
+              config=nothing,
+              debug=false)
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
     lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
