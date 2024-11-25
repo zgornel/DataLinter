@@ -38,6 +38,44 @@ function columntype(it::DataIterator, i::Int)
     return Tables.columntype(it.column_iterator, name)
 end
 
+
+"""
+    build_data_context(;data=nothing, code=nothing)
+
+Builds a data context object using `data` and `code` if available. The
+data context represents a context in which the linter runs: the data
+it lints and optionally, the `code` associated to the `data` i.e. some
+algorithm that will be applied on that data.
+
+# Examples
+```julia
+julia> using DataLinter
+       ncols, nrows = 3, 10
+       data = [rand(nrows) for _ in 1:ncols]
+       ctx = DataLinter.build_data_context(data)
+SimpleDataContext 0.00040435791015625 MB of data
+
+julia> kb = DataLinter.kb_load("")
+       DataLinter.LinterCore.lint(ctx, kb)
+38-element Vector{Pair{Tuple{DataLinter.LinterCore.Linter, String}, Union{Nothing, Bool}}}:
+         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x2") => nothing
+         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x3") => nothing
+         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x1") => nothing
+         (Linter (name=tokenizable_string, f=is_tokenizable_string), "column: x2") => nothing
+         ...
+```
+"""
+function build_data_context(;data=nothing, code=nothing)
+    if isnothing(data)
+        @error "Missing data"
+    elseif isnothing(code)
+        build_data_context(data)
+    else
+        build_data_context(data, code)
+    end
+end
+
+
 # Simple data structure and its methods
 Base.@kwdef struct SimpleDataContext <: AbstractDataContext
     data=nothing
@@ -63,7 +101,6 @@ Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
     print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
 end
 
-#TODO: Add documentation for: `build_data_context`
 build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
 context_code(ctx::SimpleCodeAndDataContext) = ctx.code
 

@@ -7,8 +7,24 @@ import ..LinterCore: load_config, linter_is_enabled, get_linter_kwargs
 const FALLBACK_CONFIG = nothing
 
 
-#TODO: Add documentation for: `load_config`
-# Function that loads the configuration for the linter
+"""
+    load_config(configpath::AbstractString)
+
+Loads a linting configuration file located at `configpath`.
+The configuration file contains options regarding which linters
+are enabled and linter parameter values.
+
+# Examples
+```julia
+julia> using DataLinter
+       using Pkg
+        configpath = joinpath(dirname((Pkg.project()).path), "config", "default.toml")
+       DataLinter.LinterCore.load_config(configpath)
+Dict{String, Any} with 2 entries:
+  "parameters" => Dict{String, Any}("uncommon_signs"=>Dict{String, Any}(), "enum_detector"=>Dict{String, Any}("distinct_max_limit"=>5, "distinct_ratio"=>0.001), "empty_example"=>Dict{String, Any}(), "negative_…
+  "linters"    => Dict{String, Any}("uncommon_signs"=>true, "enum_detector"=>true, "empty_example"=>true, "negative_values"=>true, "tokenizable_string"=>true, "number_as_string"=>true, "int_as_float"=>true, "l…
+```
+"""
 load_config(::Nothing) = FALLBACK_CONFIG
 load_config(io::IO) = TOML.parse(io)
 load_config(configpath::AbstractString) = begin

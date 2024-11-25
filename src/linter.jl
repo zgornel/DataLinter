@@ -32,7 +32,6 @@ Base.show(io::IO, linter::Linter) = begin
     print(io, "Linter (name=$(linter.name), f=$func)")
 end
 
-
 # Output Interface
 function process_output end
 
@@ -48,10 +47,10 @@ Main linting function. Lints the data provided by `ctx` using
 knowledge from `kb`. A configuration for the available linters
 can be provided in `config`.
 """
-function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing)
+function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothing, debug=false)
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
-    lintout = []
+    lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
     datait = build_data_iterator(ctx)
     for linter in build_linters(kb, ctx)
         if linter_is_enabled(config, linter)
@@ -100,7 +99,7 @@ function lint(ctx::AbstractDataContext, kb::AbstractKnowledgeBase; config=nothin
                     end
             end;
             _, _time, _bytes, _gctime, _ = _t;
-            @show linter.name, _time, _bytes, _gctime
+            debug && @show linter.name, _time, _bytes, _gctime
         end
     end
     return lintout

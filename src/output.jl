@@ -2,7 +2,14 @@ module OutputInterface
 
 import ..LinterCore: process_output
 
-#TODO: Add documentation for: `process_output`
+"""
+    process_output(lintout; buffer=stdout, show_stats=false, show_passing=false, show_na=false)
+
+Process linting output for display. The function takes the linter output `lintout` and prints
+lints to `buffer`. If `show_stats`, `show_passing` and `show_na` are set to `true`, the function
+will print statistics over the checks, the checks that passes and the ones that could not be applied
+respectively.
+"""
 function process_output(lintout;
                         buffer=stdout,
                         show_stats=false,
