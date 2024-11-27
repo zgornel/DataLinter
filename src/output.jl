@@ -2,6 +2,14 @@ module OutputInterface
 
 import ..LinterCore: process_output
 
+"""
+    process_output(lintout; buffer=stdout, show_stats=false, show_passing=false, show_na=false)
+
+Process linting output for display. The function takes the linter output `lintout` and prints
+lints to `buffer`. If `show_stats`, `show_passing` and `show_na` are set to `true`, the function
+will print statistics over the checks, the checks that passes and the ones that could not be applied
+respectively.
+"""
 function process_output(lintout;
                         buffer=stdout,
                         show_stats=false,
@@ -38,6 +46,7 @@ function process_output(lintout;
         printstyled(buffer, "$n_failures", bold=true)
         printstyled(buffer, " $(ifelse(n_failures==1, "issue", "issues")) found from $n_linters linters applied ($n_linters_applied OK, $n_linters_na N/A) .\n")
     end
+    return nothing
 end
 
 

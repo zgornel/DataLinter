@@ -30,7 +30,7 @@ end
 # First case, print to stdout linting on data
 function _workload(data, kb)
     ctx_no_code = DataLinter.build_data_context(data)
-    lintout = DataLinter.lint(ctx_no_code, kb, buffer=IOBuffer(), show_stats=true, show_passing=true);
+    lintout = DataLinter.lint(ctx_no_code, kb; debug=true)
     return nothing
 end
 
@@ -41,13 +41,13 @@ end
 using PrecompileTools: @setup_workload, @compile_workload
 @setup_workload begin
     @compile_workload begin
-    using CSV
-    using Tables
-    using StatsBase
-    # Workload 1
-    kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
-    kb = DataLinter.kb_load(kbpath)
-    ctx = DataLinter.build_data_context(_generate_workload_data());
-    DataLinter.lint(ctx, kb; buffer=IOBuffer(), show_passing=false);
+        using CSV
+        using Tables
+        using StatsBase
+        # Workload 1
+        kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
+        kb = DataLinter.kb_load(kbpath)
+        ctx = DataLinter.build_data_context(_generate_workload_data());
+        DataLinter.lint(ctx, kb; debug=true)
     end
 end

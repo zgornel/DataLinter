@@ -1,6 +1,7 @@
 @reexport module LinterCore
 using Tables
-export AbstractLinterContext, lint, version
+using ProgressMeter
+export AbstractLinterContext, lint, version, process_output
 
 # Data Interface
 abstract type AbstractDataContext end
@@ -32,7 +33,6 @@ Base.show(io::IO, linter::Linter) = begin
     print(io, "Linter (name=$(linter.name), f=$func)")
 end
 
-
 # Output Interface
 function process_output end
 
@@ -41,20 +41,26 @@ function load_config end
 function linter_is_enabled end
 function get_linter_kwargs end
 
-# Main linting function
-# 'ctx' contains data, config, etc
+const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+"""
+    lint(ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false)
+
+Main linting function. Lints the data provided by `ctx` using
+knowledge from `kb`. A configuration for the available linters
+can be provided in `config`. If `debug=true`, performance information
+for each linter are shown.
+"""
 function lint(ctx::AbstractDataContext,
-              kb::AbstractKnowledgeBase;
+              kb::Union{Nothing, AbstractKnowledgeBase};
               config=nothing,
-              buffer=stdout,
-              show_passing=false,
-              show_stats=false,
-              show_na=false)
+              debug=false,
+              progress=false)
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
-    lintout = []
+    lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
     datait = build_data_iterator(ctx)
     for linter in build_linters(kb, ctx)
+        _progress = ProgressUnknown(desc="Linting...", spinner=true, color=:white, showspeed=true)
         if linter_is_enabled(config, linter)
             linter_kwargs = get_linter_kwargs(config, linter)  # this injects configuration parameters into linter functions
             _t = @timed begin
@@ -73,6 +79,7 @@ function lint(ctx::AbstractDataContext,
                                         linter.f(_type, col, skipmissing(col), _name, code; linter_kwargs...)
                                      )
                             push!(lintout, (linter, "column: $_name") => result)
+                            progress && next!(_progress, spinner=SPINNER)
                         end
                     end
                     # 2. Apply over rows
@@ -86,6 +93,7 @@ function lint(ctx::AbstractDataContext,
                             if !isnothing(result) && !result  # skip trues or nothings as there may be too many
                                 push!(lintout, (linter, "row: $irow") => result)
                                 no_empty_rows = false
+                                progress && next!(_progress, spinner=SPINNER)
                             end
                             irow+= 1
                         end
@@ -98,13 +106,13 @@ function lint(ctx::AbstractDataContext,
                                     linter.f(datait.tblref, code; linter_kwargs...)
                                  )
                         push!(lintout, (linter, "dataset") => result)
+                        progress && next!(_progress, spinner=SPINNER)
                     end
             end;
             _, _time, _bytes, _gctime, _ = _t;
-            @show linter.name, _time, _bytes, _gctime
+            debug && @show linter.name, _time, _bytes, _gctime
         end
     end
-    process_output(lintout; buffer, show_passing, show_stats, show_na)
     return lintout
 end
 

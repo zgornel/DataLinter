@@ -63,6 +63,29 @@ Base.show(io::IO, kb::KnowledgeBaseWrapper) = begin
     print(io, "KnowledgeBaseWrapper, data: $(kb.data)")
 end
 
+"""
+    kb_load(filepath::String)
+
+Loads a Knowledge Base file located at `filepath`.
+The loaded knowledge is used by the [`lint`](@ref) function
+to drive the linting.
+
+# Examples
+```julia
+julia> using DataLinter
+julia> using TOML
+
+julia> data = Dict("a"=>1)
+julia> mktemp() do kbpath, io
+           TOML.print(io, data)   # write data
+           flush(io);             # and flush to disk
+           kb = kb_load(kbpath);  # load data with `kb_load`
+           kb.data.data           # return loaded data
+       end
+Dict{String, Any} with 1 entry:
+  "a" => 1
+```
+"""
 function kb_load(filepath::String)
     KnowledgeBaseWrapper(KnowledgeBaseNative.load(filepath))
 end

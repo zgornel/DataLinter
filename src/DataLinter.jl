@@ -3,7 +3,7 @@
  -------------------------------
 
  NOTE: This is living documentation and should be updated as the linter
-       lives over time. Up to date as per commit: 01ad74d
+       lives over time. Up to date as per commit: 089a3a5
 
   I. Dataflow diagram:
      ----------------
@@ -16,15 +16,15 @@
                   .----------------.        .---------.        .-----------------.
        (data) --> | DATA INTERFACE | -(1)-> | LINTER  | -(4)-> |OUTPUT INTERFACE | --> (output)
                   `----------------'        `---------'        `-----------------'
-                       ^                         ^                   ^
-       (config) -------'------(2)----------------'-------------------'
+                                                 ^
+       (config) --------------(2)----------------'
 
 
   II. Functional components:
       ---------------------
     • KB INTERFACE (`src/kb.jl`)
       `- handles communication with the knowledgebase
-      `- at this point, has the data linters embedded in code (TODO: to be updated during dev)
+      `- at this point, has the data linters embedded in code
 
     • DATA INTERFACE (`src/data.jl`)
       `- models types of 'data contexts' = data + metadata + information over where/when the data exists
@@ -46,12 +46,12 @@
       `- the internal representation supports the `Tables` intferface
 
     • config
-      `-keeps configuration of the linter (TODO: to be updated during dev)
+      `-keeps configuration of the linter
 
     • knowledge
       `- knowledge relevant for the functioning of the data linter
       `- currently all knowledge is present in `src/kb.jl` in the form of data structures and
-         throughout the code as functions; this will change over time (TODO: to be updated during dev)
+         throughout the code as functions; this will change over time
 
     • output
       `- what the user receives from the linter

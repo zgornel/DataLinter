@@ -1,1 +1,6 @@
-# API Documentation
+```@index
+```
+
+```@autodocs
+Modules = [DataLinter]
+```
