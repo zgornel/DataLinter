@@ -33,7 +33,7 @@ load_config(configpath::AbstractString) = begin
                 load_config(io)
             end
         catch e
-           @warn "Could not parse configuration @\"$configpath\", using default configuration.\n$e"
+           @debug "Could not parse configuration @\"$configpath\", using default configuration.\n$e"
            FALLBACK_CONFIG
         end
     return config
@@ -46,7 +46,7 @@ linter_is_enabled(config::Dict, linter) = begin
     value = try
             config["linters"][string(linter.name)] |> Bool
         catch e
-            @warn "Could not read config>[linters]>[$(linter.name)]. Linter will be enabled by default.\n$e"
+            @debug "Could not read config > [linters] > [$(linter.name)]. Linter will be enabled by default.\n$e"
             true
         end
     return value
@@ -60,7 +60,7 @@ get_linter_kwargs(config::Dict, linter) = begin
     cfg_params = try
                     ( Symbol(k)=>v for (k,v) in config["parameters"][string(linter.name)] )
                 catch e
-                    #@warn "Could not read config>[parameters]>[$(linter.name)]. Linter will use default parameters.\n$e"
+                    @debug "Could not read config > [parameters] > [$(linter.name)]. Linter will use default parameters.\n$e"
                     ()
                 end
     f_kwargs = unique(v for v in vcat(Base.kwarg_decl.(methods(linter.f))...) if !in(v, SKIP_KWARGS)) # get kwargs of linter function

@@ -8,4 +8,4 @@ if [ -z "$1" ]; then
 fi
 
 echo "Running data Linter in ${SCRIPT_DIR} on $CSV_FILE"
-time docker run -it --rm --volume="${SCRIPT_DIR}":/tmp ghcr.io/zgornel/datalinter-compiled:latest /datalinter/bin/datalinter "/tmp/${CSV_FILE}" --print-exceptions --log-level debug
+time docker run -it --rm --volume="${SCRIPT_DIR}":/tmp ghcr.io/zgornel/datalinter-compiled:latest /datalinter/bin/datalinter "/tmp/${CSV_FILE}" --print-exceptions --progress --log-level warn

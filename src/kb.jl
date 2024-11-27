@@ -19,7 +19,7 @@ module KnowledgeBaseNative
         data = try
             TOML.parse(open(filepath))
         catch
-            @warn "Could not load KB@$filepath. Returning empty Dict()."
+            @debug "Could not load KB@$filepath. Returning empty Dict()."
             Dict{String, String}()
         end
         return KnowledgeBase(data)
