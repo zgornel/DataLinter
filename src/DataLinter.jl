@@ -75,6 +75,7 @@ include("data.jl")      # data interface
 include("output.jl")    # output interface
 include("kb.jl")        # kb interface
 include("workflows.jl") # workflows
+include("version.jl")   # version
 include("precompilation.jl")  # precompilation
 
 end # module DataLinter
