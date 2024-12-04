@@ -6,9 +6,10 @@ import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, con
 # Main data interface function that abstracts over data contexts
 export build_data_context
 
-
-# Function that returns a DataStructure ammendable for use in the data linters.
-# It contains a row iterator, a column iterator, metadata
+"""
+Function that returns a DataStructure ammendable for use in the data linters.
+It contains a row iterator, a column iterator, metadata
+"""
 build_data_iterator(tbl::Tables.Columns) = begin
     DataIterator(
                  column_iterator=Tables.columns(tbl),
@@ -110,8 +111,8 @@ using CSV
 
 #Note: we assume the implicit interface for this bit `build_data_context`
 build_data_context(filepath::AbstractString) = begin
-    #TODO: make extension checks here and dispatch to specific
-    #      file format handlers
+    # Extension and type checks would go here, along with
+    # dispatch to specifie file handlers/loaders
     build_data_context(CSV.read(filepath, Tables.Columns))
 end
 

@@ -167,28 +167,6 @@ function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; tukey
 	return any(x->((x < minf) | (x > maxf)), vm)
 end
 
-# This is slow.
-###function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
-###    # simple logic: if we remove X% (X~1%) of the values:
-###    # the maxmimum changes 'a lot' (more than 2x) as we
-###    # remove the smallest and largest absolute values
-###    trim_maxs = Float64[]
-###    for t in [0, 0.01, 1, 5, 10]
-###        if t > 0 && t < 1
-###            try
-###                push!(trim_maxs, maximum(abs.(trim(collect(vm), prop=t))))
-###            catch
-###            end
-###        else
-###            try
-###                push!(trim_maxs, maximum(abs.(trim(collect(vm), count=Int(t)))))
-###            catch
-###            end
-###        end
-###    end
-###    return maximum(trim_maxs) >= 2 * minimum(trim_maxs)
-###end
-
 
 const ENUM_DETECTOR_DISTINCT_RATIO=0.001
 const ENUM_DETECTOR_MAX_LIMIT=5

@@ -1,3 +1,7 @@
+"""
+Basic flow for running the linter in a command line interface environment
+such as a Unix shell.
+"""
 function cli_linting_workflow(filepath,
                               kbpath,
                               configpath;
