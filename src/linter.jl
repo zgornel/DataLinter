@@ -42,6 +42,7 @@ function linter_is_enabled end
 function get_linter_kwargs end
 
 const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
 """
     lint(ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false)
 

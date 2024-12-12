@@ -39,8 +39,9 @@ load_config(configpath::AbstractString) = begin
     return config
 end
 
-
-# Function that returns whether a linter is enabled in the config or not
+"""
+Function that returns whether a linter is enabled in the config or not.
+"""
 linter_is_enabled(::Nothing, linter) = true  # by default, if config is not present, linters are enabled
 linter_is_enabled(config::Dict, linter) = begin
     value = try
@@ -52,8 +53,9 @@ linter_is_enabled(config::Dict, linter) = begin
     return value
 end
 
-
-# Function that reads linter configuration parameters
+"""
+Function that reads linter configuration parameters.
+"""
 get_linter_kwargs(config::Nothing, linter) = ()  # if config is missing, broken, default parameters are kept
 get_linter_kwargs(config::Dict, linter) = begin
     SKIP_KWARGS = [Symbol("kwargs...")]  # kwargs no to consider when matching config parameters and function kwargs

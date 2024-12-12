@@ -67,7 +67,7 @@ end
     kb_load(filepath::String)
 
 Loads a Knowledge Base file located at `filepath`.
-The loaded knowledge is used by the [`lint`](@ref) function
+The loaded knowledge is used by the `lint` function
 to drive the linting.
 
 # Examples

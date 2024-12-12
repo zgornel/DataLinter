@@ -11,13 +11,11 @@ using ArgParse
 using DataLinter
 
 
-# Function that parses Garamond's unix-socket client arguments
 function get_arguments(args::Vector{String})
 	s = ArgParseSettings()
 	@add_arg_table! s begin
         "input(s)"
             help = "Input(s): file(s) to be linted; Note: only delimited files supported ATM"
-            required = true
             nargs = '+'  # at least one value required
             arg_type = String
             action = :store_arg
@@ -70,7 +68,7 @@ function real_main()
     # If version present, print and exit
     ask_version = args["version"]
     if ask_version
-        print("Data linter v$(DataLinter.version()).\n")
+        print(DataLinter.printable_version(;commit="906f2df*", ver=DataLinter.DEFAULT_VERSION))
         return 0
     end
     progress = args["progress"]
@@ -89,6 +87,9 @@ function real_main()
     kbpath = args["kb-path"]
     configpath = args["config-path"]
     filepaths = unique!(args["input(s)"])
+    if isempty(filepaths)
+        @error "Provide at least one file to lint."
+    end
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin

@@ -21,7 +21,6 @@ function process_output(lintout;
     n_linters_na = n_linters - n_linters_applied
     for ((linter, loc_name), result) in lintout
         applicable = !isnothing(result)
-        #TODO: Explicitly represent dependency on linter (KB) structure
         msg, color, bold = _print_options(linter, result, applicable)
         if applicable
             if !result  # linter failed
