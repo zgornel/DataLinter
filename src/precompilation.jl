@@ -48,6 +48,7 @@ using PrecompileTools: @setup_workload, @compile_workload
         kbpath = abspath(joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml"))
         kb = DataLinter.kb_load(kbpath)
         ctx = DataLinter.build_data_context(_generate_workload_data());
-        DataLinter.lint(ctx, kb; debug=true)
+        DataLinter.lint(ctx, kb; debug=false, progress=true)
+        DataLinter.lint(ctx, kb; debug=false, progress=false)
     end
 end
