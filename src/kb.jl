@@ -94,14 +94,14 @@ function kb_query(kb::KnowledgeBaseWrapper, query::String)
     KnowledgeBaseNative.query(kb.data, query)
 end
 
-
+#TODO: Implement selection mechanism from CLI
 function build_linters(kb, ctx)
     #TODO: Implement query of the knowledge base
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
     linters = [Linter(nt...) for nt in vcat(KnowledgeBaseNative.GOOGLE_DATA_LINTERS,
-                                            KnowledgeBaseNative.ADDITIONAL_DATA_LINTERS)
+                                            KnowledgeBaseNative.EXPERIMENTAL_DATA_LINTERS)
               ]
     return linters
 end
