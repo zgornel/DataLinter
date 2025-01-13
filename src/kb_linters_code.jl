@@ -267,7 +267,7 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
-const GOOGLE_DATA_LINTERS = [
+const GOOGLE_LINTERS = [
     # 1. DateTime wrongly encoded as string
     (name = :datetime_as_string,
      description = """ Tests that the values string variable could be Date/DateTime(s) """,
@@ -400,7 +400,7 @@ const GOOGLE_DATA_LINTERS = [
 ]
 
 
-const EXPERIMENTAL_DATA_LINTERS = [
+const EXPERIMENTAL_LINTERS = [
     # No missing values in the column
     (name = :many_missing_values,
      description = """ Tests that few missing values exist in variable """,

@@ -15,21 +15,27 @@ function get_arguments(args::Vector{String})
 	s = ArgParseSettings()
 	@add_arg_table! s begin
         "input(s)"
-            help = "Input(s): file(s) to be linted; Note: only delimited files supported ATM"
+            help = "input(s): file(s) to be linted; Note: only delimited files supported ATM"
             nargs = '+'  # at least one value required
             arg_type = String
             action = :store_arg
         "--kb-path"
-            help = "Path to knowledge base '.toml' file"
+            help = "path to knowledge base '.toml' file"
             default = ""
             arg_type = String
         "--config-path"
-            help = "Path to linter configuration '.toml' file"
+            help = "path to linter configuration '.toml' file"
             default = ""
             arg_type = String
         "--log-level"
             help = "logging level"
             default = "error"
+        "--linters"
+            help = "linter groups to use. Avaliable: \"google\", \"experimental\", \"all\""
+            nargs = '*'
+            default = ["all"]
+            arg_type = String
+            action = :store_arg
         "--version", "-v"
             help = "prints version"
             action = :store_true
@@ -87,6 +93,7 @@ function real_main()
     kbpath = args["kb-path"]
     configpath = args["config-path"]
     filepaths = unique!(args["input(s)"])
+    linters = unique!(args["linters"])
     if isempty(filepaths)
         @error "Provide at least one file to lint."
     end
@@ -100,7 +107,8 @@ function real_main()
                                                 show_stats=true,
                                                 show_passing=false,
                                                 show_na=false,
-                                                progress=progress)
+                                                progress=progress,
+                                                linters=linters)
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t;

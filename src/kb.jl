@@ -54,7 +54,6 @@ function kb_load end
 # Abstraction over querying KB for data
 function kb_query end
 
-
 struct KnowledgeBaseWrapper <: AbstractKnowledgeBase
     data::KnowledgeBaseNative.KnowledgeBase
 end
@@ -94,16 +93,23 @@ function kb_query(kb::KnowledgeBaseWrapper, query::String)
     KnowledgeBaseNative.query(kb.data, query)
 end
 
-#TODO: Implement selection mechanism from CLI
-function build_linters(kb, ctx)
+function build_linters(kb, ctx; linters=["all"])
     #TODO: Implement query of the knowledge base
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
-    linters = [Linter(nt...) for nt in vcat(KnowledgeBaseNative.GOOGLE_DATA_LINTERS,
-                                            KnowledgeBaseNative.EXPERIMENTAL_DATA_LINTERS)
-              ]
-    return linters
+    nts = []
+    if "all" in linters
+        nts = vcat(nts, KnowledgeBaseNative.GOOGLE_LINTERS, KnowledgeBaseNative.EXPERIMENTAL_LINTERS)
+    else
+        if "google" in linters
+            nts = vcat(nts, KnowledgeBaseNative.GOOGLE_LINTERS)
+        end
+        if "experimental" in linters
+            nts = vcat(nts, KnowledgeBaseNative.EXPERIMENTAL_LINTERS)
+        end
+    end
+    return [Linter(nt...) for nt in nts]
 end
 
 end  # module
