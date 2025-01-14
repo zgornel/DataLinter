@@ -6,6 +6,7 @@ A data linter written in Julia at the Vrije Universiteit Brussel.
 [![License](http://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat)](LICENSE.md)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/DataLinter/dev)
 
+![til](./gifs/datalinter.gif)
 
 ## Installation
 
