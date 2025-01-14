@@ -1,3 +1,4 @@
+#!/bin/julia
 module datalinterw
 
 # The actual entrypoint is apps/datalinter/src/datalinter.jl

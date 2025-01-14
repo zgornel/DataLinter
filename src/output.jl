@@ -40,25 +40,26 @@ function process_output(lintout;
     n_linters = map(lo->lo[1][1].name, lintout) |> length∘unique
     n_linters_applied = map(lo->lo[1][1].name, filter(lo->lo[2]!=nothing, lintout)) |> length∘unique
     n_linters_na = n_linters - n_linters_applied
-    for ((linter, loc_name), result) in lintout
+    sorted_out = sort(lintout, by=l->WARN_LEVEL_TO_NUM[(l[1][1]).warn_level], rev=true)
+    for ((linter, loc_name), result) in sorted_out
         applicable = !isnothing(result)
         msg, color, bold = _print_options(linter, result, applicable)
         if applicable
             if !result  # linter failed
                 n_failures+= 1
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
-                printstyled(buffer,"$(linter.failure_message(loc_name))\n")
+                printstyled(buffer, "$(rpad("$msg",15))\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer,"$(linter.failure_message(loc_name))\n"; color, bold=true)
             elseif show_passing
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
-                printstyled(buffer,"$(linter.correct_message(loc_name))\n")
+                printstyled(buffer, "$(rpad("$msg",15))\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer,"$(linter.correct_message(loc_name))\n"; color, bold=true)
             end
         else
             if show_na
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
-                printstyled(buffer,"linter not applicable for '$(loc_name)'\n")
+                printstyled(buffer, "$(rpad("$msg",15))\t$(rpad("($(linter.name))",20))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer,"linter not applicable for '$(loc_name)'\n"; color, bold=true)
             end
         end
     end
