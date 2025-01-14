@@ -26,4 +26,4 @@ RUN git clone https://github.com/zgornel/julia_app_builder
 
 # WARNING!
 #   The container needs to be run with --volume:build:/DataLinter/build
-#   `docker run --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:alpine sh /DataLinter/build_all.sh`
+#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter

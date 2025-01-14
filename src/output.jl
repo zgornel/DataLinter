@@ -1,6 +1,27 @@
 module OutputInterface
 
+using StatsBase
 import ..LinterCore: process_output
+
+"""
+Structure that maps a warning level to a numeric value.
+This can be used to obtain an numeric estimate of the issues
+over a dataset.
+"""
+const WARN_LEVEL_TO_NUM = Dict("info" => 1,
+                               "warning" => 3,
+                               "important" => 5,
+                               "experimental" => 0)
+
+"""
+Returns a score corresponding to the severity of the issues found in
+the dataset. The score is based on the `WARN_LEVEL_TO_NUM` mapping.
+"""
+function score(lintout; normalize=true)
+    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v==false)
+    return ifelse(normalize, mean(vals), sum(vals))
+end
+
 
 """
     process_output(lintout; buffer=stdout, show_stats=false, show_passing=false, show_na=false)
@@ -25,18 +46,18 @@ function process_output(lintout;
         if applicable
             if !result  # linter failed
                 n_failures+= 1
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
                 printstyled(buffer,"$(linter.failure_message(loc_name))\n")
             elseif show_passing
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
                 printstyled(buffer,"$(linter.correct_message(loc_name))\n")
             end
         else
             if show_na
-                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name,20)) "; color=color, bold=true)
+                printstyled(buffer, "$msg\t$(rpad("($(linter.name))",25))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name,25)) "; color=color, bold=true)
                 printstyled(buffer,"linter not applicable for '$(loc_name)'\n")
             end
         end
@@ -55,9 +76,10 @@ print_buffer(buf::IOBuffer) = print(stdout, read(seekstart(buf), String))
 _print_options(linter, result, applicable) = begin
     if applicable
         if !result
-            (linter.warn_level == "warning") && ( return (msg="! warn", color=:yellow, bold=true) )
+            (linter.warn_level == "warning") && ( return (msg="! warning", color=:yellow, bold=true) )
             (linter.warn_level == "info") && ( return (msg="• info", color=:cyan, bold=true) )
-            (linter.warn_level == "error") && ( return (msg="× error", color=:red, bold=true) )
+            (linter.warn_level == "important") && ( return (msg="× important", color=:red, bold=true) )
+            (linter.warn_level == "experimental") && ( return (msg="• experimental", color=:blue, bold=true) )
         else
             # linter passed
             return (msg="✓ pass", color=:default, bold=true)

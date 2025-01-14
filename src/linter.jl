@@ -44,23 +44,24 @@ function get_linter_kwargs end
 const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
 """
-    lint(ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false)
+    lint(ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false, linters=["all"])
 
 Main linting function. Lints the data provided by `ctx` using
 knowledge from `kb`. A configuration for the available linters
 can be provided in `config`. If `debug=true`, performance information
-for each linter are shown.
+for each linter are shown. By default, all available linters will be used.
 """
 function lint(ctx::AbstractDataContext,
               kb::Union{Nothing, AbstractKnowledgeBase};
               config=nothing,
               debug=false,
-              progress=false)
+              progress=false,
+              linters=["all"])
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
     lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
     datait = build_data_iterator(ctx)
-    for linter in build_linters(kb, ctx)
+    for linter in build_linters(kb, ctx; linters)
         _progress = ProgressUnknown(desc="Linting...", spinner=true, color=:white, showspeed=true)
         if linter_is_enabled(config, linter)
             linter_kwargs = get_linter_kwargs(config, linter)  # this injects configuration parameters into linter functions
@@ -119,7 +120,9 @@ end
 
 
 function applicable(linter, iterable_type, code)
-    if linter.name == :negative_values && iterable_type == :column && code !== nothing
+    # Example below if one were to use code as well:
+    #   if linter.name == :negative_values && iterable_type == :column && code !== nothing
+    if linter.name == :negative_values && iterable_type == :column
         return true
     elseif linter.name == :many_missing_values && iterable_type == :column
         return true

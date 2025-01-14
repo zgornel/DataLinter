@@ -267,14 +267,14 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
-const GOOGLE_DATA_LINTERS = [
+const GOOGLE_LINTERS = [
     # 1. DateTime wrongly encoded as string
     (name = :datetime_as_string,
      description = """ Tests that the values string variable could be Date/DateTime(s) """,
      f = is_datetime_as_string,
      failure_message = name->"most of the string values of '$name' can be converted to times/dates",
      correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
-     warn_level = "warning",
+     warn_level = "important",
      correct_if = check_correctness(false)
      ),
 
@@ -294,7 +294,7 @@ const GOOGLE_DATA_LINTERS = [
      f = is_number_as_string,
      failure_message = name->"most of the string values of '$name' can be converted to numbers",
      correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
-     warn_level = "info",
+     warn_level = "important",
      correct_if = check_correctness(false)
      ),
 
@@ -304,7 +304,7 @@ const GOOGLE_DATA_LINTERS = [
      f = is_zipcode,
      failure_message = name->"many of the values of '$name' could be zipcodes",
      correct_message = name->"many the values of '$name' don't look like zipcodes",
-     warn_level = "warning",
+     warn_level = "info",
      correct_if = check_correctness(false)
      ),
 
@@ -314,7 +314,7 @@ const GOOGLE_DATA_LINTERS = [
      f = has_large_outliers,
      failure_message = name->"the values of '$name' contain large outliers",
      correct_message = name->"there do not seem to be large outliers in '$name'",
-     warn_level = "info",
+     warn_level = "warning",
      correct_if = check_correctness(false)
      ),
 
@@ -334,7 +334,7 @@ const GOOGLE_DATA_LINTERS = [
      f = enum_detector,
      failure_message = name->"just a few distinct values in '$name', it could be an enum",
      correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
-     warn_level = "warning",
+     warn_level = "info",
      correct_if = check_correctness(false)
      ),
 
@@ -354,7 +354,7 @@ const GOOGLE_DATA_LINTERS = [
      f = has_duplicates,
      failure_message = name->"dataset contains duplicates",
      correct_message = name->"the dataset does not contain duplicates",
-     warn_level = "info",
+     warn_level = "important",
      correct_if = check_correctness(false)
      ),
 
@@ -364,7 +364,7 @@ const GOOGLE_DATA_LINTERS = [
      f = is_empty_example,
      failure_message = index->"the example at '$index' looks empty",
      correct_message = index->"the example at '$index' is not empty",
-     warn_level = "warning",
+     warn_level = "important",
      correct_if = check_correctness(false)
      ),
 
@@ -374,7 +374,7 @@ const GOOGLE_DATA_LINTERS = [
      f = has_uncommon_signs,
      failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
      correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
-     warn_level = "warning",
+     warn_level = "info",
      correct_if = check_correctness(false)
      ),
 
@@ -384,7 +384,7 @@ const GOOGLE_DATA_LINTERS = [
      f = has_long_tailed_distribution,
      failure_message = name->"the distribution for '$name' has 'long tails'",
      correct_message = name->"no 'long tails' in the distribution of '$name'",
-     warn_level = "warning",
+     warn_level = "info",
      correct_if = check_correctness(false)
      ),
 
@@ -400,14 +400,14 @@ const GOOGLE_DATA_LINTERS = [
 ]
 
 
-const ADDITIONAL_DATA_LINTERS = [
+const EXPERIMENTAL_LINTERS = [
     # No missing values in the column
     (name = :many_missing_values,
      description = """ Tests that few missing values exist in variable """,
      f = has_many_missing_values,
      failure_message = name->"found many missing values in '$name'",
      correct_message = name->"few or no missing values in '$name'",
-     warn_level = "warning",
+     warn_level = "experimental",
      correct_if = check_correctness(false)
      ),
 
@@ -417,7 +417,7 @@ const ADDITIONAL_DATA_LINTERS = [
      f = has_negative_values,
      failure_message = name->"found values smaller than 0 in '$name'",
      correct_message = name->"no values smaller than 0 in '$name'",
-     warn_level = "error",
+     warn_level = "experimental",
      correct_if = check_correctness(false)
      )
 ]
