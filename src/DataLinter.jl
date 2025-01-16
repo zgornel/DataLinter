@@ -72,9 +72,14 @@ using Reexport
 
 include("linter.jl")    # linter core
 include("config.jl")    # linter configuration
+
 include("data.jl")      # data interface
+  include("plugins/csv.jl")  # 'csv data' plugin
+
 include("output.jl")    # output interface
 include("kb.jl")        # kb interface
+  include("plugins/kb_native.jl")  # 'native kb' plugin
+
 include("workflows.jl") # workflows
 include("version.jl")   # version
 include("precompilation.jl")  # precompilation
