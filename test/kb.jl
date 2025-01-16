@@ -2,17 +2,19 @@
 
     using TOML
     import DataLinter.KnowledgeBaseInterface as KB
+    import DataLinter.KnowledgeBaseNative as KBN
 
-    @testset "KnowledgeBaseWrapper" begin
-        @test KB.KnowledgeBaseWrapper <: DataLinter.LinterCore.AbstractKnowledgeBase
+    @testset "KnowledgeBase" begin
+        @test KBN.KnowledgeBase <: DataLinter.LinterCore.AbstractKnowledgeBase
     end
 
     @testset "kb_load" begin
         @testset "non-existent path" begin
             kb = KB.kb_load("")
-            @test kb isa KB.KnowledgeBaseWrapper
-            @test kb.data isa KB.KnowledgeBaseNative.KnowledgeBase
-            @test isempty(kb.data.data)
+            @test typeof(kb) <: KB.AbstractKnowledgeBase
+            @test kb isa DataLinter.KnowledgeBaseNative.KnowledgeBase
+            @test kb.data isa Dict
+            @test isempty(kb.data)
         end
 
         @testset "existing path" begin
@@ -21,9 +23,10 @@
                 TOML.print(io, data)
                 flush(io);
                 kb = kb_load(kbpath);
-                @test kb isa KB.KnowledgeBaseWrapper
-                @test kb.data isa KB.KnowledgeBaseNative.KnowledgeBase
-                @test kb.data.data == data
+                @test typeof(kb) <: KB.AbstractKnowledgeBase
+                @test kb isa DataLinter.KnowledgeBaseNative.KnowledgeBase
+                @test kb.data isa Dict
+                @test kb.data == data
             end
         end
     end

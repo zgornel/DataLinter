@@ -40,6 +40,28 @@ function columntype(it::DataIterator, i::Int)
 end
 
 
+# Simple data structure and its methods
+Base.@kwdef struct SimpleDataContext <: AbstractDataContext
+    data=nothing
+end
+
+Base.show(io::IO, ctx::SimpleDataContext) = begin
+    mb_size = Base.summarysize(ctx.data)/(1024^2)
+    print(io, "SimpleDataContext $mb_size MB of data")
+end
+
+# Simple data+code structure and its methods
+Base.@kwdef struct SimpleCodeAndDataContext <: AbstractDataContext
+    data=nothing
+    code=nothing
+end
+
+Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
+    mb_size = (Base.summarysize(ctx.data) + Base.summarysize(ctx.code))/(1024^2)
+    print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
+end
+
+
 """
     build_data_context(;data=nothing, code=nothing)
 
@@ -77,43 +99,10 @@ function build_data_context(;data=nothing, code=nothing)
 end
 
 
-# Simple data structure and its methods
-Base.@kwdef struct SimpleDataContext <: AbstractDataContext
-    data=nothing
-end
-
-Base.show(io::IO, ctx::SimpleDataContext) = begin
-    mb_size = Base.summarysize(ctx.data)/(1024^2)
-    print(io, "SimpleDataContext $mb_size MB of data")
-end
-
 build_data_context(data) = SimpleDataContext(;data)
-context_code(ctx::SimpleDataContext) = nothing
-
-
-# Simple data+code structure and its methods
-Base.@kwdef struct SimpleCodeAndDataContext <: AbstractDataContext
-    data=nothing
-    code=nothing
-end
-
-Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
-    mb_size = (Base.summarysize(ctx.data) + Base.summarysize(ctx.code))/(1024^2)
-    print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
-end
-
 build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
+
 context_code(ctx::SimpleCodeAndDataContext) = ctx.code
-
-
-### CSV Related stuff (not yet another module/submodule)
-using CSV
-
-#Note: we assume the implicit interface for this bit `build_data_context`
-build_data_context(filepath::AbstractString) = begin
-    # Extension and type checks would go here, along with
-    # dispatch to specifie file handlers/loaders
-    build_data_context(CSV.read(filepath, Tables.Columns))
-end
+context_code(ctx::SimpleDataContext) = nothing
 
 end  # module
