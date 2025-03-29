@@ -1,5 +1,6 @@
 @reexport module LinterCore
 using Tables
+using REPL
 using ProgressMeter
 export AbstractLinterContext, lint, version, process_output
 
@@ -61,8 +62,9 @@ function lint(ctx::AbstractDataContext,
     #       that includes timings, outputs, easy referencing i.e. Dict
     lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
     datait = build_data_iterator(ctx)
+    _progress = ProgressUnknown(desc="Linting...", spinner=true, color=:white, showspeed=true)
+    _terminal = REPL.Terminals.TTYTerminal("", stdin, stdout, stderr)
     for linter in build_linters(kb, ctx; linters)
-        _progress = ProgressUnknown(desc="Linting...", spinner=true, color=:white, showspeed=true)
         if linter_is_enabled(config, linter)
             linter_kwargs = get_linter_kwargs(config, linter)  # this injects configuration parameters into linter functions
             _t = @timed begin
@@ -115,6 +117,7 @@ function lint(ctx::AbstractDataContext,
             debug && @show linter.name, _time, _bytes, _gctime
         end
     end
+    progress && REPL.Terminals.clear_line(_terminal)
     return lintout
 end
 
