@@ -1,4 +1,4 @@
-module VUBLintingServer
+module DataLintingServer
 
 using Pkg
 Pkg.activate(joinpath(dirname(@__FILE__), ".."))  # activate root folder
@@ -9,7 +9,7 @@ using Sockets
 using HTTP
 using JSON
 using ArgParse
-using VUBLinter
+using DataLinter
 
 # Default forecaster port
 const SERVER_HTTP_PORT = 10000
@@ -107,7 +107,7 @@ function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; model_path="")
     HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(model_path))
 
     # Start serving requests
-    @info "• VUB linting server online @$addr:$port..."
+    @info "• Data linting server online @$addr:$port..."
     HTTP.serve(Sockets.IPv4(addr), port, readtimeout=0) do http_req::HTTP.Request
         handler_output = try
             ROUTER(http_req)
@@ -164,17 +164,20 @@ linting_handler_wrapper(model_path) = (req::HTTP.Request)->begin
     #TODO: Handle errors here
     ctx = _request["linter_input"]["context"]
     data = ctx["data"]
-    @show data, typeof(data)
+    for dv in data
+        dv[isnothing.(dv)] .= missing
+    end
     code = ctx["code"]
-    elementwise = ctx["elementwise"]
     kbpath = expanduser(_request["linter_input"]["kbpath"])
-    kb = VUBLinter.kb_load(kbpath)
-    show_passing = _request["linter_input"]["options"]["show_passing"]
-    show_stats = _request["linter_input"]["options"]["show_stats"]
+    kb = DataLinter.kb_load(kbpath)
+    show_passing = get(_request["linter_input"]["options"], "show_passing", false)
+    show_stats = get(_request["linter_input"]["options"], "show_stats", false)
+    show_na = get(_request["linter_input"]["options"], "show_stats", false)
     try
         buffer = IOBuffer();
-        ctx_code = VUBLinter.build_data_context(data, code; elementwise)
-        lintout = VUBLinter.lint(ctx_code, kb; buffer, show_passing, show_stats);
+        ctx_code = DataLinter.build_data_context(data, code)
+        lintout = DataLinter.lint(ctx_code, kb);
+        process_output(lintout; buffer, show_passing, show_stats, show_na)
         string_buf = read(seekstart(buffer), String)
         return JSON.json("linting_output" => string_buf)
     catch e
