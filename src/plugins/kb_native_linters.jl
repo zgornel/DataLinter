@@ -265,6 +265,25 @@ has_negative_values(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_negative_values(::Type{<:StringEltype}, args...; kwargs...) = nothing
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = any(<(0), vm)
 
+const PERC_MINORITY_CLASS = 0.1
+
+function is_imbalanced_target_variable(tblref::Base.RefValue{<:Tables.Columns},
+                                       experiment_ctx,
+                                       args...;
+                                       threshold=PERC_MINORITY_CLASS)
+    col = experiment_ctx.target_variable
+    _process_col(col::Number) = Int(col)
+    _process_col(col::String) = Symbol(col)
+    tc = getindex(tblref[], _process_col(col))
+    n = length(tc)
+    for (val, cnt) in countmap(tc)
+       cnt/n < threshold && return true
+    end
+    return false
+end
+
+is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = nothing
+
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
 const GOOGLE_LINTERS = [
@@ -275,7 +294,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"most of the string values of '$name' can be converted to times/dates",
      correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
      warn_level = "important",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 2. Tokenizable string i.e. too long, with spaces
@@ -285,7 +306,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"the values of '$name' could be tokenizable i.e. contain spaces",
      correct_message = name->"the values of '$name' are not tokenizable i.e. no spaces",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 3. Number wrongly encoded as string
@@ -295,7 +318,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"most of the string values of '$name' can be converted to numbers",
      correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
      warn_level = "important",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
@@ -305,7 +330,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"many of the values of '$name' could be zipcodes",
      correct_message = name->"many the values of '$name' don't look like zipcodes",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 5. Large outliers
@@ -315,7 +342,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"the values of '$name' contain large outliers",
      correct_message = name->"there do not seem to be large outliers in '$name'",
      warn_level = "warning",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 6. Int-as-float wrong encoding
@@ -325,7 +354,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"the values of '$name' are floating point but can be integers",
      correct_message = name->"no int-as-float in '$name'",
      warn_level = "warning",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
@@ -335,7 +366,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"just a few distinct values in '$name', it could be an enum",
      correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
      # 8. uncommon list length
@@ -345,7 +378,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"values in '$name' are lists inconsistent in length",
      correct_message = name->"'$name' does not contain lists incosistent in length",
      warn_level = "warning",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
      # 9. duplicate examples (row based, not column based)
@@ -355,7 +390,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"dataset contains duplicates",
      correct_message = name->"the dataset does not contain duplicates",
      warn_level = "important",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 10. empty examples
@@ -365,7 +402,9 @@ const GOOGLE_LINTERS = [
      failure_message = index->"the example at '$index' looks empty",
      correct_message = index->"the example at '$index' is not empty",
      warn_level = "important",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 11. uncommon sign i.e. +/-/0/nan
@@ -375,7 +414,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
      correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 12. tailed distribution i.e. extrema that affects the mean
@@ -385,7 +426,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"the distribution for '$name' has 'long tails'",
      correct_message = name->"no 'long tails' in the distribution of '$name'",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # 13. circular domain detector i.e. angles, hours, latitude/longitude
@@ -395,7 +438,9 @@ const GOOGLE_LINTERS = [
      failure_message = name->"the name of '$name' indicates its values may have a circular domain",
      correct_message = name->"the name of '$name' do not indicate its values having a circular domain",
      warn_level = "info",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 ]
 
@@ -408,7 +453,9 @@ const EXPERIMENTAL_LINTERS = [
      failure_message = name->"found many missing values in '$name'",
      correct_message = name->"few or no missing values in '$name'",
      warn_level = "experimental",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
      ),
 
     # No negative values in the column
@@ -418,6 +465,37 @@ const EXPERIMENTAL_LINTERS = [
      failure_message = name->"found values smaller than 0 in '$name'",
      correct_message = name->"no values smaller than 0 in '$name'",
      warn_level = "experimental",
-     correct_if = check_correctness(false)
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
+     ),
+    # Imbalanced data
+    (name = :imbalanced_target_variable,
+     description = """ Tests that data labels are balanced (no class less than θ%)""",
+     f = is_imbalanced_target_variable,
+     failure_message = name->"Imbalanced target column in '$name'",
+     correct_message = name->"Re-sample or add new samples on minority class(es) in '$name'",
+     warn_level = "experimental",
+     correct_if = check_correctness(false),
+     query = nothing,
+     programming_language = nothing
+     ),
+    # Imbalanced target variable in data (R code, glmmTMB algorithm)
+    (name = :R_glmmTMB_target_variable,
+     description = """ Tests that data labels are balanced (no class less than θ%)""",
+     f = is_imbalanced_target_variable,
+     failure_message = name->"Imbalanced dependent variable in glmmTMB",
+     correct_message = name->"Re-sample or add new samples on minority class(es) in dependent variable",
+     warn_level = "experimental",
+     correct_if = check_correctness(false),
+     query =("*",
+               "glmmTMB",                      # -> glmmTMB
+               ("*",                          # -> (arguments...)
+                 ("*",
+                    ("*",
+                       "@target_variable",
+                       ("@dependent_variables",
+                         "*"))))),
+     programming_language = "r"
      )
 ]

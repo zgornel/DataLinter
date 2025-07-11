@@ -1,3 +1,31 @@
+# Section `experiment` describes the type of experiment and
+# related information such as target variables, data variables, etc.
+[experiment]
+    name = "Data analysis"          # name of the experiment, NOT USED currently
+
+    # The type of analysis:
+    # - can be "unsupervised", "supervised" or "unknown"/empty/missing (default)
+    analysis_type = ""
+
+    # Analysis subtype specifcation:
+    # - if analysis_type="supervised": "classification", "regression"
+    # - if analysis_type="unsupervised": "transform", "feature-engineering"
+    # - if analysis_type="unknown" or missing: "unknown" (default)
+    analysis_subtype = "unknown"
+
+    # Target variable specification:
+    # - if an Integer, it refers to a specific column index
+    # - if a String, it refers to a specific column name
+    target_variable = ""
+
+    # Data variables specification:
+    # - if a list of Strings, it refers to specific column names
+    # - if a list of Integers, it refers to specific column indices
+    # - if missing, it refers to all columns, except `target_variable` if specified
+    data_variables = []
+
+    programming_language = ""
+
 # Section `linters` enables or disables linters. The format is:
 # ```
 #   [linters]

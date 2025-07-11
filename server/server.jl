@@ -160,7 +160,7 @@ linting_handler_wrapper(model_path) = (req::HTTP.Request)->begin
         end
     end
     model !== nothing && @debug "Model loaded @$_model_path"
-   
+
     #TODO: Handle errors here
     ctx = _request["linter_input"]["context"]
     data = ctx["data"]
@@ -174,6 +174,7 @@ linting_handler_wrapper(model_path) = (req::HTTP.Request)->begin
     show_stats = get(_request["linter_input"]["options"], "show_stats", false)
     show_na = get(_request["linter_input"]["options"], "show_stats", false)
     try
+        # TODO: Integrate with online_linting_workflow function (src/workflows.jl)
         buffer = IOBuffer();
         ctx_code = DataLinter.build_data_context(data, code)
         lintout = DataLinter.lint(ctx_code, kb);
