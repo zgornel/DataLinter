@@ -36,7 +36,9 @@ const SAMPLE_CONFIG = """
          failure_message = name->"",
          correct_message = name->"",
          warn_level = "info",
-         correct_if = x->x==true
+         correct_if = x->x==true,
+         query = nothing,
+         programming_language = nothing
          )
     @test Cfg.linter_is_enabled(nothing, linter)
     @test Cfg.linter_is_enabled(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == true # linter is NOT in config
