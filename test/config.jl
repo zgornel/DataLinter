@@ -38,7 +38,8 @@ const SAMPLE_CONFIG = """
          warn_level = "info",
          correct_if = x->x==true,
          query = nothing,
-         programming_language = nothing
+         programming_language = nothing,
+         requirements=Dict{String, Any}()
          )
     @test Cfg.linter_is_enabled(nothing, linter)
     @test Cfg.linter_is_enabled(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == true # linter is NOT in config

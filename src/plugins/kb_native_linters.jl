@@ -265,19 +265,24 @@ has_negative_values(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_negative_values(::Type{<:StringEltype}, args...; kwargs...) = nothing
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = any(<(0), vm)
 
-const PERC_MINORITY_CLASS = 0.1
+const PERC_MINORITY_CLASS = 0.01
 
 function is_imbalanced_target_variable(tblref::Base.RefValue{<:Tables.Columns},
-                                       experiment_ctx,
+                                       linting_ctx,
                                        args...;
                                        threshold=PERC_MINORITY_CLASS)
-    col = experiment_ctx.target_variable
-    _process_col(col::Number) = Int(col)
-    _process_col(col::String) = Symbol(col)
-    tc = getindex(tblref[], _process_col(col))
-    n = length(tc)
-    for (val, cnt) in countmap(tc)
-       cnt/n < threshold && return true
+    try
+        col = linting_ctx.target_variable
+        _process_col(col::Number) = Int(col)
+        _process_col(col::String) = Symbol(col)
+        tc = getindex(tblref[], _process_col(col))
+        n = length(tc)
+        for (val, cnt) in countmap(tc)
+           cnt/n < threshold && return true
+        end
+    catch
+        @debug "is_imbalanced_target_variable: Failed\n"
+        return false
     end
     return false
 end
@@ -296,7 +301,8 @@ const GOOGLE_LINTERS = [
      warn_level = "important",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 2. Tokenizable string i.e. too long, with spaces
@@ -308,7 +314,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 3. Number wrongly encoded as string
@@ -320,7 +327,8 @@ const GOOGLE_LINTERS = [
      warn_level = "important",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
@@ -332,7 +340,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 5. Large outliers
@@ -344,7 +353,8 @@ const GOOGLE_LINTERS = [
      warn_level = "warning",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 6. Int-as-float wrong encoding
@@ -356,7 +366,8 @@ const GOOGLE_LINTERS = [
      warn_level = "warning",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
@@ -368,7 +379,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
      # 8. uncommon list length
@@ -380,7 +392,8 @@ const GOOGLE_LINTERS = [
      warn_level = "warning",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
      # 9. duplicate examples (row based, not column based)
@@ -392,7 +405,8 @@ const GOOGLE_LINTERS = [
      warn_level = "important",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:dataset)
      ),
 
     # 10. empty examples
@@ -404,7 +418,8 @@ const GOOGLE_LINTERS = [
      warn_level = "important",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:row)
      ),
 
     # 11. uncommon sign i.e. +/-/0/nan
@@ -416,7 +431,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 12. tailed distribution i.e. extrema that affects the mean
@@ -428,7 +444,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # 13. circular domain detector i.e. angles, hours, latitude/longitude
@@ -440,7 +457,8 @@ const GOOGLE_LINTERS = [
      warn_level = "info",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 ]
 
@@ -455,7 +473,8 @@ const EXPERIMENTAL_LINTERS = [
      warn_level = "experimental",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
 
     # No negative values in the column
@@ -467,8 +486,10 @@ const EXPERIMENTAL_LINTERS = [
      warn_level = "experimental",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:column)
      ),
+
     # Imbalanced data
     (name = :imbalanced_target_variable,
      description = """ Tests that data labels are balanced (no class less than θ%)""",
@@ -478,8 +499,10 @@ const EXPERIMENTAL_LINTERS = [
      warn_level = "experimental",
      correct_if = check_correctness(false),
      query = nothing,
-     programming_language = nothing
+     programming_language = nothing,
+     requirements=Dict("iterable_type"=>:dataset, "linting_ctx"=>true)
      ),
+
     # Imbalanced target variable in data (R code, glmmTMB algorithm)
     (name = :R_glmmTMB_target_variable,
      description = """ Tests that data labels are balanced (no class less than θ%)""",
@@ -496,6 +519,7 @@ const EXPERIMENTAL_LINTERS = [
                        "@target_variable",
                        ("@dependent_variables",
                          "*"))))),
-     programming_language = "r"
+     programming_language = "r",
+     requirements=Dict("iterable_type"=>:dataset, "linting_ctx"=>true)
      )
 ]
