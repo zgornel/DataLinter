@@ -1,0 +1,27 @@
+#using Revise
+using Pkg
+const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..")
+Pkg.activate(joinpath(PROJECT_PATH))  # we assume that this file lies in ./scripts
+#Base.set_active_project(PROJECT_PATH, "Project.toml")
+using Logging; global_logger(ConsoleLogger(Logging.Debug))
+using Random
+using Dates
+using CSV
+using DataLinter
+using ParSitter
+
+kb = DataLinter.kb_load(joinpath(PROJECT_PATH, "knowledge", "linting.toml"))
+filepath = joinpath(PROJECT_PATH, "data", "imbalanced_data.csv")
+code_path = joinpath(PROJECT_PATH, "data", "r_snippet.r")
+
+#configpath = "config/default.toml"
+config_imbalanced = joinpath(PROJECT_PATH, "config", "r_glmmTMB_imbalanced_data.toml")
+config = DataLinter.LinterCore.load_config(config_imbalanced)
+
+
+_ctx = DataLinter.build_data_context(filepath)
+ctx = DataLinter.DataInterface.build_data_context(_ctx.data, read(code_path, String))
+
+@time out=DataLinter.lint(ctx, kb; config=config);
+DataLinter.process_output(out; show_stats=true)
+@info "Score: $(DataLinter.OutputInterface.score(out; normalize=true))"
