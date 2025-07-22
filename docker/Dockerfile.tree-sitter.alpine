@@ -1,32 +1,9 @@
-# Alpine Linux based commands
-FROM alpine:3.22.0
-RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter
-RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
+# Alpine Linux based image for tree-sitter Oxoa flavour
+#  - build with: `docker build -f Dockerfile.tree-sitter.alpine -t tree-sitter.alpine:latest .`
+# Info from: https://dcreager.net/2021/06/getting-started-with-tree-sitter/
+FROM alpine:3.22
+RUN apk add --update --no-cache ca-certificates git tree-sitter-cli tar gzip npm nodejs python3 gcc build-base
 
-# make directories
-RUN mkdir -p /tmp
-RUN mkdir -p /output
-RUN mkdir -p /workspace
-RUN mkdir -p /datalinter/workload
-RUN mkdir -p /datalinter/knowledge
-RUN mkdir -p /datalinter/config
-RUN mkdir -p /_config
-RUN mkdir -p /_data
-
-# Copy binaries
-WORKDIR /
-COPY ./build/datalinter /datalinter
-COPY ./workload /datalinter/workload
-COPY ./knowledge /datalinter/knowledge
-COPY ./config /datalinter/config
-
-# Prime dependencies for top level script
-RUN datalinter/bin/datalinter /datalinter/workload/data.csv --kb-path /datalinter/knowledge/linting.toml > /dev/null
-
-# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
-### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
-
-# Tree sitter stuff
 RUN mkdir -p /root/dev/
 RUN mkdir -p /root/src/
 RUN mkdir -p /workspace

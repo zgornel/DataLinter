@@ -12,6 +12,10 @@ JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+ParSitter = "bdeffda0-9f75-4d6c-9dad-1bfd8db84b8f"
+
+[sources]
+ParSitter = {rev = "master", url = "https://github.com/zgornel/ParSitter"}
 
 [compat]
 ArgParse = "1.2.0"

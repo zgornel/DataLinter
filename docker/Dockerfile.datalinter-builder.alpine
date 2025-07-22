@@ -1,6 +1,12 @@
 # Alpine Linux based commands
+
+# WARNING!
+#   The container needs to be run with --volume:build:/DataLinter/build
+#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
+
 FROM alpine:3.22.0
-RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip python3
+RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip python3 libxml2 tree-sitter tree-sitter-cli npm nodejs python3 build-base
+RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
 RUN mkdir -p /DataLinter/build
 
@@ -25,6 +31,87 @@ RUN rm julia-1.11.6-musl-x86_64.tar.gz
 
 RUN git clone https://github.com/zgornel/julia_app_builder
 
-# WARNING!
-#   The container needs to be run with --volume:build:/DataLinter/build
-#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
+# Tree sitter stuff
+RUN mkdir -p /root/dev/
+RUN mkdir -p /root/src/
+RUN mkdir -p /workspace
+
+WORKDIR /
+# Generate /root/.config/tree-sitter/config.json with:
+# { "parser-directories": [
+#       "/root/dev/",
+#       "/root/src/"
+#   ], ... }
+RUN tree-sitter init-config
+
+# Python parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-python
+WORKDIR /root/dev/tree-sitter-python
+RUN tree-sitter generate
+
+# Julia parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-julia
+WORKDIR /root/dev/tree-sitter-julia
+RUN tree-sitter generate
+
+# C parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-c
+WORKDIR /root/dev/tree-sitter-c
+RUN tree-sitter generate
+
+# GO parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-go
+WORKDIR /root/dev/tree-sitter-go
+RUN tree-sitter generate
+
+# R parser
+WORKDIR /root/dev
+RUN git clone https://github.com/r-lib/tree-sitter-r
+WORKDIR /root/dev/tree-sitter-r
+RUN tree-sitter generate
+
+# C-sharp parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-c-sharp
+WORKDIR /root/dev/tree-sitter-c-sharp
+RUN tree-sitter generate
+
+# Java parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-java
+WORKDIR /root/dev/tree-sitter-java
+RUN tree-sitter generate
+
+# Javascript parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
+WORKDIR /root/dev/tree-sitter-javascript
+RUN tree-sitter generate
+
+# Typescript parser --> FAILS
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-typescript
+#WORKDIR /root/dev/tree-sitter-typescript
+#RUN tree-sitter generate
+
+# Angular parser --> FAILS
+#WORKDIR /root/dev
+#RUN git clone https://github.com/dlvandenberg/tree-sitter-angular
+#WORKDIR /root/dev/tree-sitter-angular
+#RUN tree-sitter generate
+
+# HTML parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-html
+WORKDIR /root/dev/tree-sitter-html
+RUN tree-sitter generate
+
+# JSON parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-json
+WORKDIR /root/dev/tree-sitter-json
+RUN tree-sitter generate
