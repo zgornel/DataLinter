@@ -1,0 +1,24 @@
+name = "datalinterserver"
+uuid = "9d407fd6-3526-4981-96c7-4c6ad4fe050f"
+authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
+version = "0.1.0"
+
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+DataLinter = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
+DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+
+[compat]
+ArgParse = "1.2.0"
+DataLinter = "0.1.0"
+DelimitedFiles = "1.9.1"
+HTTP = "1.10.17"
+JSON = "0.21.4"
+Logging = "1.11.0"
+Pkg = "1.11.0"
+Sockets = "1.11.0"

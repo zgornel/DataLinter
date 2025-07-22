@@ -1,9 +1,9 @@
-module DataLinterServer
+module datalinterserver
 
 using Pkg
-Pkg.activate(joinpath(dirname(@__FILE__), ".."))  # activate root folder
-Pkg.instantiate()
-#using Serialization
+project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:end-4]...))
+Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
+
 using Logging
 using Sockets
 using HTTP

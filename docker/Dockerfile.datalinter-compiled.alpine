@@ -1,5 +1,5 @@
 # Alpine Linux based commands
-FROM alpine:3.20.0
+FROM alpine:3.22.0
 RUN apk add --update --no-cache jq curl tar gzip make
 
 # make directories
