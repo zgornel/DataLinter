@@ -1,4 +1,4 @@
-module DataLintingServer
+module DataLinterServer
 
 using Pkg
 Pkg.activate(joinpath(dirname(@__FILE__), ".."))  # activate root folder
@@ -30,8 +30,12 @@ function get_server_commandline_arguments(args::Vector{String})
         "--http-ip", "-i"
             help = "HTTP IP address"
             default = "127.0.0.1"
-        "--model-path"
-            help = "Path for the model(s)"
+        "--config-path"
+            help = "Path for the configuration file"
+            arg_type = String
+            default = ""
+        "--kb-path"
+            help = "Path for the KB file"
             arg_type = String
             default = ""
         "--log-level"
@@ -71,20 +75,23 @@ function real_main()
     # Get IP, port, directory
     http_ip = args["http-ip"]
     http_port = args["http-port"]
-
-    model_path = args["model-path"]
-    if isempty(model_path) || !ispath(model_path) || !isfile(model_path)
-        @info "Using in-memory linters (model path is missing or wrong)"
+    config_path = args["config-path"]
+    if isempty(config_path) || !isfile(config_path)
+        @warn "Config file not correctly specified, defaults will be used."
+    end
+    kb_path = args["kb-path"]
+    if isempty(kb_path) || !isfile(kb_path)
+        @warn "KB file not correctly specified, defaults will be used."
     end
 
     # Start I/O server(s) #
     # ################### #
-    linting_server(http_ip, http_port; model_path=model_path)
+    linting_server(http_ip, http_port; config_path=config_path, kb_path=kb_path)
     return 0
 end
 
 
-function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; model_path="")
+function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; config_path="", kb_path="")
     #Checks
     if port <= 0 || port == nothing
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
@@ -104,7 +111,7 @@ function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; model_path="")
     HTTP.register!(ROUTER, "GET", "/*", noop_req_handler)
     HTTP.register!(ROUTER, "GET", "/api/kill", kill_req_handler)
     HTTP.register!(ROUTER, "POST", "/*", noop_req_handler)
-    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(model_path))
+    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(config_path, kb_path))
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
@@ -145,40 +152,44 @@ kill_req_handler(req::HTTP.Request) = begin
 end
 
 
-linting_handler_wrapper(model_path) = (req::HTTP.Request)->begin
+linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request)->begin
     @debug "HTTP request $(req.target) received."
-    # Process HTTP linting request
     _request = JSON.parse(IOBuffer(HTTP.payload(req)))
-    model = nothing  # by default, use in-memory
-    model = if !isempty(model_path)
-        open(model_path) do io
-            try
-                deserialize(io)
-            catch e
-                @warn "Model deserialization error: $e"
+    config = if !isempty(config_path)
+                try
+                    DataLinter.LinterCore.load_config(config_path)
+                catch e
+                    @warn "Error loading the config @$config_path\n$e"
+                    nothing
+                end
             end
-        end
-    end
-    model !== nothing && @debug "Model loaded @$_model_path"
-
+    config !== nothing && @debug "config loaded @$config_path"
+    kb = if !isempty(kb_path)
+                try
+                    DataLinter.kb_load(kb_path)
+                catch e
+                    @warn "Error loading the KB @$kb_path\n$e"
+                    nothing
+                end
+            end
+    kb !== nothing && @debug "KB loaded @$kb_path"
     #TODO: Handle errors here
     ctx = _request["linter_input"]["context"]
-    data = ctx["data"]
-    for dv in data
+    _data = ctx["data"]  # data is a Dict
+    for (_, dv) in _data
         dv[isnothing.(dv)] .= missing
     end
+    data = Dict(Symbol(k)=>v for (k,v) in _data)
     code = ctx["code"]
-    kbpath = expanduser(_request["linter_input"]["kbpath"])
-    kb = DataLinter.kb_load(kbpath)
     show_passing = get(_request["linter_input"]["options"], "show_passing", false)
     show_stats = get(_request["linter_input"]["options"], "show_stats", false)
     show_na = get(_request["linter_input"]["options"], "show_stats", false)
     try
-        # TODO: Integrate with online_linting_workflow function (src/workflows.jl)
         buffer = IOBuffer();
         ctx_code = DataLinter.build_data_context(data, code)
-        lintout = DataLinter.lint(ctx_code, kb);
+        lintout = DataLinter.lint(ctx_code, kb; config=config);
         process_output(lintout; buffer, show_passing, show_stats, show_na)
+        score = DataLinter.OutputInterface.score(lintout; normalize=true)
         string_buf = read(seekstart(buffer), String)
         return JSON.json("linting_output" => string_buf)
     catch e
@@ -189,12 +200,10 @@ end
 
 
 ##############
-# Run client #
+# Run server #
 ##############
 if abspath(PROGRAM_FILE) == @__FILE__
     real_main()
 end
 
-
 end  # module
-

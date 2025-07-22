@@ -18,9 +18,7 @@ code_path = joinpath(PROJECT_PATH, "data", "r_snippet.r")
 config_imbalanced = joinpath(PROJECT_PATH, "config", "r_glmmTMB_imbalanced_data.toml")
 config = DataLinter.LinterCore.load_config(config_imbalanced)
 
-
-_ctx = DataLinter.build_data_context(filepath)
-ctx = DataLinter.DataInterface.build_data_context(_ctx.data, read(code_path, String))
+ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, String))
 
 @time out=DataLinter.lint(ctx, kb; config=config);
 DataLinter.process_output(out; show_stats=true)
