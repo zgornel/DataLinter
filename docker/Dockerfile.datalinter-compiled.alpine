@@ -1,6 +1,6 @@
 # Alpine Linux based commands
 FROM alpine:3.22.0
-RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter
+RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs
 RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
 # make directories
@@ -16,6 +16,8 @@ RUN mkdir -p /_data
 # Copy binaries
 WORKDIR /
 COPY ./build/datalinter /datalinter
+COPY ./build/datalinterserver /datalinterserver
+
 COPY ./workload /datalinter/workload
 COPY ./knowledge /datalinter/knowledge
 COPY ./config /datalinter/config
