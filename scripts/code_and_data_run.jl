@@ -20,6 +20,6 @@ config = DataLinter.LinterCore.load_config(config_imbalanced)
 
 ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, String))
 
-@time out=DataLinter.lint(ctx, kb; config=config);
-DataLinter.process_output(out; show_stats=true)
-@info "Score: $(DataLinter.OutputInterface.score(out; normalize=true))"
+@time out = DataLinter.lint(ctx, kb; config = config);
+DataLinter.process_output(out; show_stats = true)
+@info "Score: $(DataLinter.OutputInterface.score(out; normalize = true))"

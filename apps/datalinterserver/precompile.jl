@@ -14,23 +14,29 @@ PORT = 10_000
 @async datalinterserver.linting_server(IP, PORT; config_path)
 
 # Client part
-_data, _header = readdlm(data_path, ',', header=true)
-data = Dict(h=>col for (h,col) in zip(_header, collect(eachcol(_data))))
+_data, _header = readdlm(data_path, ',', header = true)
+data = Dict(h => col for (h, col) in zip(_header, collect(eachcol(_data))))
 
-linter_input = Dict("context" => Dict("data"=>data,
-                                      "code"=>read(code_path, String)),
-                    "options" =>Dict("show_stats"=>true,
-                                     "show_passing"=>false,
-                                     "show_na"=>false))
-request = Dict("linter_input"=>linter_input)
+linter_input = Dict(
+    "context" => Dict(
+        "data" => data,
+        "code" => read(code_path, String)
+    ),
+    "options" => Dict(
+        "show_stats" => true,
+        "show_passing" => false,
+        "show_na" => false
+    )
+)
+request = Dict("linter_input" => linter_input)
 
 # Send to server
 reply = try
     HTTP.post("http://$IP:$PORT/api/lint", Dict(), JSON.json(request))
-    catch e
-        @warn "Something went wrong with request processing $e"
-        nothing
-    end
+catch e
+    @warn "Something went wrong with request processing $e"
+    nothing
+end
 @show reply
 if reply !== nothing
     output = JSON.parse(IOBuffer(reply.body))

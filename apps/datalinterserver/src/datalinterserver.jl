@@ -1,7 +1,7 @@
 module datalinterserver
 
 using Pkg
-project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:end-4]...))
+project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:(end - 4)]...))
 Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
 
 using Logging
@@ -21,28 +21,28 @@ global_logger(ConsoleLogger(stdout, LOG_LEVEL))
 
 
 function get_server_commandline_arguments(args::Vector{String})
-	s = ArgParseSettings()
-	@add_arg_table! s begin
+    s = ArgParseSettings()
+    @add_arg_table! s begin
         "--http-port", "-p"
-            help = "HTTP port"
-            arg_type = Int
-            default = SERVER_HTTP_PORT
+        help = "HTTP port"
+        arg_type = Int
+        default = SERVER_HTTP_PORT
         "--http-ip", "-i"
-            help = "HTTP IP address"
-            default = "127.0.0.1"
+        help = "HTTP IP address"
+        default = "127.0.0.1"
         "--config-path"
-            help = "Path for the configuration file"
-            arg_type = String
-            default = ""
+        help = "Path for the configuration file"
+        arg_type = String
+        default = ""
         "--kb-path"
-            help = "Path for the KB file"
-            arg_type = String
-            default = ""
+        help = "Path for the KB file"
+        arg_type = String
+        default = ""
         "--log-level"
-            help = "logging level"
-            default = "debug"
+        help = "logging level"
+        default = "debug"
     end
-	return parse_args(args,s)
+    return parse_args(args, s)
 end
 
 
@@ -65,10 +65,12 @@ function real_main()
     args = get_server_commandline_arguments(ARGS)
 
     # Logging
-    log_levels = Dict("debug" => Logging.Debug,
-                      "info" => Logging.Info,
-                      "warning" => Logging.Warn,
-                      "error" => Logging.Error)
+    log_levels = Dict(
+        "debug" => Logging.Debug,
+        "info" => Logging.Info,
+        "warning" => Logging.Warn,
+        "error" => Logging.Error
+    )
     logger = ConsoleLogger(stdout, get(log_levels, lowercase(args["log-level"]), Logging.Info))
     global_logger(logger)
 
@@ -86,12 +88,12 @@ function real_main()
 
     # Start I/O server(s) #
     # ################### #
-    linting_server(http_ip, http_port; config_path=config_path, kb_path=kb_path)
+    linting_server(http_ip, http_port; config_path = config_path, kb_path = kb_path)
     return 0
 end
 
 
-function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; config_path="", kb_path="")
+function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config_path = "", kb_path = "")
     #Checks
     if port <= 0 || port == nothing
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
@@ -115,7 +117,7 @@ function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; config_path="",
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    HTTP.serve(Sockets.IPv4(addr), port, readtimeout=0) do http_req::HTTP.Request
+    return HTTP.serve(Sockets.IPv4(addr), port, readtimeout = 0) do http_req::HTTP.Request
         handler_output = try
             ROUTER(http_req)
         catch e
@@ -125,15 +127,15 @@ function linting_server(addr="127.0.0.1", port=SERVER_HTTP_PORT; config_path="",
         #TODO(Corneliu): Differentiate between types of errors
         if handler_output === nothing
             # An unsupported endpoint was called
-            return HTTP.Response(501, ["Access-Control-Allow-Origin"=>"*", "Status"=>"OK"], body="")
+            return HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
         elseif handler_output isa String
             # All OK, send request to search server and get response
-            return HTTP.Response(200, ["Access-Control-Allow-Origin"=>"*", "Status"=>"OK"], body=handler_output)
+            return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = handler_output)
         elseif handler_output isa Int
             _status = ifelse(handler_output == 0, "OK", "ERROR")
-            return HTTP.Response(200, ["Access-Control-Allow-Origin"=>"*", "Status"=>_status], body="")
+            return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => _status], body = "")
         else
-            return HTTP.Response(400, ["Access-Control-Allow-Origin"=>"*"], body="")  # failsafe (not used)
+            return HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")  # failsafe (not used)
         end
     end
 end
@@ -152,26 +154,26 @@ kill_req_handler(req::HTTP.Request) = begin
 end
 
 
-linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request)->begin
+linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
     @debug "HTTP request $(req.target) received."
     _request = JSON.parse(IOBuffer(HTTP.payload(req)))
     config = if !isempty(config_path)
-                try
-                    DataLinter.LinterCore.load_config(config_path)
-                catch e
-                    @warn "Error loading the config @$config_path\n$e"
-                    nothing
-                end
-            end
+        try
+            DataLinter.LinterCore.load_config(config_path)
+        catch e
+            @warn "Error loading the config @$config_path\n$e"
+            nothing
+        end
+    end
     config !== nothing && @debug "config loaded @$config_path"
     kb = if !isempty(kb_path)
-                try
-                    DataLinter.kb_load(kb_path)
-                catch e
-                    @warn "Error loading the KB @$kb_path\n$e"
-                    nothing
-                end
-            end
+        try
+            DataLinter.kb_load(kb_path)
+        catch e
+            @warn "Error loading the KB @$kb_path\n$e"
+            nothing
+        end
+    end
     kb !== nothing && @debug "KB loaded @$kb_path"
     #TODO: Handle errors here
     ctx = _request["linter_input"]["context"]
@@ -179,17 +181,17 @@ linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request)->begin
     for (_, dv) in _data
         dv[isnothing.(dv)] .= missing
     end
-    data = Dict(Symbol(k)=>v for (k,v) in _data)
+    data = Dict(Symbol(k) => v for (k, v) in _data)
     code = ctx["code"]
     show_passing = get(_request["linter_input"]["options"], "show_passing", false)
     show_stats = get(_request["linter_input"]["options"], "show_stats", false)
     show_na = get(_request["linter_input"]["options"], "show_stats", false)
     try
-        buffer = IOBuffer();
+        buffer = IOBuffer()
         ctx_code = DataLinter.build_data_context(data, code)
-        lintout = DataLinter.lint(ctx_code, kb; config=config);
+        lintout = DataLinter.lint(ctx_code, kb; config = config)
         process_output(lintout; buffer, show_passing, show_stats, show_na)
-        score = DataLinter.OutputInterface.score(lintout; normalize=true)
+        score = DataLinter.OutputInterface.score(lintout; normalize = true)
         string_buf = read(seekstart(buffer), String)
         return JSON.json("linting_output" => string_buf)
     catch e

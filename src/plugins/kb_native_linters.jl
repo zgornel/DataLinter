@@ -13,15 +13,15 @@ ListEltype = Union{Any, Vector{Any}}
 
 
 check_correctness(check_against) =
-    (result)->begin
-        if result === nothing
-            return nothing
-        elseif result==check_against
-            return true
-        else
-            return false
-        end
+    (result) -> begin
+    if result === nothing
+        return nothing
+    elseif result == check_against
+        return true
+    else
+        return false
     end
+end
 
 
 is_int_as_float(::Type{<:StringEltype}, args...; kwargs...) = nothing
@@ -35,8 +35,8 @@ is_datetime_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
 is_datetime_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
 is_datetime_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-const DATETIME_MATCH_PERC=0.9
-function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc=DATETIME_MATCH_PERC)
+const DATETIME_MATCH_PERC = 0.9
+function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc = DATETIME_MATCH_PERC)
     DATETIME_REGEXES = [
         # RFC 2822 Date Format Regular Expression from https://regexpattern.com/rfc-2822-date/
         r"^(?:(Sun|Mon|Tue|Wed|Thu|Fri|Sat),\s+)?(0[1-9]|[1-2]?[0-9]|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(19[0-9]{2}|[2-9][0-9]{3})\s+(2[0-3]|[0-1][0-9]):([0-5][0-9])(?::(60|[0-5][0-9]))?\s+([-\+][0-9]{2}[0-5][0-9]|(?:UT|GMT|(?:E|C|M|P)(?:ST|DT)|[A-IK-Z]))(\s+|\(([^\(\)]+|\\\(|\\\))*\))*$",
@@ -76,14 +76,14 @@ is_tokenizable_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
 const TOKENIZABLE_REGEXES = [r"\s+"]
 const MIN_TOKENS = 2
-function is_tokenizable_string(::Type{<:StringEltype}, v, vm, name, args...; regexes=TOKENIZABLE_REGEXES, min_tokens=MIN_TOKENS)
+function is_tokenizable_string(::Type{<:StringEltype}, v, vm, name, args...; regexes = TOKENIZABLE_REGEXES, min_tokens = MIN_TOKENS)
     _vm = collect(vm)
     matches = Dict{Int, Int}()
     for (i, rdt) in enumerate(regexes)
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > min_tokens-1 for count_matches in values(matches))
+    return any(count_matches > min_tokens - 1 for count_matches in values(matches))
 end
 
 
@@ -91,11 +91,11 @@ is_number_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
 is_number_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
 is_number_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
-const NUMBER_AS_STRING_MATCH_PERC=0.9
-function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc=NUMBER_AS_STRING_MATCH_PERC)
+const NUMBER_AS_STRING_MATCH_PERC = 0.9
+function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc = NUMBER_AS_STRING_MATCH_PERC)
     NUMBER_REGEXES = [
-         # Regex from https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#12643073
-        r"^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
+        # Regex from https://stackoverflow.com/questions/12643009/regular-expression-for-floating-point-numbers#12643073
+        r"^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$",
     ]
     _vm = collect(vm)
     matches = Dict{Int, Int}()
@@ -127,9 +127,11 @@ is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = nothing
 
 const NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
 const ZIPCODES_MATCH_PERC = 0.99
-function is_zipcode(typ::Type{T}, v, vm, name, args...;
-                    match_perc=ZIPCODES_MATCH_PERC,
-                    zipcodes=NUM_ZIPCODES) where T<:Union{<:StringEltype, <:NumericEltype}
+function is_zipcode(
+        typ::Type{T}, v, vm, name, args...;
+        match_perc = ZIPCODES_MATCH_PERC,
+        zipcodes = NUM_ZIPCODES
+    ) where {T <: Union{<:StringEltype, <:NumericEltype}}
     zipcodes_strings = string.(zipcodes)
     _count_in_zipcode(::Type{<:NumericEltype}, vm) = sum(z in zipcodes for z in vm)
     _count_in_zipcode(::Type{<:StringEltype}, vm) = sum(z in zipcodes_strings for z in vm)
@@ -139,7 +141,7 @@ end
 
 function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...; kwargs...)
     _rows = Tables.rows(tblref[])
-    length(unique(hash(r) for r in _rows)) != length(_rows)
+    return length(unique(hash(r) for r in _rows)) != length(_rows)
 end
 
 
@@ -154,54 +156,58 @@ to Tukey (1977; John W, Exploratory Data Analysis, Addison-Wesley, ISBN
 0-201-07616-0, OCLC 3058187).  Larger values of `k` consider fewer elements
 to be anomalous.
 """
-function tukey_fences(data; k=1.5)
-    q1,q3 = quantile(data, [0.25,0.75])
-    iqr = q3-q1
-    fence = k*iqr
-    q1-fence, q3+fence
+function tukey_fences(data; k = 1.5)
+    q1, q3 = quantile(data, [0.25, 0.75])
+    iqr = q3 - q1
+    fence = k * iqr
+    return q1 - fence, q3 + fence
 end
 
-const TUKEY_FENCES_K=1.5
-function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; tukey_fences_k=TUKEY_FENCES_K)
-	minf, maxf = tukey_fences(vm; k=tukey_fences_k)
-	return any(x->((x < minf) | (x > maxf)), vm)
+const TUKEY_FENCES_K = 1.5
+function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; tukey_fences_k = TUKEY_FENCES_K)
+    minf, maxf = tukey_fences(vm; k = tukey_fences_k)
+    return any(x -> ((x < minf) | (x > maxf)), vm)
 end
 
 
-const ENUM_DETECTOR_DISTINCT_RATIO=0.001
-const ENUM_DETECTOR_MAX_LIMIT=5
-function enum_detector(::T, v, vm, name, args...;
-                       distinct_ratio=ENUM_DETECTOR_DISTINCT_RATIO,
-                       distinct_max_limit=ENUM_DETECTOR_MAX_LIMIT) where T
+const ENUM_DETECTOR_DISTINCT_RATIO = 0.001
+const ENUM_DETECTOR_MAX_LIMIT = 5
+function enum_detector(
+        ::T, v, vm, name, args...;
+        distinct_ratio = ENUM_DETECTOR_DISTINCT_RATIO,
+        distinct_max_limit = ENUM_DETECTOR_MAX_LIMIT
+    ) where {T}
     # if unique values < distinct_ratio % of the total number => we have an enum
     n_uniques = length(unique(vm))
     n = length(collect(vm))
-    return (n_uniques <= floor(distinct_ratio * n) + 1 ) | (n_uniques < distinct_max_limit)
+    return (n_uniques <= floor(distinct_ratio * n) + 1) | (n_uniques < distinct_max_limit)
 end
 
 
 has_uncommon_sings(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = nothing
-has_uncommon_signs(::T, args...; kwargs...) where T= nothing
+has_uncommon_signs(::T, args...; kwargs...) where {T} = nothing
 
 #TODO: See if it makes sense to make this configurable through kwargs
 function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
     sgns = sign.(vm)
-    zs = sum(sgns.== 0)
-    negs = sum(sgns.< 0)
-    poss = sum(sgns.> 0)
-    nans = sum(sgns.== NaN)
+    zs = sum(sgns .== 0)
+    negs = sum(sgns .< 0)
+    poss = sum(sgns .> 0)
+    nans = sum(sgns .== NaN)
     # dataset dimension range => max number of positive, negative, zeros, NaNs
     # that may count as uncommon signs given the dimension of the data
     # i.e. if the dataset has 100 samples one '-', '+' or 'NaN' would trigger the linter
-    ranges = [1:1000 => 2,
-              1001=>100_000 => 5,
-              100_000:1_000_000 => 10];
+    ranges = [
+        1:1000 => 2,
+        1001 => 100_000 => 5,
+        100_000:1_000_000 => 10,
+    ]
     r_outlier = try
-            first(v for (k,v) in ranges if length(v) in k)
-        catch # bounds error, many samples
-            20
-        end
+        first(v for (k, v) in ranges if length(v) in k)
+    catch # bounds error, many samples
+        20
+    end
     return any(cnt in 1:r_outlier for cnt in (zs, negs, poss, nans))
 end
 
@@ -209,13 +215,15 @@ end
 has_long_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_long_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = nothing
 
-const LTD_DROP_PROPORTION=0.001
-const LTD_ZSCORE_MULTIPLIER=1.0
-function has_long_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args...;
-                                      drop_proportion=LTD_DROP_PROPORTION,
-                                      zscore_multiplier=LTD_ZSCORE_MULTIPLIER)
+const LTD_DROP_PROPORTION = 0.001
+const LTD_ZSCORE_MULTIPLIER = 1.0
+function has_long_tailed_distribution(
+        ::Type{<:NumericEltype}, v, vm, name, args...;
+        drop_proportion = LTD_DROP_PROPORTION,
+        zscore_multiplier = LTD_ZSCORE_MULTIPLIER
+    )
     v = collect(vm)
-    vt = trim(v, prop=drop_proportion)
+    vt = trim(v, prop = drop_proportion)
     μ, σ = mean_and_std(vt)
     zs = abs.(zscore(v, μ, σ))
     n_outliers = sum(zs .>= zscore_multiplier * mean(zs))
@@ -223,7 +231,7 @@ function has_long_tailed_distribution(::Type{<:NumericEltype}, v, vm, name, args
 end
 
 
-function has_circular_domain(::T, v, vm, name, args...; kwargs...) where T
+function has_circular_domain(::T, v, vm, name, args...; kwargs...) where {T}
     # This one looks only at column name. Courtesy of:
     # `https://github.com/brain-research/data-linter/blob/master/linters.py#L966C3-L973C1`
     CIRCULAR_NAME_REGEXES = [
@@ -231,7 +239,8 @@ function has_circular_domain(::T, v, vm, name, args...; kwargs...) where T
         r"(month|week|day|time|hour|min(ute)?|sec(ond)?)[\W_]?o[f\W_]",                 # x of y
         r"^(week|day|hour|month|(milli|micro)?sec((ond)?s?)|minutes?)$",                # times
         r"([\W_]|\b)(lat|lon)([\W_]|\b|\w*?itude)",                                     # latlon
-        r"([\W_]|\b)angle([\W_]|\b)", r"heading", r"rotation", r"dir([\w]*|ection)"]    # directions
+        r"([\W_]|\b)angle([\W_]|\b)", r"heading", r"rotation", r"dir([\w]*|ection)",
+    ]    # directions
     return any(!isnothing(match(re, string(name))) for re in CIRCULAR_NAME_REGEXES)
 end
 
@@ -252,12 +261,12 @@ end
 
 
 const MISSING_VALUES_THRESHOLD = 0.9
-function has_many_missing_values(::T, v, vm, name, args...; threshold=MISSING_VALUES_THRESHOLD) where T
+function has_many_missing_values(::T, v, vm, name, args...; threshold = MISSING_VALUES_THRESHOLD) where {T}
     n_missings = sum(ismissing.(v))
     n_nothings = sum(isnothing.(v))
     n = length(v)
     return (n_missings >= threshold * n) | (n_nothings >= threshold * n) |
-           (n_missings + n_nothings >= threshold * n)
+        (n_missings + n_nothings >= threshold * n)
 end
 
 
@@ -267,10 +276,12 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 
 const PERC_MINORITY_CLASS = 0.01
 
-function is_imbalanced_target_variable(tblref::Base.RefValue{<:Tables.Columns},
-                                       linting_ctx,
-                                       args...;
-                                       threshold=PERC_MINORITY_CLASS)
+function is_imbalanced_target_variable(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        threshold = PERC_MINORITY_CLASS
+    )
     try
         col = linting_ctx.target_variable
         _process_col(col::Number) = Int(col)
@@ -278,7 +289,7 @@ function is_imbalanced_target_variable(tblref::Base.RefValue{<:Tables.Columns},
         tc = getindex(tblref[], _process_col(col))
         n = length(tc)
         for (val, cnt) in countmap(tc)
-           cnt/n < threshold && return true
+            cnt / n < threshold && return true
         end
     catch
         @debug "is_imbalanced_target_variable: Failed\n"
@@ -293,233 +304,260 @@ is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = nothin
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
 const GOOGLE_LINTERS = [
     # 1. DateTime wrongly encoded as string
-    (name = :datetime_as_string,
-     description = """ Tests that the values string variable could be Date/DateTime(s) """,
-     f = is_datetime_as_string,
-     failure_message = name->"most of the string values of '$name' can be converted to times/dates",
-     correct_message = name->"the string values of '$name' generally cannot be converted to times/dates",
-     warn_level = "important",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :datetime_as_string,
+        description = """ Tests that the values string variable could be Date/DateTime(s) """,
+        f = is_datetime_as_string,
+        failure_message = name -> "most of the string values of '$name' can be converted to times/dates",
+        correct_message = name -> "the string values of '$name' generally cannot be converted to times/dates",
+        warn_level = "important",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 2. Tokenizable string i.e. too long, with spaces
-    (name = :tokenizable_string,
-     description = """ Tests if the values of the string variable are tokenizable i.e. contain spaces """,
-     f = is_tokenizable_string,
-     failure_message = name->"the values of '$name' could be tokenizable i.e. contain spaces",
-     correct_message = name->"the values of '$name' are not tokenizable i.e. no spaces",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :tokenizable_string,
+        description = """ Tests if the values of the string variable are tokenizable i.e. contain spaces """,
+        f = is_tokenizable_string,
+        failure_message = name -> "the values of '$name' could be tokenizable i.e. contain spaces",
+        correct_message = name -> "the values of '$name' are not tokenizable i.e. no spaces",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 3. Number wrongly encoded as string
-    (name = :number_as_string,
-     description = """ Tests if the values of the string variable could be parsed as numbers """,
-     f = is_number_as_string,
-     failure_message = name->"most of the string values of '$name' can be converted to numbers",
-     correct_message = name->"the string values of '$name' generally cannot be converted to numbers",
-     warn_level = "important",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :number_as_string,
+        description = """ Tests if the values of the string variable could be parsed as numbers """,
+        f = is_number_as_string,
+        failure_message = name -> "most of the string values of '$name' can be converted to numbers",
+        correct_message = name -> "the string values of '$name' generally cannot be converted to numbers",
+        warn_level = "important",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 4. Zipcode wrongly encoded as number (tip: use zipcode list)
-    (name = :zipcodes_as_values,
-     description = """ Tests if the values of the numerical variable could be zipcodes """,
-     f = is_zipcode,
-     failure_message = name->"many of the values of '$name' could be zipcodes",
-     correct_message = name->"many the values of '$name' don't look like zipcodes",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :zipcodes_as_values,
+        description = """ Tests if the values of the numerical variable could be zipcodes """,
+        f = is_zipcode,
+        failure_message = name -> "many of the values of '$name' could be zipcodes",
+        correct_message = name -> "many the values of '$name' don't look like zipcodes",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 5. Large outliers
-    (name = :large_outliers,
-     description = """ Tests that the values of a numerical variable do not contain large outliers """,
-     f = has_large_outliers,
-     failure_message = name->"the values of '$name' contain large outliers",
-     correct_message = name->"there do not seem to be large outliers in '$name'",
-     warn_level = "warning",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :large_outliers,
+        description = """ Tests that the values of a numerical variable do not contain large outliers """,
+        f = has_large_outliers,
+        failure_message = name -> "the values of '$name' contain large outliers",
+        correct_message = name -> "there do not seem to be large outliers in '$name'",
+        warn_level = "warning",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 6. Int-as-float wrong encoding
-    (name = :int_as_float,
-     description = """ Tests that no the values of a floating point variable can be converted to integers """,
-     f = is_int_as_float,
-     failure_message = name->"the values of '$name' are floating point but can be integers",
-     correct_message = name->"no int-as-float in '$name'",
-     warn_level = "warning",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :int_as_float,
+        description = """ Tests that no the values of a floating point variable can be converted to integers """,
+        f = is_int_as_float,
+        failure_message = name -> "the values of '$name' are floating point but can be integers",
+        correct_message = name -> "no int-as-float in '$name'",
+        warn_level = "warning",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 7. enum detector i.e. few distinct values, treat as categorical instead of whatever type
-    (name = :enum_detector,
-     description = """ Tests that a variable has few variables and could be an enum """,
-     f = enum_detector,
-     failure_message = name->"just a few distinct values in '$name', it could be an enum",
-     correct_message = name->"'$name' has quite a few values, unlikely to be an enum",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :enum_detector,
+        description = """ Tests that a variable has few variables and could be an enum """,
+        f = enum_detector,
+        failure_message = name -> "just a few distinct values in '$name', it could be an enum",
+        correct_message = name -> "'$name' has quite a few values, unlikely to be an enum",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
-     # 8. uncommon list length
-    (name = :uncommon_list_lengths,
-     description = """ Tests that the variable does not contain uncommon list lengths in its values """,
-     f = has_uncommon_list_lengths,
-     failure_message = name->"values in '$name' are lists inconsistent in length",
-     correct_message = name->"'$name' does not contain lists incosistent in length",
-     warn_level = "warning",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    # 8. uncommon list length
+    (
+        name = :uncommon_list_lengths,
+        description = """ Tests that the variable does not contain uncommon list lengths in its values """,
+        f = has_uncommon_list_lengths,
+        failure_message = name -> "values in '$name' are lists inconsistent in length",
+        correct_message = name -> "'$name' does not contain lists incosistent in length",
+        warn_level = "warning",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
-     # 9. duplicate examples (row based, not column based)
-    (name = :duplicate_examples,
-     description = """ Tests that the dataset does not contain duplicates """,
-     f = has_duplicates,
-     failure_message = name->"dataset contains duplicates",
-     correct_message = name->"the dataset does not contain duplicates",
-     warn_level = "important",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:dataset)
-     ),
+    # 9. duplicate examples (row based, not column based)
+    (
+        name = :duplicate_examples,
+        description = """ Tests that the dataset does not contain duplicates """,
+        f = has_duplicates,
+        failure_message = name -> "dataset contains duplicates",
+        correct_message = name -> "the dataset does not contain duplicates",
+        warn_level = "important",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :dataset),
+    ),
 
     # 10. empty examples
-    (name = :empty_example,
-     description = """ Tests that no example is completely empty """,
-     f = is_empty_example,
-     failure_message = index->"the example at '$index' looks empty",
-     correct_message = index->"the example at '$index' is not empty",
-     warn_level = "important",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:row)
-     ),
+    (
+        name = :empty_example,
+        description = """ Tests that no example is completely empty """,
+        f = is_empty_example,
+        failure_message = index -> "the example at '$index' looks empty",
+        correct_message = index -> "the example at '$index' is not empty",
+        warn_level = "important",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :row),
+    ),
 
     # 11. uncommon sign i.e. +/-/0/nan
-    (name = :uncommon_signs,
-     description = """ Tests for the existence of uncommon signs (+/-/NaN) in the variable """,
-     f = has_uncommon_signs,
-     failure_message = name->"uncommon signs (+/-/NaN/0) present in '$name'",
-     correct_message = name->"no uncommon signs (+/-/NaN/0) present in '$name'",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :uncommon_signs,
+        description = """ Tests for the existence of uncommon signs (+/-/NaN) in the variable """,
+        f = has_uncommon_signs,
+        failure_message = name -> "uncommon signs (+/-/NaN/0) present in '$name'",
+        correct_message = name -> "no uncommon signs (+/-/NaN/0) present in '$name'",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 12. tailed distribution i.e. extrema that affects the mean
-    (name = :long_tailed_distrib,
-     description = """ Tests if the distribution of the variable has long tails """,
-     f = has_long_tailed_distribution,
-     failure_message = name->"the distribution for '$name' has 'long tails'",
-     correct_message = name->"no 'long tails' in the distribution of '$name'",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :long_tailed_distrib,
+        description = """ Tests if the distribution of the variable has long tails """,
+        f = has_long_tailed_distribution,
+        failure_message = name -> "the distribution for '$name' has 'long tails'",
+        correct_message = name -> "no 'long tails' in the distribution of '$name'",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # 13. circular domain detector i.e. angles, hours, latitude/longitude
-    (name = :circular_domain,
-     description = """ Tests if the domain of the variable may be circular""",
-     f = has_circular_domain,
-     failure_message = name->"the name of '$name' indicates its values may have a circular domain",
-     correct_message = name->"the name of '$name' do not indicate its values having a circular domain",
-     warn_level = "info",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :circular_domain,
+        description = """ Tests if the domain of the variable may be circular""",
+        f = has_circular_domain,
+        failure_message = name -> "the name of '$name' indicates its values may have a circular domain",
+        correct_message = name -> "the name of '$name' do not indicate its values having a circular domain",
+        warn_level = "info",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 ]
 
 
 const EXPERIMENTAL_LINTERS = [
     # No missing values in the column
-    (name = :many_missing_values,
-     description = """ Tests that few missing values exist in variable """,
-     f = has_many_missing_values,
-     failure_message = name->"found many missing values in '$name'",
-     correct_message = name->"few or no missing values in '$name'",
-     warn_level = "experimental",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :many_missing_values,
+        description = """ Tests that few missing values exist in variable """,
+        f = has_many_missing_values,
+        failure_message = name -> "found many missing values in '$name'",
+        correct_message = name -> "few or no missing values in '$name'",
+        warn_level = "experimental",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # No negative values in the column
-    (name = :negative_values,
-     description = """ Tests that no negative values exist in variable """,
-     f = has_negative_values,
-     failure_message = name->"found values smaller than 0 in '$name'",
-     correct_message = name->"no values smaller than 0 in '$name'",
-     warn_level = "experimental",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:column)
-     ),
+    (
+        name = :negative_values,
+        description = """ Tests that no negative values exist in variable """,
+        f = has_negative_values,
+        failure_message = name -> "found values smaller than 0 in '$name'",
+        correct_message = name -> "no values smaller than 0 in '$name'",
+        warn_level = "experimental",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :column),
+    ),
 
     # Imbalanced data
-    (name = :imbalanced_target_variable,
-     description = """ Tests that data labels are balanced (no class less than θ%)""",
-     f = is_imbalanced_target_variable,
-     failure_message = name->"Imbalanced target column in '$name'",
-     correct_message = name->"Re-sample or add new samples on minority class(es) in '$name'",
-     warn_level = "experimental",
-     correct_if = check_correctness(false),
-     query = nothing,
-     programming_language = nothing,
-     requirements=Dict("iterable_type"=>:dataset, "linting_ctx"=>true)
-     ),
+    (
+        name = :imbalanced_target_variable,
+        description = """ Tests that data labels are balanced (no class less than θ%)""",
+        f = is_imbalanced_target_variable,
+        failure_message = name -> "Imbalanced target column in '$name'",
+        correct_message = name -> "Re-sample or add new samples on minority class(es) in '$name'",
+        warn_level = "experimental",
+        correct_if = check_correctness(false),
+        query = nothing,
+        programming_language = nothing,
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
 
     # Imbalanced target variable in data (R code, glmmTMB algorithm)
-    (name = :R_glmmTMB_target_variable,
-     description = """ Tests that data labels are balanced (no class less than θ%)""",
-     f = is_imbalanced_target_variable,
-     failure_message = name->"Imbalanced dependent variable in glmmTMB",
-     correct_message = name->"Re-sample or add new samples on minority class(es) in dependent variable",
-     warn_level = "experimental",
-     correct_if = check_correctness(false),
-     query =("*",
-               "glmmTMB",                      # -> glmmTMB
-               ("*",                          # -> (arguments...)
-                 ("*",
-                    ("*",
-                       "@target_variable",
-                       ("@dependent_variables",
-                         "*"))))),
-     programming_language = "r",
-     requirements=Dict("iterable_type"=>:dataset, "linting_ctx"=>true)
-     )
+    (
+        name = :R_glmmTMB_target_variable,
+        description = """ Tests that data labels are balanced (no class less than θ%)""",
+        f = is_imbalanced_target_variable,
+        failure_message = name -> "Imbalanced dependent variable in glmmTMB",
+        correct_message = name -> "Re-sample or add new samples on minority class(es) in dependent variable",
+        warn_level = "experimental",
+        correct_if = check_correctness(false),
+        query = (
+            "*",
+            "glmmTMB",                      # -> glmmTMB
+            (
+                "*",                          # -> (arguments...)
+                (
+                    "*",
+                    (
+                        "*",
+                        "@target_variable",
+                        (
+                            "@dependent_variables",
+                            "*",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
 ]

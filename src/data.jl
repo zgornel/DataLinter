@@ -2,7 +2,7 @@
 using Reexport
 using Tables
 import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator,
-                     get_context_code, columnname, columntype
+    get_context_code, columnname, columntype
 
 # Main data interface function that abstracts over data contexts
 export build_data_context
@@ -13,10 +13,10 @@ It contains a row iterator, a column iterator, metadata
 """
 build_data_iterator(tbl::Tables.Columns) = begin
     DataIterator(
-                 column_iterator=Tables.columns(tbl),
-                 row_iterator=Tables.rows(tbl),
-                 tblref=Ref(tbl)
-                )
+        column_iterator = Tables.columns(tbl),
+        row_iterator = Tables.rows(tbl),
+        tblref = Ref(tbl)
+    )
 end
 
 build_data_iterator(data::Dict{Symbol, <:AbstractVector}) = begin
@@ -24,14 +24,14 @@ build_data_iterator(data::Dict{Symbol, <:AbstractVector}) = begin
 end
 
 build_data_iterator(data::AbstractVector) = begin
-    build_data_iterator(Dict(Symbol("x$i")=>v for (i,v) in enumerate(data)))
+    build_data_iterator(Dict(Symbol("x$i") => v for (i, v) in enumerate(data)))
 end
 
 build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
 
 Base.show(io::IO, datait::DataIterator) = begin
     m, n = length(datait.row_iterator), length(datait.column_iterator)
-    mb_size = Base.summarysize(datait.tblref)/(1024^2)
+    mb_size = Base.summarysize(datait.tblref) / (1024^2)
     print(io, "DataIterator over $m samples, $n variables, $mb_size MB of data")
 end
 
@@ -47,22 +47,22 @@ end
 
 # Simple data structure and its methods
 Base.@kwdef struct SimpleDataContext <: AbstractDataContext
-    data=nothing
+    data = nothing
 end
 
 Base.show(io::IO, ctx::SimpleDataContext) = begin
-    mb_size = Base.summarysize(ctx.data)/(1024^2)
+    mb_size = Base.summarysize(ctx.data) / (1024^2)
     print(io, "SimpleDataContext $mb_size MB of data")
 end
 
 # Simple data+code structure and its methods
 Base.@kwdef struct SimpleCodeAndDataContext <: AbstractDataContext
-    data=nothing
-    code=nothing
+    data = nothing
+    code = nothing
 end
 
 Base.show(io::IO, ctx::SimpleCodeAndDataContext) = begin
-    mb_size = (Base.summarysize(ctx.data) + Base.summarysize(ctx.code))/(1024^2)
+    mb_size = (Base.summarysize(ctx.data) + Base.summarysize(ctx.code)) / (1024^2)
     print(io, "SimpleCodeAndDataContext $mb_size MB of code+data")
 end
 
@@ -93,7 +93,7 @@ julia> kb = DataLinter.kb_load("")
          ...
 ```
 """
-function build_data_context(;data=nothing, code=nothing)
+function build_data_context(; data = nothing, code = nothing)
     if isnothing(data)
         @error "Missing data"
     elseif isnothing(code)
@@ -104,8 +104,8 @@ function build_data_context(;data=nothing, code=nothing)
 end
 
 
-build_data_context(data) = SimpleDataContext(;data)
-build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
+build_data_context(data) = SimpleDataContext(; data)
+build_data_context(data, code) = SimpleCodeAndDataContext(; data, code)
 
 get_context_code(ctx::SimpleCodeAndDataContext) = ctx.code
 get_context_code(ctx::SimpleDataContext) = nothing

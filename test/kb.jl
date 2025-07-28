@@ -18,11 +18,11 @@
         end
 
         @testset "existing path" begin
-            data = Dict("a"=>1)
+            data = Dict("a" => 1)
             mktemp() do kbpath, io
                 TOML.print(io, data)
-                flush(io);
-                kb = kb_load(kbpath);
+                flush(io)
+                kb = kb_load(kbpath)
                 @test typeof(kb) <: KB.AbstractKnowledgeBase
                 @test kb isa DataLinter.KnowledgeBaseNative.KnowledgeBase
                 @test kb.data isa Dict
