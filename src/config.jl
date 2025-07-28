@@ -74,13 +74,13 @@ get_linter_kwargs(config::Dict, linter) = begin
 end
 
 
+const DEFAULT_EXPERIMENT_NAME = "Default experiment name"
 """
 Function that reads linter configuration parameters.
 """
 get_experiment_parameters(config::Nothing) = nothing  # if config is missing, broken, default parameters are kept
 get_experiment_parameters(config::Dict) = begin
     _ctx = get(config, "experiment", Dict())
-    DEFAULT_EXPERIMENT_NAME = "Default experiment name"
     return (name = get(_ctx, "name", DEFAULT_EXPERIMENT_NAME),
             analysis_type = get(_ctx, "analysis_type", nothing),
             analysis_subtype = get(_ctx, "analysis_subtype", nothing),
