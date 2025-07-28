@@ -1,30 +1,10 @@
 # Section `experiment` describes the type of experiment and
 # related information such as target variables, data variables, etc.
 [experiment]
-    name = "Data analysis"          # name of the experiment, NOT USED currently
+    name = "Imbalanced data analysis"          # name of the experiment, NOT USED currently
 
-    # The type of analysis:
-    # - can be "unsupervised", "supervised" or "unknown"/empty/missing (default)
-    analysis_type = ""
+    #target_variable = 4
 
-    # Analysis subtype specifcation:
-    # - if analysis_type="supervised": "classification", "regression"
-    # - if analysis_type="unsupervised": "transform", "feature-engineering"
-    # - if analysis_type="unknown" or missing: "unknown" (default)
-    analysis_subtype = "unknown"
-
-    # Target variable specification:
-    # - if an Integer, it refers to a specific column index
-    # - if a String, it refers to a specific column name
-    target_variable = ""
-
-    # Data variables specification:
-    # - if a list of Strings, it refers to specific column names
-    # - if a list of Integers, it refers to specific column indices
-    # - if missing, it refers to all columns, except `target_variable` if specified
-    data_variables = []
-
-    programming_language = ""
 
 # Section `linters` enables or disables linters. The format is:
 # ```
@@ -36,25 +16,27 @@
 # Linters are specified through their name and allowed values are those which can be converted to booleans i.e. `true`/`false` or `0`/`1`.
 [linters]
     # Google linters
-    datetime_as_string = true
-    tokenizable_string = true
-    number_as_string = true
-    zipcodes_as_values = true
-    large_outliers = true
-    int_as_float = true
-    enum_detector = true
+    datetime_as_string = false
+    tokenizable_string = false
+    number_as_string = false
+    zipcodes_as_values = false
+    large_outliers = false
+    int_as_float = false
+    enum_detector = false
     #enum_detector = false
-    uncommon_list_lengths = true
-    duplicate_examples = true
-    empty_example = true
+    uncommon_list_lengths = false
+    duplicate_examples = false
+    empty_example = false
     #empty_example = false
-    uncommon_signs = true
-    long_tailed_distrib = true
-    circular_domain = true
+    uncommon_signs = false
+    long_tailed_distrib = false
+    circular_domain = false
 
     # Additional linters
-    many_missing_values = true
-    negative_values = true
+    many_missing_values = false
+    negative_values = false
+    imbalanced_target_variable = true
+    R_glmmTMB_target_variable = true
 
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
@@ -107,7 +89,7 @@
 
     [parameters.long_tailed_distrib]
         drop_proportion=0.001  # how many samples % to remove from column before calculating zscores
-        zscore_multiplier=5.0  # multiplier for mean zscore; if there are any values with a zscore > mean zscore * multiplier, linter is triggered 
+        zscore_multiplier=5.0  # multiplier for mean zscore; if there are any values with a zscore > mean zscore * multiplier, linter is triggered
 
     [parameters.circular_domain]
         # function is `has_circular_domain`, does not use keyword arguments
@@ -118,3 +100,9 @@
 
     [parameters.negative_values]
         # function is `has_negative_values`, does not use keyword arguments
+
+    [parameters.imbalanced_target_variable]
+        threshold = 0.1
+
+    [parameters.R_glmmTMB_target_variable]
+        threshold = 0.1

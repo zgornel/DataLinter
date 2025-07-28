@@ -3,7 +3,6 @@
 	using Tables
 	import DataLinter.DataInterface as DI
 
-
 	@testset "SimpleDataContext" begin
 		@test DI.SimpleDataContext <: DataLinter.LinterCore.AbstractDataContext
 		@test DI.SimpleDataContext(1) isa DI.SimpleDataContext
@@ -39,4 +38,11 @@
 			@test context isa DI.SimpleDataContext
 		end
 	end
+
+	@testset "build_data_iterator" begin
+		tbl = Tables.Columns((a=[1, 2, 3], b=[3, 2, 1]))
+        dict_tbl = Dict(:a=>[1,2,3], :b=>[3,2,1])
+        @test DI.build_data_iterator(tbl) isa DataLinter.LinterCore.DataIterator
+        @test DI.build_data_iterator(dict_tbl) isa DataLinter.LinterCore.DataIterator
+    end
 end

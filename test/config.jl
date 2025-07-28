@@ -36,7 +36,10 @@ const SAMPLE_CONFIG = """
          failure_message = name->"",
          correct_message = name->"",
          warn_level = "info",
-         correct_if = x->x==true
+         correct_if = x->x==true,
+         query = nothing,
+         programming_language = nothing,
+         requirements=Dict{String, Any}()
          )
     @test Cfg.linter_is_enabled(nothing, linter)
     @test Cfg.linter_is_enabled(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == true # linter is NOT in config
@@ -49,4 +52,17 @@ const SAMPLE_CONFIG = """
     @test Cfg.get_linter_kwargs(nothing, linter) == ()
     @test Cfg.get_linter_kwargs(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == Pair{Symbol, Any}[:x=>2, :y=>"a"]
     @test Cfg.get_linter_kwargs(Dict(), linter) == []
+
+    # get_experiment_parameters
+    @test Cfg.get_experiment_parameters(nothing) == nothing
+    sample_config_ex_params = Cfg.get_experiment_parameters(TOML.parse(IOBuffer(SAMPLE_CONFIG)))
+    @test sample_config_ex_params isa NamedTuple
+    @test length(propertynames(sample_config_ex_params)) == 6
+    EX_PROPS = (:name, :analysis_type, :analysis_subtype,
+                :target_variable, :data_variables, :programming_language)
+    @test all(k in propertynames(sample_config_ex_params) for k in EX_PROPS)
+    @test sample_config_ex_params.name == Cfg.DEFAULT_EXPERIMENT_NAME
+    @test all(getproperty(sample_config_ex_params, k) === nothing
+                for k in propertynames(sample_config_ex_params)
+                if k!= :name)
 end

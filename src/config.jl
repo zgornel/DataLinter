@@ -1,11 +1,9 @@
 module Configuration
 
 using TOML
-import ..LinterCore: load_config, linter_is_enabled, get_linter_kwargs
-
-
+import ..LinterCore: load_config, linter_is_enabled, get_linter_kwargs,
+                     get_experiment_parameters
 const FALLBACK_CONFIG = nothing
-
 
 """
     load_config(configpath::AbstractString)
@@ -33,7 +31,7 @@ load_config(configpath::AbstractString) = begin
                 load_config(io)
             end
         catch e
-           @debug "Could not parse configuration @\"$configpath\", using default configuration.\n$e"
+           @warn "Could not parse configuration @\"$configpath\", using default configuration.\n"
            FALLBACK_CONFIG
         end
     return config
@@ -47,7 +45,7 @@ linter_is_enabled(config::Dict, linter) = begin
     value = try
             config["linters"][string(linter.name)] |> Bool
         catch e
-            @debug "Could not read config > [linters] > [$(linter.name)]. Linter will be enabled by default.\n$e"
+            @debug "Linter from KB, not found in config: [linters]->[$(linter.name)]. Linter will be enabled by default.\n$e"
             true
         end
     return value
@@ -62,7 +60,7 @@ get_linter_kwargs(config::Dict, linter) = begin
     cfg_params = try
                     ( Symbol(k)=>v for (k,v) in config["parameters"][string(linter.name)] )
                 catch e
-                    @debug "Could not read config > [parameters] > [$(linter.name)]. Linter will use default parameters.\n$e"
+                    @debug "Could not read linter parameters in config: [parameters]->[$(linter.name)]. Linter will use default parameters.\n$e"
                     ()
                 end
     f_kwargs = unique(v for v in vcat(Base.kwarg_decl.(methods(linter.f))...) if !in(v, SKIP_KWARGS)) # get kwargs of linter function
@@ -73,6 +71,38 @@ get_linter_kwargs(config::Dict, linter) = begin
         @debug "$(linter.name): [$(cfg_params_toomany...)] parameters from config could not be set"
     end
     return linter_kwargs
+end
+
+
+const DEFAULT_EXPERIMENT_NAME = "Default experiment name"
+"""
+Function that reads linter configuration parameters.
+"""
+get_experiment_parameters(config::Nothing) = nothing  # if config is missing, broken, default parameters are kept
+get_experiment_parameters(config::Dict) = begin
+    _ctx = get(config, "experiment", Dict())
+    return (name = get(_ctx, "name", DEFAULT_EXPERIMENT_NAME),
+            analysis_type = get(_ctx, "analysis_type", nothing),
+            analysis_subtype = get(_ctx, "analysis_subtype", nothing),
+            target_variable = get(_ctx, "target_variable", nothing),
+            data_variables = _parse_vector_values(get(_ctx, "data_variables", nothing)),
+            programming_language = get(_ctx, "programming_language", nothing))
+end
+
+# Some custom parsing of values for config fields
+_parse_vector_values(::Nothing) = nothing
+
+_parse_vector_values(_v::Vector{String}) = begin
+    try
+        [parse(Int, _vi) for _vi in _v]
+    catch
+        _v
+    end
+end
+
+_parse_vector_values(_v::AbstractVector) = begin
+    isempty(_v) && return Vector{Int}()
+    @error "Could not parse vector of values from configuration"
 end
 
 end  # module

@@ -1,22 +1,22 @@
 # Section `experiment` describes the type of experiment and
 # related information such as target variables, data variables, etc.
 [experiment]
-    name = "Data analysis"          # name of the experiment, NOT USED currently
+    name = "Imbalanced data analysis"          # name of the experiment, NOT USED currently
 
     # The type of analysis:
-    # - can be "unsupervised", "supervised" or "unknown"/empty/missing (default)
-    analysis_type = ""
+    # - can be "unsupervised", "supervised", "transform"
+    analysis_type = "supervised"
 
     # Analysis subtype specifcation:
     # - if analysis_type="supervised": "classification", "regression"
     # - if analysis_type="unsupervised": "transform", "feature-engineering"
-    # - if analysis_type="unknown" or missing: "unknown" (default)
-    analysis_subtype = "unknown"
+    # - if analysis_type is unknown, its value will be ignored
+    #analysis_subtype = "unknown"
 
     # Target variable specification:
     # - if an Integer, it refers to a specific column index
     # - if a String, it refers to a specific column name
-    target_variable = ""
+    target_variable = "col4"
 
     # Data variables specification:
     # - if a list of Strings, it refers to specific column names
@@ -55,6 +55,7 @@
     # Additional linters
     many_missing_values = true
     negative_values = true
+    imbalanced_target_variable = true
 
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
@@ -107,7 +108,7 @@
 
     [parameters.long_tailed_distrib]
         drop_proportion=0.001  # how many samples % to remove from column before calculating zscores
-        zscore_multiplier=5.0  # multiplier for mean zscore; if there are any values with a zscore > mean zscore * multiplier, linter is triggered 
+        zscore_multiplier=5.0  # multiplier for mean zscore; if there are any values with a zscore > mean zscore * multiplier, linter is triggered
 
     [parameters.circular_domain]
         # function is `has_circular_domain`, does not use keyword arguments
@@ -118,3 +119,6 @@
 
     [parameters.negative_values]
         # function is `has_negative_values`, does not use keyword arguments
+
+    [parameters.imbalanced_target_variable]
+        threshold = 0.1

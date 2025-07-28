@@ -83,6 +83,5 @@ module KnowledgeBaseNative
         end
         return [Linter(nt...) for nt in nts]
     end
-
 end  # module
 

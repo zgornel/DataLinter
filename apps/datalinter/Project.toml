@@ -8,3 +8,7 @@ ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 DataLinter = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
+ParSitter = "bdeffda0-9f75-4d6c-9dad-1bfd8db84b8f"
+
+[sources]
+ParSitter = {rev = "master", url = "https://github.com/zgornel/ParSitter"}

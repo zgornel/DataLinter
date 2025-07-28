@@ -1,7 +1,8 @@
 @reexport module DataInterface
 using Reexport
 using Tables
-import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator, context_code, columnname, columntype
+import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator,
+                     get_context_code, columnname, columntype
 
 # Main data interface function that abstracts over data contexts
 export build_data_context
@@ -18,8 +19,12 @@ build_data_iterator(tbl::Tables.Columns) = begin
                 )
 end
 
+build_data_iterator(data::Dict{Symbol, <:AbstractVector}) = begin
+    build_data_iterator(Tables.Columns(data))
+end
+
 build_data_iterator(data::AbstractVector) = begin
-    build_data_iterator(Tables.Columns(Dict(Symbol("x$i")=>v for (i,v) in enumerate(data))))
+    build_data_iterator(Dict(Symbol("x$i")=>v for (i,v) in enumerate(data)))
 end
 
 build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
@@ -102,7 +107,7 @@ end
 build_data_context(data) = SimpleDataContext(;data)
 build_data_context(data, code) = SimpleCodeAndDataContext(;data, code)
 
-context_code(ctx::SimpleCodeAndDataContext) = ctx.code
-context_code(ctx::SimpleDataContext) = nothing
+get_context_code(ctx::SimpleCodeAndDataContext) = ctx.code
+get_context_code(ctx::SimpleDataContext) = nothing
 
 end  # module
