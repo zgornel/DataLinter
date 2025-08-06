@@ -1,6 +1,6 @@
 using Pkg
 const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..")
-Pkg.activate(joinpath(PROJECT_PATH))  # we assume that this file lies in ./scripts
+#Pkg.activate(joinpath(PROJECT_PATH))  # we assume that this file lies in ./scripts
 using DelimitedFiles
 using HTTP
 using JSON
@@ -11,11 +11,13 @@ code_path = joinpath(PROJECT_PATH, "data", "r_snippet.r")
 
 _data, _header = readdlm(data_path, ',', header = true)
 data = Dict(h => col for (h, col) in zip(_header, collect(eachcol(_data))))
-
+_code = read(code_path, String)
+#@show _code
+#@show data
 linter_input = Dict(
     "context" => Dict(
         "data" => data,
-        "code" => read(code_path, String)
+        "code" => _code
     ),
     "options" => Dict(
         "show_stats" => true,
@@ -27,7 +29,7 @@ request = Dict("linter_input" => linter_input)
 
 # Send to server
 reply = try
-    HTTP.post("http://localhost:10000/api/lint", Dict(), JSON.json(request))
+    HTTP.post("http://0.0.0.0:10000/api/lint", Dict(), JSON.json(request))
 catch e
     @warn "Something went wrong with request processing $e"
     nothing
