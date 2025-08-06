@@ -1,6 +1,15 @@
 # Alpine Linux based commands
+
+# Example run of the datalinter server
+# `docker run -it --rm\
+#       -p 10000:10000\
+#       ghcr.io/zgornel/datalinter-compiled:latest\
+#           /datalinterserver/bin/datalinterserver\
+#               -i 0.0.0.0\
+#               --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
+#               --log-level debug`
 FROM alpine:3.22.0
-RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs
+RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
 RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
 # make directories
