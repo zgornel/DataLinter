@@ -34,8 +34,8 @@ catch e
     @warn "Something went wrong with request processing $e"
     nothing
 end
-@show reply
 if reply !== nothing
     output = JSON.parse(IOBuffer(reply.body))
-    @info output["linting_output"]
+    println("--- Linting output (HTTP Status: $(reply.status)):")
+    println(output["linting_output"])
 end
