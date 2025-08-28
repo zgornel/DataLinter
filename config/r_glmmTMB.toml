@@ -1,9 +1,9 @@
 # Section `experiment` describes the type of experiment and
 # related information such as target variables, data variables, etc.
 [experiment]
-    name = "Imbalanced data analysis"          # name of the experiment, NOT USED currently
+    name = "Online data analysis for glmmTMB"          # name of the experiment, NOT USED currently
 
-    target_variable = 4
+    #target_variable = 4
 
 
 # Section `linters` enables or disables linters. The format is:
@@ -35,7 +35,7 @@
     # Additional linters
     many_missing_values = false
     negative_values = false
-    imbalanced_target_variable = true
+    imbalanced_target_variable = false
     R_glmmTMB_target_variable = true
     R_glmmTMB_binomial_modelling = true
 

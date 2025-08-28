@@ -108,15 +108,24 @@ The server accepts HTTP requests with a specific JSON payload containing data or
 ```
 $ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
 ```
-Running the client script
+Running the client script with data and code arguments
 ```
-$ julia --project=@datalinter ./scripts/client_example.jl
+$ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./test/code/r_snippet_binomial.r
 ```
 outputs:
 ```
+--- Code:
+path <- "./data.csv"
+out1 <- loaded_data(path)
+out2 <- glmmTMB(col4 ~ col1 + col2 + col3,
+                data = out1,
+                family = binomial(link = "linear"))  # raises linter error
+
 --- Linting output (HTTP Status: 200):
-• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable in glmmTMB
-1 issue found from 2 linters applied (2 OK, 0 N/A) .
+• n/a           (imbalanced_target_variable)    dataset              linter not applicable (or failed) for 'dataset'
+• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
+• experimental  (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
+2 issues found from 3 linters applied (2 OK, 1 N/A) .
 ```
 
 ### Using the script
