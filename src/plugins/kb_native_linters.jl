@@ -278,6 +278,7 @@ const PERC_MINORITY_CLASS = 0.01
 
 __process_target_col(col::Number) = Int(col)
 __process_target_col(col::String) = Symbol(col)
+__process_target_col(::Nothing) = nothing
 
 function is_imbalanced_target_variable(
         tblref::Base.RefValue{<:Tables.Columns},
@@ -301,7 +302,7 @@ end
 
 is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = nothing
 
-const ACCEPTABLE_LINKS = ["logit", "probit", "log-log", "cloglog", "cauchit"]
+const ACCEPTABLE_LINK_VALUES = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
 function is_binomial_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.Columns},
