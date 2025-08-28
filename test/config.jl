@@ -38,6 +38,7 @@ const SAMPLE_CONFIG = """
         warn_level = "info",
         correct_if = x -> x == true,
         query = nothing,
+        query_match_type = nothing,
         programming_language = nothing,
         requirements = Dict{String, Any}()
     )
