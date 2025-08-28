@@ -7,12 +7,14 @@
         @test fieldnames(LC.Linter) == (
             :name, :description, :f, :failure_message,
             :correct_message, :warn_level, :correct_if,
-            :query, :programming_language, :requirements,
+            :query, :query_match_type,
+            :programming_language, :requirements,
         )
         @test fieldtypes(LC.Linter) == (
             Symbol, String, Function, Function,
             Function, String, Function,
-            Union{Nothing, Tuple}, Union{Nothing, String}, Dict{String},
+            Union{Nothing, Tuple}, Union{Nothing, Symbol},
+            Union{Nothing, String}, Dict{String},
         )
     end
     @testset "LintingContext struct" begin

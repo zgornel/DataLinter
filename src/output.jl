@@ -63,7 +63,7 @@ function process_output(
             if show_na
                 printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
                 printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "linter not applicable for '$(loc_name)'\n"; color, bold = true)
+                printstyled(buffer, "linter not applicable (or failed) for '$(loc_name)'\n"; color, bold = true)
             end
         end
     end

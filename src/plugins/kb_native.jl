@@ -65,22 +65,49 @@ function kb_query(kb::KnowledgeBase, query::String)
     return __query(kb.data, query)
 end
 
+
+_LINTERS = Dict(
+    "google" => [GOOGLE_LINTERS],
+    "experimental" => [EXPERIMENTAL_LINTERS],
+    "r" => [R_LINTERS],
+    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS])
+
 function build_linters(kb, ctx; linters = ["all"])
     #TODO: Implement query of the knowledge base
     #      based on the context provided i.e.
     #      use `kb_query` to get data, wrap it etc.
     #      and return it (to `LinterCore`)
     nts = []
-    if "all" in linters
-        nts = vcat(nts, GOOGLE_LINTERS, EXPERIMENTAL_LINTERS)
+    lnts = intersect(unique(linters), keys(_LINTERS))
+    if "all" in lnts
+        nts = vcat(_LINTERS["all"]...)
     else
-        if "google" in linters
-            nts = vcat(nts, GOOGLE_LINTERS)
-        end
-        if "experimental" in linters
-            nts = vcat(nts, EXPERIMENTAL_LINTERS)
+        for l in lnts
+            append!(nts, _LINTERS[l]...)
         end
     end
-    return [Linter(nt...) for nt in nts]
+    return [_namedtuple_to_linter(nt) for nt in nts]
 end
+
+function _namedtuple_to_linter(nt)
+    return Linter(
+            name = nt.name,
+            description = nt.description,
+            f = nt.f,
+            failure_message = nt.failure_message,
+            correct_message = nt.correct_message,
+            warn_level = nt.warn_level,
+            correct_if = nt.correct_if,
+            query = nt.query,
+            query_match_type = if isnothing(nt.query)
+                                    nothing
+                               elseif hasfield(typeof(nt), :query_match_type)
+                                    nt.query_match_type
+                               else
+                                    nothing
+                               end,
+            programming_language = nt.programming_language,
+            requirements = nt.requirements)
+end
+
 end  # module

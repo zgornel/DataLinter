@@ -31,7 +31,7 @@ function get_arguments(args::Vector{String})
         help = "logging level"
         default = "error"
         "--linters"
-        help = "linter groups to use. Avaliable: \"google\", \"experimental\", \"all\""
+        help = "linter groups to use. Avaliable: \"google\", \"experimental\", \"r\", \"all\""
         nargs = '*'
         default = ["all"]
         arg_type = String
