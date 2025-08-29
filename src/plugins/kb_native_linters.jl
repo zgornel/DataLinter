@@ -331,7 +331,6 @@ end
 is_binomial_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
 
 
-
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
 const GOOGLE_LINTERS = [
     # 1. DateTime wrongly encoded as string
@@ -613,30 +612,34 @@ const R_LINTERS = [
                     "*",                       # -> argument
                     (
                         "*",                    # -> binary_operator
-                         "@target_variable",
-                         (
-                         "@dependent_variables",
-                            "*"))),
-                   (
-                   "*",                       # -> family = binomial(link=...)
-                      "family",                # -> family
-                      (
-                      "*",                    # -> binomial(link=...)
-                         "binomial",           # -> binomial
-                         (
+                        "@target_variable",
+                        (
+                            "@dependent_variables",
+                            "*",
+                        ),
+                    ),
+                ),
+                (
+                    "*",                       # -> family = binomial(link=...)
+                    "family",                # -> family
+                    (
+                        "*",                    # -> binomial(link=...)
+                        "binomial",           # -> binomial
+                        (
                             "*",                 # -> argument
                             (
                                 "*",
-                                    "@arg_name",
-                                    (
+                                "@arg_name",
+                                (
                                     "*",
-                                        "@arg_value")
-                           )
-                         )
-                      )
-                   )
-                )
+                                    "@arg_value",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
+        ),
         query_match_type = :nonstrict,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),

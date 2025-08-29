@@ -70,7 +70,8 @@ _LINTERS = Dict(
     "google" => [GOOGLE_LINTERS],
     "experimental" => [EXPERIMENTAL_LINTERS],
     "r" => [R_LINTERS],
-    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS])
+    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS]
+)
 
 function build_linters(kb, ctx; linters = ["all"])
     #TODO: Implement query of the knowledge base
@@ -91,23 +92,24 @@ end
 
 function _namedtuple_to_linter(nt)
     return Linter(
-            name = nt.name,
-            description = nt.description,
-            f = nt.f,
-            failure_message = nt.failure_message,
-            correct_message = nt.correct_message,
-            warn_level = nt.warn_level,
-            correct_if = nt.correct_if,
-            query = nt.query,
-            query_match_type = if isnothing(nt.query)
-                                    nothing
-                               elseif hasfield(typeof(nt), :query_match_type)
-                                    nt.query_match_type
-                               else
-                                    nothing
-                               end,
-            programming_language = nt.programming_language,
-            requirements = nt.requirements)
+        name = nt.name,
+        description = nt.description,
+        f = nt.f,
+        failure_message = nt.failure_message,
+        correct_message = nt.correct_message,
+        warn_level = nt.warn_level,
+        correct_if = nt.correct_if,
+        query = nt.query,
+        query_match_type = if isnothing(nt.query)
+            nothing
+        elseif hasfield(typeof(nt), :query_match_type)
+            nt.query_match_type
+        else
+            nothing
+        end,
+        programming_language = nt.programming_language,
+        requirements = nt.requirements
+    )
 end
 
 end  # module
