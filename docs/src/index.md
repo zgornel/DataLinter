@@ -4,20 +4,20 @@ CurrentModule=DataLinter
 
 # Introduction
 
-DataLinter is a package for linting datasets. Currently, it is based almost entirely on [Google's data linter project](https://github.com/brain-research/data-linter). We aim for a redesign that aims at a richer and faster experience.
+DataLinter is a library for contextual linting of data and code. The main idea behind the linter is that by providing additional context, more complex issues relating to data and code quality can be detected as issues in data modelling can arise due to both data structure as well as algorithmic or parameter choices. 'Context' here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for or. Hence, the assumptions about what the data will be used for are implicit. Alternatively, one could provide, for example, the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language where the data is used. This provides a much higher degree of flexibility in the types of checks that can be implemented.
 
+DataLinter development started by rewriting [Google's data linter project](https://github.com/brain-research/data-linter) in the Julia language. We aim for a redesign that aims at a richer and faster experience.
 
 ## Installation
-
-Installation can be performed from either inside or outside Julia.
-
-### Docker image (recommended)
-```
-$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
-```
+There are several ways to install DataLinter: cloning the Github repository or pulling a Docker image from the [Github container registry](https://ghcr.io). Unless one wants to develop DataLinter, the Docker installation is recommended.
 
 ### Git cloning
 The `DataLinter` repository can be downloaded through git:
 ```
 $ git clone https://github.com/zgornel/DataLinter
+```
+
+### Docker image (recommended)
+```
+$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
