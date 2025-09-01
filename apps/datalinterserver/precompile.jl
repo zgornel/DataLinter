@@ -5,7 +5,7 @@ using JSON
 
 # Use <PROJECT_ROOT>/test/data/data.csv
 data_path = joinpath(dirname(@__FILE__), "..", "..", "test", "data", "imbalanced_data.csv")
-code_path = joinpath(dirname(@__FILE__), "..", "..", "test", "code", "r_snippet.r")
+code_path = joinpath(dirname(@__FILE__), "..", "..", "test", "code", "r_snippet_imbalanced.r")
 config_path = joinpath(dirname(@__FILE__), "..", "..", "config", "r_glmmTMB_imbalanced_data.toml")
 
 # Start server
