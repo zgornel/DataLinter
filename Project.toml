@@ -4,9 +4,12 @@ authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
 version = "0.1.0"
 
 [deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
 ParSitter = "bdeffda0-9f75-4d6c-9dad-1bfd8db84b8f"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
@@ -23,7 +26,10 @@ Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
 ParSitter = {rev = "master", url = "https://github.com/zgornel/ParSitter"}
 
 [compat]
+ArgParse = "1.2.0"
 Dates = "1.11.0"
+HTTP = "1.10.17"
+JSON = "0.21.4"
 ParSitter = "0.1.0"
 ProgressMeter = "1.10.2"
 REPL = "1.11.0"

@@ -2,7 +2,7 @@
 using Dates
 using StatsBase
 using Tables
-
+using ParSitter
 
 # Meta-types for varius column element types
 NumericEltype = Union{<:Number, Union{Missing, <:Number}}
@@ -276,6 +276,10 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 
 const PERC_MINORITY_CLASS = 0.01
 
+__process_target_col(col::Number) = Int(col)
+__process_target_col(col::String) = Symbol(col)
+__process_target_col(::Nothing) = nothing
+
 function is_imbalanced_target_variable(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
@@ -284,21 +288,47 @@ function is_imbalanced_target_variable(
     )
     try
         col = linting_ctx.target_variable
-        _process_col(col::Number) = Int(col)
-        _process_col(col::String) = Symbol(col)
-        tc = getindex(tblref[], _process_col(col))
+        tc = getindex(tblref[], __process_target_col(col))
         n = length(tc)
         for (val, cnt) in countmap(tc)
             cnt / n < threshold && return true
         end
-    catch
-        @debug "is_imbalanced_target_variable: Failed\n"
-        return false
+    catch e
+        @debug "is_imbalanced_target_variable: Failed\n$e"
+        return nothing
     end
     return false
 end
 
 is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = nothing
+
+const ACCEPTABLE_LINK_VALUES = ["logit", "probit", "log-log", "cloglog", "cauchit"]
+
+function is_binomial_data_correctly_modelled(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        acceptable_link_values = ACCEPTABLE_LINK_VALUES
+    )
+    try
+        col = linting_ctx.target_variable
+        query_results = linting_ctx.parsing_data
+        tc = getindex(tblref[], __process_target_col(col))
+        nvars = length(unique(tc))
+        arg_name, _... = ParSitter.get_capture(query_results, "arg_name")
+        arg_value, _... = ParSitter.get_capture(query_results, "arg_value")
+        result = true
+        if nvars == 2  # we have a binomial target variable
+            result = arg_name == "link" && arg_value ∈ acceptable_link_values
+        end
+        return result
+    catch e
+        @debug "is_binomial_data_correctly_modelled: Failed\n$e"
+        return nothing
+    end
+end
+
+is_binomial_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
@@ -522,21 +552,23 @@ const EXPERIMENTAL_LINTERS = [
         description = """ Tests that data labels are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
         failure_message = name -> "Imbalanced target column in '$name'",
-        correct_message = name -> "Re-sample or add new samples on minority class(es) in '$name'",
+        correct_message = name -> "Data is balanced in target column '$name'",
         warn_level = "experimental",
         correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
+]
 
+const R_LINTERS = [
     # Imbalanced target variable in data (R code, glmmTMB algorithm)
     (
         name = :R_glmmTMB_target_variable,
         description = """ Tests that data labels are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = name -> "Imbalanced dependent variable in glmmTMB",
-        correct_message = name -> "Re-sample or add new samples on minority class(es) in dependent variable",
+        failure_message = name -> "Imbalanced dependent variable (glmmTMB)",
+        correct_message = name -> "Dependent variable is balanced (glmmTMB)",
         warn_level = "experimental",
         correct_if = check_correctness(false),
         query = (
@@ -557,6 +589,58 @@ const EXPERIMENTAL_LINTERS = [
                 ),
             ),
         ),
+        query_match_type = :strict,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Binary target data modelled by binomial family modelling with correct link type
+    (
+        name = :R_glmmTMB_binomial_modelling,
+        description = """ Ensures that binary varianles are modelled with correct family and link values""",
+        f = is_binomial_data_correctly_modelled,
+        failure_message = name -> "Incorrect binomial data modelling (glmmTMB)",
+        correct_message = name -> "Correct binomial data modelling (glmmTMB)",
+        warn_level = "experimental",
+        correct_if = check_correctness(true),
+        query = (
+            "*",
+            "glmmTMB",                      # -> glmmTMB
+            (
+                "*",                          # -> (arguments...)
+                (
+                    "*",                       # -> argument
+                    (
+                        "*",                    # -> binary_operator
+                        "@target_variable",
+                        (
+                            "@dependent_variables",
+                            "*",
+                        ),
+                    ),
+                ),
+                (
+                    "*",                       # -> family = binomial(link=...)
+                    "family",                # -> family
+                    (
+                        "*",                    # -> binomial(link=...)
+                        "binomial",           # -> binomial
+                        (
+                            "*",                 # -> argument
+                            (
+                                "*",
+                                "@arg_name",
+                                (
+                                    "*",
+                                    "@arg_value",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        query_match_type = :nonstrict,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),

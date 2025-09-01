@@ -23,3 +23,9 @@ ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, Stri
 @time out = DataLinter.lint(ctx, kb; config = config);
 DataLinter.process_output(out; show_stats = true)
 @info "Score: $(DataLinter.OutputInterface.score(out; normalize = true))"
+
+# For debugging linting contexts
+ll = DataLinter.LinterCore.build_linters(ctx, kb)[end]
+code_ctx = DataLinter.LinterCore.build_linting_context(read(code_path, String), ll)
+rctx = DataLinter.LinterCore.reconcile_contexts(code_ctx, DataLinter.LinterCore.build_linting_context(config));
+@show code_ctx

@@ -39,6 +39,7 @@ function build_linters end
     warn_level::String
     correct_if::Function
     query::Union{Nothing, Tuple}
+    query_match_type::Union{Nothing, Symbol}
     programming_language::Union{Nothing, String}
     requirements::Dict{String}
 end
@@ -100,7 +101,7 @@ function build_linting_context(code::String, linter::Linter)
             query_results = ParSitter.query(
                 code_tree.root,
                 query_tree;
-                match_type = :strict,
+                match_type = linter.query_match_type,
                 target_tree_nodevalue = __target_nodevalue,
                 query_tree_nodevalue = __query_nodevalue,
                 capture_function = __capture_function,
@@ -113,16 +114,16 @@ function build_linting_context(code::String, linter::Linter)
                 @debug "Multiple query matches, query is not specific enough"
                 return nothing
             else
-                _, _parsed_data = first(query_results)
+                _parsed_data = first(query_results) # of the form (match::Bool, captured::MultiDict)
                 code_ctx = LintingContext(name = "Online Context [$(now())]")
-                for (k, _captures) in _parsed_data
+                for (k, _captures) in _parsed_data[2]  # iterate over the MultiDict
                     @assert length(_captures) == 1 "Multiple captures, query is not specific enough"
                     symb_key = Symbol(k)
                     if symb_key in fieldnames(typeof(code_ctx))
                         setfield!(code_ctx, symb_key, (first(_captures)).v)
                     end
                 end
-                isnothing(code_ctx.parsing_data) && setfield!(code_ctx, :parsing_data, query_results)
+                isnothing(code_ctx.parsing_data) && setfield!(code_ctx, :parsing_data, _parsed_data)
                 return code_ctx
             end
         catch e
