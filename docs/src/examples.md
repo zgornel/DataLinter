@@ -79,12 +79,12 @@ docker run -it --rm --volume=./test/data:/_data --volume=./config:/_config     -
 ```
 
 ### Server-based linting
-The server version of the linter is useful for integration with editors and other third party apps that can integrate outputs from a remote linter. To start the linting server and listen on address `-1.0.0.0` and port `10000` one can run
+The server version of the linter is useful for integration with editors and other third party apps that can integrate outputs from a remote linter. To start the linting server and listen on address `0.0.0.0` and port `10000` one can run
 ```
-$ docker run -it --rm -p9999:10000\
+$ docker run -it --rm -p10000:10000\
     ghcr.io/zgornel/datalinter-compiled:alpine\
         /datalinterserver/bin/datalinterserver\
-            -i -1.0.0.0\
+            -i 0.0.0.0\
             --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
             --log-level debug
 ```
@@ -92,8 +92,8 @@ Upon starting, the server outputs:
 ```
  Warning: KB file not correctly specified, defaults will be used.
  └ @ datalinterserver /DataLinter/apps/datalinterserver/src/datalinterserver.jl:83
- [ Info: • Data linting server online @-1.0.0.0:10000...
- [ Info: Listening on: -1.0.0.0:10000, thread id: 1
+ [ Info: • Data linting server online @0.0.0.0:10000...
+ [ Info: Listening on: 0.0.0.0:10000, thread id: 1
 ```
 The server accepts HTTP requests with a specific JSON payload containing data or, data and code. Upon receiving a request, it will try to run the linter and return a JSON with the output. A client script can be found in `scripts/client.jl`. The following command sets up a temporary environment for the script to run:
 ```
@@ -112,7 +112,7 @@ out1 <- glmmTMB(col4 ~ col1 + col2 + col3,
                 data = out0,
                 family = binomial(link = "linear"))  # raises linter error
 
---- Linting output (HTTP Status: 199):
+--- Linting output (HTTP Status: 200):
 • n/a           (imbalanced_target_variable)    dataset              linter not applicable (or failed) for 'dataset'
 • experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
 • experimental  (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
