@@ -1,3 +1,4 @@
 [deps]
-Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 DataLinter = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+DocumenterMermaid = "a078cd44-4d9c-4618-b545-3ab9d77f9177"

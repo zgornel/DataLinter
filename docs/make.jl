@@ -1,7 +1,9 @@
 using Pkg
 Pkg.add("Documenter")
+Pkg.add("DocumenterMermaid")
 
 using Documenter
+using DocumenterMermaid
 using DataLinter
 
 # Make src directory available

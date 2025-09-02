@@ -21,3 +21,34 @@ $ git clone https://github.com/zgornel/DataLinter
 ```
 $ docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
+
+## Architecture (from [the wiki](https://github.com/zgornel/DataLinter/wiki/DataLinter-architecture))
+So far the architecture looks like:
+
+> Note:  arrows indicate dependencies and the arrow labels indicate intermediary modules
+ 
+ - Full system: micro-kernel architecture (core system + plugins)
+ ```mermaid
+ graph TD
+    A[data plugin module i.e. **DataCSV**] -- DataInterface --> C[Core System]
+    K[knowledge plugin module i.e. **KnowledgeBaseNative**] -- KnowledgeBaseInterface --> C
+    O[output plugin module] --OutputInterface --> C
+```
+
+ - `Core System`: pipeline architecture
+```mermaid
+ graph LR
+    D[DataInterface] --> L[LinterCore]
+    C[Configuration] --> L
+    K[KnowledgeBaseInterface] --> L
+    O[OutputInterface]-->L
+```
+
+The modules and corresponding implementations are shown below:
+- [`LinterCore`](https://github.com/zgornel/DataLinter/blob/master/src/linter.jl)
+- [`Configuration`](https://github.com/zgornel/DataLinter/blob/master/src/config.jl)
+- [`DataInterface`](https://github.com/zgornel/DataLinter/blob/master/src/data.jl)
+- [`DataCSV` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/csv.jl)
+- [`KnowledgeBaseInterface`](https://github.com/zgornel/DataLinter/blob/master/src/kb.jl)
+- [`KnwoledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb_native.jl)
+- [`OutputInterface`](https://github.com/zgornel/DataLinter/blob/master/src/output.jl)
