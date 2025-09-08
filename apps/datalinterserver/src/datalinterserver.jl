@@ -8,6 +8,7 @@ using Logging
 using Sockets
 using HTTP
 using JSON
+using DelimitedFiles
 using ArgParse
 using DataLinter
 
@@ -175,13 +176,26 @@ linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
         end
     end
     kb !== nothing && @debug "KB loaded @$kb_path"
-    #TODO: Handle errors here
     ctx = _request["linter_input"]["context"]
-    _data = ctx["data"]  # data is a Dict
-    for (_, dv) in _data
-        dv[isnothing.(dv)] .= missing
+    raw_data, raw_header = try
+            readdlm(IOBuffer(ctx["data"]), first(ctx["data_delim"]), Any, header=ctx["data_header"])
+        catch e
+            @warn "Error parsing data\n$e"
+            nothing, nothing
+        end
+    isnothing(raw_data) && return nothing
+    for dv  in eachcol(raw_data)
+        try
+            dv[isnothing.(dv)] .= missing
+        catch
+        end
+        try
+            dv[isempty.(dv)] .= missing
+        catch
+        end
     end
-    data = Dict(Symbol(k) => v for (k, v) in _data)
+    data = Dict(Symbol(h) => col for (h, col) in zip(raw_header, collect(eachcol(raw_data))))
+    @debug "CSV data loaded and succesfully processed."
     code = ctx["code"]
     show_passing = get(_request["linter_input"]["options"], "show_passing", false)
     show_stats = get(_request["linter_input"]["options"], "show_stats", false)

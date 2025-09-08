@@ -7,8 +7,7 @@ using HTTP
 using JSON
 
 function _load_data(data_path)
-    _data, _header = readdlm(data_path, ',', header = true)
-    return data = Dict(h => col for (h, col) in zip(_header, collect(eachcol(_data))))
+    read(data_path, String)
 end
 
 
@@ -24,6 +23,8 @@ function client_main(args)
     linter_input = Dict(
         "context" => Dict(
             "data" => data,
+            "data_delim" => ",",
+            "data_header" => true,
             "code" => r_code
         ),
         "options" => Dict(
