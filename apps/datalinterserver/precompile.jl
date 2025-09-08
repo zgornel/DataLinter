@@ -14,12 +14,11 @@ PORT = 10_000
 @async datalinterserver.linting_server(IP, PORT; config_path)
 
 # Client part
-_data, _header = readdlm(data_path, ',', header = true)
-data = Dict(h => col for (h, col) in zip(_header, collect(eachcol(_data))))
-
 linter_input = Dict(
     "context" => Dict(
-        "data" => data,
+        "data" => read(data_path, String),
+        "data_delim" => ",",
+        "data_header" => true,
         "code" => read(code_path, String)
     ),
     "options" => Dict(
