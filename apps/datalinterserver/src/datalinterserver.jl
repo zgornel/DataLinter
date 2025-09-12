@@ -199,7 +199,7 @@ linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
     code = ctx["code"]
     show_passing = get(_request["linter_input"]["options"], "show_passing", false)
     show_stats = get(_request["linter_input"]["options"], "show_stats", false)
-    show_na = get(_request["linter_input"]["options"], "show_stats", false)
+    show_na = get(_request["linter_input"]["options"], "show_na", false)
     try
         buffer = IOBuffer()
         ctx_code = DataLinter.build_data_context(data, code)
