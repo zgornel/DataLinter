@@ -44,7 +44,7 @@ class DataLinterMagic(Magics):
                 return None
             return tracked_variable, data_header, data_delim
         except Exception as ex:
-            print(f"Warning (Linter): Could not parse line for %%add_linter_data line magic.\n{ex}")
+            print(f"Warning (Linter): Could not parse line for %%add_linter_data line magic:\n\t{ex}")
             return None
 
     def __parse_lint_magic(self, line):
@@ -86,7 +86,7 @@ class DataLinterMagic(Magics):
                 return None
             return ip, port, show_stats, show_na, show_passing
         except Exception as ex:
-            print(f"Warning (Linter): Could not parse line for %%lint cell magic.\n{ex}")
+            print(f"Warning (Linter): Could not parse line for %%lint cell magic:\n\t{ex}")
             return None
 
     @line_magic
@@ -98,7 +98,7 @@ class DataLinterMagic(Magics):
             try:
                 TRACKED_VARIABLES[self.tracked_variable] = ipy.ev(self.tracked_variable)
             except Exception as ex:
-                print(f"Warning (Linter): Variable '{tracked_variable}' not found in the current cell.\n{ex}")
+                print(f"Warning (Linter): Variable '{tracked_variable}' not found in the current cell:\n\t{ex}")
         else:
             print(f">>DEBUG: '%add_linter_data' line magic FAILED (parsed_args={parsed_args})")
 
@@ -108,10 +108,12 @@ class DataLinterMagic(Magics):
         parsed_args = self.__parse_lint_magic(line)
         if parsed_args is not None:
             self.ip, self.port, self.show_stats, self.show_na, self.show_passing = self.__parse_lint_magic(line)
+            _df = TRACKED_VARIABLES[self.tracked_variable]
+            _csv_df = self.dataframe_to_csv_string(_df)
             varbody = {
                         'linter_input': {
                             'context': {
-                                'data': self.dataframe_to_csv_string(TRACKED_VARIABLES[self.tracked_variable]),
+                                'data': _csv_df,
                                 'data_delim': self.data_delim,
                                 'data_header': self.data_header,
                                 'code': cell},
@@ -122,9 +124,12 @@ class DataLinterMagic(Magics):
                         }
                     }
             jsonbody = json.dumps(varbody)
-            linter_response_json = self.http_lint_request(jsonbody)
-            linter_response = json.loads(linter_response_json)
-            print(f"Linter output\n-------------\n {linter_response['linting_output']}")
+            try:
+                linter_response_json = self.http_lint_request(jsonbody)
+                linter_response = json.loads(linter_response_json)
+                print(f"Linter output\n-------------\n{linter_response['linting_output']}")
+            except Exception as ex:
+                print(f"Warning (Linter): Failed to read linter output (perhaps linting failed):\n\t{ex}")
         else:
             print(f">>DEBUG: '%%lint' cell magic FAILED (parsed_args={parsed_args})")
         return None
@@ -134,7 +139,16 @@ class DataLinterMagic(Magics):
         self.dataframe_to_csv_string(df)
 
     def dataframe_to_csv_string(self, df):
-        return df.to_csv(None, sep=self.data_delim, header=self.data_header)
+        _header = False
+        _colnames = list(df.columns)
+        if self.data_header is True and _colnames:
+            _header = _colnames
+        elif self.data_header is True and not _colnames:
+            _header = ['x'+str(i) for i in range(len(df.columns))]
+        else:
+            pass
+        return df.to_csv(None, sep=self.data_delim, header=_header, index=False)
+
 
     def http_lint_request(self, body):
         host = self.ip
