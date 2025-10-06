@@ -40,13 +40,13 @@ end
 """
 Function that returns whether a linter is enabled in the config or not.
 """
-linter_is_enabled(::Nothing, linter) = true  # by default, if config is not present, linters are enabled
+linter_is_enabled(::Nothing, linter) = false  # by default, if config is not present, linters are disabled
 linter_is_enabled(config::Dict, linter) = begin
     value = try
         config["linters"][string(linter.name)] |> Bool
     catch e
-        @debug "Linter from KB, not found in config: [linters]->[$(linter.name)]. Linter will be enabled by default.\n$e"
-        true
+        @debug "Linter from KB, not found in config: [linters]->[$(linter.name)]. Linter will be disabled by default.\n$e"
+        false
     end
     return value
 end

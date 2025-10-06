@@ -42,7 +42,7 @@ const SAMPLE_CONFIG = """
         programming_language = nothing,
         requirements = Dict{String, Any}()
     )
-    @test Cfg.linter_is_enabled(nothing, linter)
+    @test Cfg.linter_is_enabled(nothing, linter) == false
     @test Cfg.linter_is_enabled(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == true # linter is NOT in config
 
     for val in [true, false, 0, 1]
