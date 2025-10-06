@@ -21,7 +21,11 @@ the dataset. The score is based on the `WARN_LEVEL_TO_NUM` mapping.
 """
 function score(lintout; normalize = true)
     vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v == false)
-    return ifelse(normalize, mean(vals), sum(vals))
+    return if !isempty(vals)
+            ifelse(normalize, mean(vals), sum(vals))
+        else
+            0
+        end
 end
 
 
