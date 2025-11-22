@@ -8,8 +8,6 @@ A data linter written in Julia at the Vrije Universiteit Brussel.
 [![codecov](https://codecov.io/gh/zgornel/DataLinter/graph/badge.svg?token=GWKJKBZ5FB)](https://codecov.io/gh/zgornel/DataLinter)
 [![code style: runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
 
-![til](./gifs/datalinter.gif)
-
 ## Installation
 
 The recommended way to install `DataLinter` is to download the docker image:
@@ -18,6 +16,16 @@ $ docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
 
 Check out the documentation for more information about how to run the linter.
+
+
+## Integration
+
+### Jupyter notebooks
+![til](./gifs/jupyter.gif)
+
+### Command line
+![til](./gifs/cli.gif)
+
 
 ## License
 

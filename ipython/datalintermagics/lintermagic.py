@@ -115,7 +115,9 @@ class DataLinterMagic(Magics):
                 print(f"Warning (Linter): Variable '{self.tracked_variable}' not found in the current cell:\n\t{ex}")  # noqa: E501
         else:
             print(f">>DEBUG: '%add_linter_data' line magic FAILED (parsed_args={parsed_args})")  # noqa: E501
+        return None
 
+    # TODO: Investigate when to execute or provide two different magic commands i.e. @lint_before, @lint_after
     @cell_magic
     def lint(self, line, cell):
         # TODO: Support a '--with-data' option that allows to specify
@@ -123,6 +125,7 @@ class DataLinterMagic(Magics):
         #       As of now, the behavior is to  use the last variable name,
         #       specified by the `%add_linter_data line magic`
         parsed_args = self.__parse_lint_magic(line)
+        ipy = IPython.get_ipython()
         if parsed_args is not None:
             self.ip, self.port, self.show_stats, self.show_na, \
                 self.show_passing = self.__parse_lint_magic(line)
@@ -156,6 +159,7 @@ class DataLinterMagic(Magics):
                 print(f"Warning (Linter): Failed to read linter output (perhaps linting failed):\n\t{ex}")  # noqa: E501
         else:
             print(f">>DEBUG: '%%lint' cell magic FAILED (parsed_args={parsed_args})")  # noqa: E501
+        exec(cell, globals())
         return None
 
     def ndarray_to_csv_string(self, arr):
