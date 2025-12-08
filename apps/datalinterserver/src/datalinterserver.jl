@@ -80,11 +80,11 @@ function real_main()
     http_port = args["http-port"]
     config_path = args["config-path"]
     if isempty(config_path) || !isfile(config_path)
-        @warn "Config file not correctly specified, defaults will be used."
+        @warn "Config file not correctly specified (--config-path),  defaults will be used."
     end
     kb_path = args["kb-path"]
     if isempty(kb_path) || !isfile(kb_path)
-        @warn "KB file not correctly specified, defaults will be used."
+        @warn "KB file not correctly specified (--kb-path), defaults will be used."
     end
 
     # Start I/O server(s) #
