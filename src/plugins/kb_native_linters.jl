@@ -1,6 +1,8 @@
 #TODO: Move the logic from code into a knowledge-base object of some sort#
 using Dates
 using StatsBase
+using Distributions
+using HypothesisTests
 using Tables
 using ParSitter
 
@@ -277,7 +279,7 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 const PERC_MINORITY_CLASS = 0.01
 
 __process_target_col(col::Number) = Int(col)
-__process_target_col(col::String) = Symbol(col)
+__process_target_col(col::AbstractString) = Symbol(col)
 __process_target_col(::Nothing) = nothing
 
 function is_imbalanced_target_variable(
@@ -304,7 +306,7 @@ is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = nothin
 
 const ACCEPTABLE_LINK_VALUES = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
-function is_binomial_data_correctly_modelled(
+function is_glmmTMB_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
@@ -323,12 +325,78 @@ function is_binomial_data_correctly_modelled(
         end
         return result
     catch e
-        @debug "is_binomial_data_correctly_modelled: Failed\n$e"
+        @debug "is_glmmTMB_data_correctly_modelled: Failed\n$e"
         return nothing
     end
 end
 
-is_binomial_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_glmmTMB_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
+
+const PVALUE_THRESHOLD = 0.2
+
+function is_normally_distributed(ux::AbstractVector, pvalue_threshold=PVALUE_THRESHOLD)
+    x = (ux.-mean(ux))./std(ux)
+    p1 = pvalue(ExactOneSampleKSTest(x, Distributions.Normal(0,1.0)), tail=:both)
+    p2 = pvalue(ShapiroWilkTest(x))
+    return p1 >= pvalue_threshold || p2 >= pvalue_threshold
+end
+
+function is_lm_data_correct(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        pvalue_threshold=PVALUE_THRESHOLD
+    )
+    try
+        col = linting_ctx.target_variable
+        query_results = linting_ctx.parsing_data
+        tc = getindex(tblref[], __process_target_col(col))
+        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
+        dvars =  split(replace(dvars_str, r"\s"=>""), r"[+,]+") |> filter(!isempty)
+        result = true
+        for dvar in dvars
+            _vals = getindex(tblref[], __process_target_col(dvar))
+            #TODO: Check whether lm works with one-hot encoded variables i.e. 0 and 1's
+            result&= is_normally_distributed(_vals, pvalue_threshold)
+        end
+        return result & is_normally_distributed(tc, pvalue_threshold)
+    catch e
+        @debug "is_lm_data_correct: Failed\n$e"
+        return nothing
+    end
+end
+
+is_lm_data_correct(::Type{<:ListEltype}, args...; kwargs...) = nothing
+
+
+function is_glm_data_correctly_modelled(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        pvalue_threshold=PVALUE_THRESHOLD
+    )
+    try
+        col = linting_ctx.target_variable
+        query_results = linting_ctx.parsing_data
+        tc = getindex(tblref[], __process_target_col(col))
+        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
+        dvars =  split(replace(dvars_str, r"\s"=>""), r"[+,]+") |> filter(!isempty)
+        result = true
+        for dvar in dvars
+            _vals = getindex(tblref[], __process_target_col(dvar))
+            if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
+                result&= is_normally_distributed(_vals, pvalue_threshold)
+            end
+        end
+        return result && length(unique(tc)) == 2
+    catch e
+        @debug "is_glm_data_correctly_modelled: Failed\n$e"
+        return nothing
+    end
+end
+
+is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
+
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
@@ -569,7 +637,7 @@ const R_LINTERS = [
         f = is_imbalanced_target_variable,
         failure_message = name -> "Imbalanced dependent variable (glmmTMB)",
         correct_message = name -> "Dependent variable is balanced (glmmTMB)",
-        warn_level = "experimental",
+        warn_level = "warning",
         correct_if = check_correctness(false),
         query = (
             "*",
@@ -598,10 +666,10 @@ const R_LINTERS = [
     (
         name = :R_glmmTMB_binomial_modelling,
         description = """ Ensures that binary varianles are modelled with correct family and link values""",
-        f = is_binomial_data_correctly_modelled,
+        f = is_glmmTMB_data_correctly_modelled,
         failure_message = name -> "Incorrect binomial data modelling (glmmTMB)",
         correct_message = name -> "Correct binomial data modelling (glmmTMB)",
-        warn_level = "experimental",
+        warn_level = "warning",
         correct_if = check_correctness(true),
         query = (
             "*",
@@ -636,6 +704,77 @@ const R_LINTERS = [
                                 ),
                             ),
                         ),
+                    ),
+                ),
+            ),
+        ),
+        query_match_type = :nonstrict,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Corectness test for linear modelling
+    (
+        name = :R_lm_modelling,
+        description = """ Tests that variables for linear modelling have correct values""",
+        f = is_lm_data_correct,
+        failure_message = name -> "Incorrect linear modelling (lm), non-normal variables present",
+        correct_message = name -> "Correct linear modelling (lm)",
+        warn_level = "warning",
+        correct_if = check_correctness(true),
+        query = (
+            "*",
+            "lm",                             # -> lm
+            (
+                "*",                          # -> (arguments...)
+                (
+                    "*",
+                    (
+                        "*",
+                        "@target_variable",
+                        (
+                            "@dependent_variables",
+                            "*",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        query_match_type = :strict,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Binary target data modelled by binomial family modelling
+    (
+        name = :R_glm_binomial_modelling,
+        description = """ Ensures that binary variables are modelled with correct data values""",
+        f = is_glm_data_correctly_modelled,
+        failure_message = name -> "Incorrect binomial data modelling (glm), non-normal variables present",
+        correct_message = name -> "Correct binomial data modelling (glm)",
+        warn_level = "warning",
+        correct_if = check_correctness(true),
+        query = (
+            "*",
+            "glm",                            # -> glmmTMB
+            (
+                "*",                          # -> (arguments...)
+                (
+                    "*",                       # -> argument
+                    (
+                        "*",                    # -> binary_operator
+                        "@target_variable",
+                        (
+                            "@dependent_variables",
+                            "*",
+                        ),
+                    ),
+                ),
+                (
+                    "*",                      # -> family = "binomial"
+                    "family",                 # -> family
+                    (
+                        "\"binomial\"",           # -> binomial
                     ),
                 ),
             ),
