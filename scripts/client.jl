@@ -7,7 +7,7 @@ using HTTP
 using JSON
 
 function _load_data(data_path)
-    read(data_path, String)
+    return read(data_path, String)
 end
 
 
