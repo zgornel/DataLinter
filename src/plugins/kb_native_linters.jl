@@ -334,9 +334,9 @@ is_glmmTMB_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = n
 
 const PVALUE_THRESHOLD = 0.2
 
-function is_normally_distributed(ux::AbstractVector, pvalue_threshold=PVALUE_THRESHOLD)
-    x = (ux.-mean(ux))./std(ux)
-    p1 = pvalue(ExactOneSampleKSTest(x, Distributions.Normal(0,1.0)), tail=:both)
+function is_normally_distributed(ux::AbstractVector, pvalue_threshold = PVALUE_THRESHOLD)
+    x = (ux .- mean(ux)) ./ std(ux)
+    p1 = pvalue(ExactOneSampleKSTest(x, Distributions.Normal(0, 1.0)), tail = :both)
     p2 = pvalue(ShapiroWilkTest(x))
     return p1 >= pvalue_threshold || p2 >= pvalue_threshold
 end
@@ -345,19 +345,19 @@ function is_lm_data_correct(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        pvalue_threshold=PVALUE_THRESHOLD
+        pvalue_threshold = PVALUE_THRESHOLD
     )
     try
         col = linting_ctx.target_variable
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        dvars =  split(replace(dvars_str, r"\s"=>""), r"[+,]+") |> filter(!isempty)
+        dvars = split(replace(dvars_str, r"\s" => ""), r"[+,]+") |> filter(!isempty)
         result = true
         for dvar in dvars
             _vals = getindex(tblref[], __process_target_col(dvar))
             #TODO: Check whether lm works with one-hot encoded variables i.e. 0 and 1's
-            result&= is_normally_distributed(_vals, pvalue_threshold)
+            result &= is_normally_distributed(_vals, pvalue_threshold)
         end
         return result & is_normally_distributed(tc, pvalue_threshold)
     catch e
@@ -373,19 +373,19 @@ function is_glm_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        pvalue_threshold=PVALUE_THRESHOLD
+        pvalue_threshold = PVALUE_THRESHOLD
     )
     try
         col = linting_ctx.target_variable
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        dvars =  split(replace(dvars_str, r"\s"=>""), r"[+,]+") |> filter(!isempty)
+        dvars = split(replace(dvars_str, r"\s" => ""), r"[+,]+") |> filter(!isempty)
         result = true
         for dvar in dvars
             _vals = getindex(tblref[], __process_target_col(dvar))
             if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
-                result&= is_normally_distributed(_vals, pvalue_threshold)
+                result &= is_normally_distributed(_vals, pvalue_threshold)
             end
         end
         return result && length(unique(tc)) == 2
@@ -396,7 +396,6 @@ function is_glm_data_correctly_modelled(
 end
 
 is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
-
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
