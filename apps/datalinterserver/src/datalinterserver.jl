@@ -80,11 +80,11 @@ function real_main()
     http_port = args["http-port"]
     config_path = args["config-path"]
     if isempty(config_path) || !isfile(config_path)
-        @warn "Config file not correctly specified, defaults will be used."
+        @warn "Config file not correctly specified (--config-path),  defaults will be used."
     end
     kb_path = args["kb-path"]
     if isempty(kb_path) || !isfile(kb_path)
-        @warn "KB file not correctly specified, defaults will be used."
+        @warn "KB file not correctly specified (--kb-path), defaults will be used."
     end
 
     # Start I/O server(s) #
@@ -178,18 +178,18 @@ linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
     kb !== nothing && @debug "KB loaded @$kb_path"
     ctx = _request["linter_input"]["context"]
     _raw = try
-            readdlm(IOBuffer(ctx["data"]), first(ctx["data_delim"]), Any, header=ctx["data_header"])
-        catch e
-            @warn "Error parsing data\n$e"
-            nothing, nothing
-        end
+        readdlm(IOBuffer(ctx["data"]), first(ctx["data_delim"]), Any, header = ctx["data_header"])
+    catch e
+        @warn "Error parsing data\n$e"
+        nothing, nothing
+    end
     raw_data, raw_header = if ctx["data_header"] == false
-            _raw, ["x"*string(i) for i in 1:size(_raw,2)]
-        else
-            _raw
+        _raw, ["x" * string(i) for i in 1:size(_raw, 2)]
+    else
+        _raw
     end
     isnothing(raw_data) && return nothing
-    for dv  in eachcol(raw_data)
+    for dv in eachcol(raw_data)
         try
             dv[isnothing.(dv)] .= missing
         catch
