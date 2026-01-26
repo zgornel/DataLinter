@@ -19,6 +19,7 @@ makedocs(
     debug = true,
     pages = [
         "Introduction" => "index.md",
+        "Linters, configuration" => "linters_config.md",
         "Usage examples" => "examples.md",
         "API Reference" => "api.md"
     ],
