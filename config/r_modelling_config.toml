@@ -1,10 +1,8 @@
 # Section `experiment` describes the type of experiment and
 # related information such as target variables, data variables, etc.
 [experiment]
-    name = "Online data analysis for glmmTMB"          # name of the experiment, NOT USED currently
-
+    name = "Configuration for R modelling"
     #target_variable = 4
-
 
 # Section `linters` enables or disables linters. The format is:
 # ```
@@ -16,29 +14,30 @@
 # Linters are specified through their name and allowed values are those which can be converted to booleans i.e. `true`/`false` or `0`/`1`.
 [linters]
     # Google linters
-    datetime_as_string = false
+    datetime_as_string = true
     tokenizable_string = false
-    number_as_string = false
+    number_as_string = true
     zipcodes_as_values = false
-    large_outliers = false
-    int_as_float = false
+    large_outliers = true
+    int_as_float = true
     enum_detector = false
-    #enum_detector = false
     uncommon_list_lengths = false
-    duplicate_examples = false
-    empty_example = false
-    #empty_example = false
+    duplicate_examples = true
+    empty_example = true
     uncommon_signs = false
     long_tailed_distrib = false
     circular_domain = false
 
     # Additional linters
-    many_missing_values = false
+    many_missing_values = true
     negative_values = false
     imbalanced_target_variable = false
+
+    # Specific R linters
     R_glmmTMB_target_variable = true
     R_glmmTMB_binomial_modelling = true
-
+    R_lm_modelling = true
+    R_glm_binomial_modelling = true
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
 # ```
@@ -63,7 +62,7 @@
         match_perc = 0.5  # fraction of strings in column that can be converted to number for lint to trigger
 
     [parameters.zipcodes_as_values]
-        zipcodes=[9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
+        zipcodes=[]
         match_perc = 0.99  # fraction of values in column that match zipcode for lint to trigger
 
     [parameters.large_outliers]
@@ -105,8 +104,15 @@
     [parameters.imbalanced_target_variable]
         threshold = 0.1
 
+    # R modelling linters
     [parameters.R_glmmTMB_target_variable]
         threshold = 0.1
 
     [parameters.R_glmmTMB_binomial_modelling]
         acceptable_link_values = ["logit", "probit", "log-log", "cloglog", "cauchit"]
+
+    [parameters.R_lm_modelling]
+        pvalue_threshold = 0.1
+
+    [parameters.R_glm_binomial_modelling]
+        pvalue_threshold = 0.1
