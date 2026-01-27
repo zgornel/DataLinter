@@ -11,15 +11,28 @@ DataLinter development started by rewriting [Google's data linter project](https
 ## Installation
 There are several ways to install DataLinter: cloning the Github repository or pulling a Docker image from the [Github container registry](https://ghcr.io). Unless one wants to develop DataLinter, the Docker installation is recommended.
 
-### Git cloning
-The `DataLinter` repository can be downloaded through git:
-```
-$ git clone https://github.com/zgornel/DataLinter
-```
-
 ### Docker image (recommended)
 ```
 $ docker pull ghcr.io/zgornel/datalinter-compiled:latest
+```
+
+### Quick run
+The first step is to start the linting server and provide a configuration file which is already present in the Docker image:
+```
+$ docker run -it --rm -p10000:10000\
+    ghcr.io/zgornel/datalinter-compiled:latest\
+        /datalinterserver/bin/datalinterserver\
+            -i 0.0.0.0\
+            --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
+            --log-level debug
+```
+The next step is to install code dependencies for the client in a temporary Julia project:
+```
+$ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
+```
+Finally, we need to run the client providing a dataset and a code snippet that uses the dataset. The following line assumes that the current directory is the root directory of the project as the paths to the client script, data and code are relative to it:
+```
+$ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./test/code/r_snippet_binomial.r
 ```
 
 ## Architecture (from [the wiki](https://github.com/zgornel/DataLinter/wiki/DataLinter-architecture))

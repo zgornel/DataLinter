@@ -82,7 +82,7 @@ docker run -it --rm --volume=./test/data:/_data --volume=./config:/_config     -
 The server version of the linter is useful for integration with editors and other third party apps that can integrate outputs from a remote linter. To start the linting server and listen on address `0.0.0.0` and port `10000` one can run
 ```
 $ docker run -it --rm -p10000:10000\
-    ghcr.io/zgornel/datalinter-compiled:alpine\
+    ghcr.io/zgornel/datalinter-compiled:latest\
         /datalinterserver/bin/datalinterserver\
             -i 0.0.0.0\
             --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
