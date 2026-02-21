@@ -10,10 +10,12 @@ jobs:
   build:
     name: Build DataLinter (${{ github.event_name }})
     runs-on: [self-hosted]
+    outputs:
+      output1: ${{steps.dateb64.outputs.date}}
     steps:
       - name: Get current date
         id: dateb64
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d %H:%M:%S' | base64)"
+        run: echo "date=$(date +'%Y-%m-%d %H:%M:%S' | base64)" >> $GITHUB_OUTPUT
 
       - name: Checkout current project repository
         uses: actions/checkout@v3
