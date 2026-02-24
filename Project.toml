@@ -1,10 +1,11 @@
 name = "DataLinter"
 uuid = "7795ac26-99bd-44b7-aa9b-4d57ee2553a8"
-authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
 version = "0.1.0"
+authors = ["Corneliu Cofaru <cornel@oxoaresearch.com>"]
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Automa = "67c07d97-cdcb-5c2c-af73-a7f9c32a568b"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -28,6 +29,7 @@ ParSitter = {rev = "master", url = "https://github.com/zgornel/ParSitter"}
 
 [compat]
 ArgParse = "1.2.0"
+Automa = "1.1.0"
 Dates = "1.11.0"
 Distributions = "0.25.122"
 HTTP = "1.10.17"

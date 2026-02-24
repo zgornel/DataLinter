@@ -63,5 +63,5 @@ The modules and corresponding implementations are shown below:
 - [`DataInterface`](https://github.com/zgornel/DataLinter/blob/master/src/data.jl)
 - [`DataCSV` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/csv.jl)
 - [`KnowledgeBaseInterface`](https://github.com/zgornel/DataLinter/blob/master/src/kb.jl)
-- [`KnwoledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb_native.jl)
+- [`KnowledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb_native.jl)
 - [`OutputInterface`](https://github.com/zgornel/DataLinter/blob/master/src/output.jl)
