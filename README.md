@@ -1,6 +1,6 @@
 # DataLinter
 
-Linting tools for ML workflows, data and code.
+Linting library and tools for machine learning, statistical modelling, data, code.
 
 [![License](http://img.shields.io/badge/license-GPL-brightgreen.svg?style=flat)](LICENSE.md)
 [![Build Status](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml?query=branch%3Amaster)
@@ -17,11 +17,15 @@ The recommended way to install `DataLinter` is to download the docker image:
 $ docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
 
-Check out the documentation for more information about how to run the linter.
+Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters.
+
+## Integrations
+
+Integrations are available for [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter) and [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
 
 ## License
 
-This code has an GPL license and therefore it is free.
+This code has an GPLv3 license.
 
 
 ## Reporting Bugs
