@@ -84,7 +84,7 @@ function real_main()
     end
     kb_path = args["kb-path"]
     if isempty(kb_path) || !isfile(kb_path)
-        @warn "KB file not correctly specified (--kb-path), defaults will be used."
+        @debug "KB file not correctly specified (--kb-path), defaults will be used."
     end
 
     # Start I/O server(s) #
@@ -99,14 +99,16 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config_path
     if port <= 0 || port == nothing
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
     end
-
+    # Assign addresses: try IPv4 first, IPv6 second
     addr = try
         IPv4(addr)
-        IPv6(addr)
-        addr
     catch
-        @warn "HTTP IP $addr is not valid, using `localhost`..."
-        Sockets.localhost
+        try
+            IPv6(addr)
+        catch
+            @warn "HTTP IP $addr is not valid, using `localhost`..."
+            Sockets.localhost
+        end
     end
 
     # Define REST endpoints to dispatch to "service" functions
@@ -118,14 +120,13 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config_path
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    return HTTP.serve(Sockets.IPv4(addr), port, readtimeout = 0) do http_req::HTTP.Request
+    return HTTP.serve(addr, port, readtimeout = 0) do http_req::HTTP.Request
         handler_output = try
             ROUTER(http_req)
         catch e
             @debug "Error handling HTTP request.\n$e"
             -1  # will be visible in HTTP headers, "Status"=>"ERROR"
         end
-        #TODO(Corneliu): Differentiate between types of errors
         if handler_output === nothing
             # An unsupported endpoint was called
             return HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
@@ -157,7 +158,6 @@ end
 
 linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
     @debug "HTTP request $(req.target) received."
-    _request = JSON.parse(IOBuffer(HTTP.payload(req)))
     config = if !isempty(config_path)
         try
             DataLinter.LinterCore.load_config(config_path)
@@ -171,11 +171,13 @@ linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
         try
             DataLinter.kb_load(kb_path)
         catch e
-            @warn "Error loading the KB @$kb_path\n$e"
+            @debug "Error loading the KB @$kb_path\n$e"
             nothing
         end
     end
     kb !== nothing && @debug "KB loaded @$kb_path"
+    #TODO: JSON validation
+    _request = JSON.parse(IOBuffer(HTTP.payload(req)))
     ctx = _request["linter_input"]["context"]
     _raw = try
         readdlm(IOBuffer(ctx["data"]), first(ctx["data_delim"]), Any, header = ctx["data_header"])

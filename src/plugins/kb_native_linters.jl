@@ -354,6 +354,7 @@ function is_lm_data_correct(
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
+        #TODO: Add '.' processing
         dvars = RFormulaParser.extract_identifiers(dvars_str)
         result = true
         for dvar in dvars
@@ -382,6 +383,7 @@ function is_glm_data_correctly_modelled(
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
+        #TODO: Add '.' processing
         dvars = RFormulaParser.extract_identifiers(dvars_str)
         result = true
         for dvar in dvars

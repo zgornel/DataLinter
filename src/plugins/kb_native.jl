@@ -18,7 +18,9 @@ end
 
 function __load(filepath)
     data = try
-        TOML.parse(open(filepath))
+        open(filepath, "r") do io
+            TOML.parse(io)
+        end
     catch
         @debug "Could not load KB@$filepath. Returning empty Dict()."
         Dict{String, String}()
