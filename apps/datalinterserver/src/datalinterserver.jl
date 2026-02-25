@@ -225,8 +225,14 @@ end
 ##############
 # Run server #
 ##############
+Base.exit_on_sigint(false)
 if abspath(PROGRAM_FILE) == @__FILE__
-    real_main()
+    try
+        real_main()
+    catch e
+        "Exception $e caught, exiting..."
+        return 1
+    end
 end
 
 end  # module

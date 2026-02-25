@@ -134,11 +134,17 @@ end
 ##############
 # Run client #
 ##############
+Base.exit_on_sigint(false)
 
 main_script_file = abspath(PROGRAM_FILE)
 
 if occursin("debugger", main_script_file) || main_script_file == @__FILE__
-    real_main()
+    try
+        real_main()
+    catch e
+        "Exception $e caught, exiting..."
+        return 1
+    end
 end
 
 end  # module
