@@ -5,6 +5,7 @@ Pkg.add("DocumenterMermaid")
 using Documenter
 using DocumenterMermaid
 using DataLinter
+using ParSitter
 
 # Make src directory available
 push!(LOAD_PATH,"../src/")
@@ -13,8 +14,8 @@ push!(LOAD_PATH,"../src/")
 makedocs(
     #modules = [DataLinter],
     format = Documenter.HTML(),
-    sitename = "A Data Linter",
-    authors = "Corneliu Cofaru, Vrije Universiteit Brussel",
+    sitename = "DataLinter",
+    authors = "Corneliu Cofaru",
     clean = true,
     debug = true,
     pages = [
