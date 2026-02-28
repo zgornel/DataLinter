@@ -15,25 +15,30 @@ function client_main(args)
     data_path, code_path = args
     data = _load_data(data_path)
     r_code = read(code_path, String)
-    println("--- Code:")
-    println(r_code)
+    #println("--- Code:")
+    #println(r_code)
 
-    #@show _code
-    #@show data
+    _data_path = abspath(expanduser(data_path))
     linter_input = Dict(
         "context" => Dict(
-            "data" => data,
-            "data_delim" => ",",
-            "data_header" => true,
-            "code" => r_code
+            "data" => data,             # can be the data or a path to it
+            "data_type" => "dataset",   # "dataset" or "filepath"
+            #"data" => data_path,
+            #"data_type" => "filepath",
+            "linters" => ["all"],       # which linters to use: "google", "r", "experimental" or "all"
+            "data_delim" => ",",        # csv delimiter
+            "data_header" => true,      # header
+            "code" => r_code            # code
         ),
         "options" => Dict(
-            "show_stats" => true,
-            "show_passing" => false,
-            "show_na" => false
+            "show_stats" => true,       # whether to print statistics
+            "show_passing" => false,    # show linters that passed (no issues)
+            "show_na" => false          # show linters that were not applicable
         )
     )
     request = Dict("linter_input" => linter_input)
+    #println("--- Request:")
+    #println(request)
 
     # Send to server
     reply = try

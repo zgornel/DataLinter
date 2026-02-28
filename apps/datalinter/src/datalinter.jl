@@ -19,6 +19,10 @@ function get_arguments(args::Vector{String})
         nargs = '+'  # at least one value required
         arg_type = String
         action = :store_arg
+        "--code-path"
+        help = "path to code file"
+        default = ""
+        arg_type = String
         "--kb-path"
         help = "path to knowledge base '.toml' file"
         default = ""
@@ -91,6 +95,7 @@ function real_main()
     logger = ConsoleLogger(stdout, log_level)
     global_logger(logger)
     ### Lint input(s)
+    codepath = args["code-path"]
     kbpath = args["kb-path"]
     configpath = args["config-path"]
     filepaths = unique!(args["input(s)"])
@@ -103,6 +108,7 @@ function real_main()
             _t = @timed begin
                 DataLinter.cli_linting_workflow(
                     filepath,
+                    codepath,
                     kbpath,
                     configpath;
                     buffer = stdout,
