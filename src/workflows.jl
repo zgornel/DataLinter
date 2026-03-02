@@ -25,9 +25,8 @@ function cli_linting_workflow(
         @debug "Could not read code file @$codepath. Code-based linters will not work."
         ""
     end
-    @info code
     ctx = DataLinter.DataInterface.build_data_context(filepath, code)
     config = DataLinter.Configuration.load_config(configpath)
     lintout = lint(ctx, kb; config, progress, linters)
-    return process_output(lintout; buffer, show_passing, show_stats, show_na)
+    return process_output(lintout; buffer, show_passing, show_stats, show_na), lintout
 end
