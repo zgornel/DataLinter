@@ -1,35 +1,41 @@
 # Alpine Linux based commands
 
-# WARNING!
-#   The container needs to be run with --volume:build:/DataLinter/build
-#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
-
-FROM alpine:3.23.0
-RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip python3 libxml2 tree-sitter tree-sitter-cli npm nodejs python3 build-base
+# Example run of the datalinter server
+# `docker run -it --rm\
+#       -p 10000:10000\
+#       ghcr.io/zgornel/datalinter-compiled:latest\
+#           /datalinterserver/bin/datalinterserver\
+#               -i 0.0.0.0\
+#               --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
+#               --log-level debug`
+FROM frolvlad/alpine-glibc:alpine-3.22_glibc-2.42
+RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
 RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
-RUN mkdir -p /DataLinter/build
+# make directories
+RUN mkdir -p /tmp
+RUN mkdir -p /output
+RUN mkdir -p /workspace
+RUN mkdir -p /datalinter/workload
+RUN mkdir -p /datalinter/knowledge
+RUN mkdir -p /datalinter/config
+RUN mkdir -p /_config
+RUN mkdir -p /_data
 
-# Directory in container should be /
-# Directory in host should be DataLinter root
-WORKDIR /DataLinter
-COPY ./.git ./.git/
-COPY ./apps ./apps/
-COPY ./src ./src/
-COPY ./test ./test/
-COPY ./config ./config
-COPY ./knowledge ./knowledge
-COPY ./workload ./workload
-COPY ./Project.toml ./
-
-# Install julia in /julia
+# Copy binaries
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.11/julia-1.11.6-musl-x86_64.tar.gz
-RUN tar zxf julia-1.11.6-musl-x86_64.tar.gz
-RUN ln -s /julia-1.11.6 /julia
-RUN rm julia-1.11.6-musl-x86_64.tar.gz
+COPY ./build/datalinter /datalinter
+COPY ./build/datalinterserver /datalinterserver
 
-RUN git clone https://github.com/zgornel/julia_app_builder
+COPY ./workload /datalinter/workload
+COPY ./knowledge /datalinter/knowledge
+COPY ./config /datalinter/config
+
+# Prime dependencies for top level script
+RUN datalinter/bin/datalinter /datalinter/workload/data.csv --kb-path /datalinter/knowledge/linting.toml > /dev/null
+
+# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
+### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
 
 # Tree sitter stuff
 RUN mkdir -p /root/dev/

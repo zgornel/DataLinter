@@ -21,7 +21,6 @@ A minimal configuration with one single linter would look as:
         pvalue_threshold = 0.1
 ```
 
-
 ## Linters
 A short description of the available linters is found below. Their parameters are documented in the configuration files found in the [config](https://github.com/zgornel/DataLinter/tree/master/config) folder.
 

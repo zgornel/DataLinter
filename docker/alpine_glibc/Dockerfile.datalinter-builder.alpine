@@ -4,7 +4,7 @@
 #   The container needs to be run with --volume:build:/DataLinter/build
 #   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
 
-FROM alpine:3.23.0
+FROM frolvlad/alpine-glibc:alpine-3.22_glibc-2.42
 RUN apk add --update --no-cache ca-certificates git wget gcc g++ jq curl make tar gzip python3 libxml2 tree-sitter tree-sitter-cli npm nodejs python3 build-base
 RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
@@ -24,10 +24,10 @@ COPY ./Project.toml ./
 
 # Install julia in /julia
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/musl/x64/1.11/julia-1.11.6-musl-x86_64.tar.gz
-RUN tar zxf julia-1.11.6-musl-x86_64.tar.gz
-RUN ln -s /julia-1.11.6 /julia
-RUN rm julia-1.11.6-musl-x86_64.tar.gz
+RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz
+RUN tar zxf julia-1.12.5-linux-x86_64.tar.gz
+RUN ln -s /julia-1.12.5 /julia
+RUN rm julia-1.12.5-linux-x86_64.tar.gz
 
 RUN git clone https://github.com/zgornel/julia_app_builder
 

@@ -203,18 +203,20 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
     # Read data from request
     data = try
         data_source = if ctx["data_type"] == "dataset"
-                seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
-            elseif ctx["data_type"] == "filepath"
-                _path = abspath(expanduser(ctx["data"]))  # take the absolute pathabspath(expanduser(ctx["data"]))  # take the absolute path
-                @assert ispath(_path) "No valid entity @$_path"
-                _path
-            else
-                @error "Data type $(ctx["data_type"]) not supported"
-            end
-        CSV.read(data_source,
-                 CSV.Tables.Columns,
-                 delim=first(ctx["data_delim"]),
-                 header=ctx["data_header"])
+            seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
+        elseif ctx["data_type"] == "filepath"
+            _path = abspath(expanduser(ctx["data"]))  # take the absolute pathabspath(expanduser(ctx["data"]))  # take the absolute path
+            @assert ispath(_path) "No valid entity @$_path"
+            _path
+        else
+            @error "Data type $(ctx["data_type"]) not supported"
+        end
+        CSV.read(
+            data_source,
+            CSV.Tables.Columns,
+            delim = first(ctx["data_delim"]),
+            header = ctx["data_header"]
+        )
     catch e
         @debug "Error loading data\n$e"
         nothing

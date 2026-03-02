@@ -109,10 +109,10 @@ function real_main()
         @error "Provide at least one file to lint."
     end
     buffer = if output_type == "json"
-            IOBuffer()
-        else
-            stdout
-        end
+        IOBuffer()
+    else
+        stdout
+    end
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
@@ -132,8 +132,8 @@ function real_main()
                 )
             end
             if output_type == "json"
-               string_buf = read(seekstart(buffer), String)
-               print(stdout, JSON.json("linting_output" => string_buf))
+                string_buf = read(seekstart(buffer), String)
+                print(stdout, JSON.json("linting_output" => string_buf))
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t

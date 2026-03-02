@@ -26,7 +26,7 @@ jobs:
         name: Build datalinter-builder image
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker build --no-cache -f ./docker/Dockerfile.datalinter-builder.alpine -t ghcr.io/zgornel/datalinter-builder:alpine .
+          docker build --no-cache -f ./docker/alpine_glibc/Dockerfile.datalinter-builder.alpine -t ghcr.io/zgornel/datalinter-builder:alpine .
           docker tag ghcr.io/zgornel/datalinter-builder:alpine ghcr.io/zgornel/datalinter-builder:latest
 
       - id: test_datalinter
@@ -44,7 +44,7 @@ jobs:
         name:  Build datalinter-compiled image
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker build --no-cache -f ./docker/Dockerfile.datalinter-compiled.alpine -t ghcr.io/zgornel/datalinter-compiled:alpine .
+          docker build --no-cache -f ./docker/alpine_glibc/Dockerfile.datalinter-compiled.alpine -t ghcr.io/zgornel/datalinter-compiled:alpine .
           docker tag ghcr.io/zgornel/datalinter-compiled:alpine ghcr.io/zgornel/datalinter-compiled:latest
 
       - id: push_datalinter-compiled_image
