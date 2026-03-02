@@ -1,4 +1,4 @@
-# Linters and configuration
+# Linters, configuration
 
 ## The configuration file
 The linters can be configured through a `.toml` configuration file which contains three sections:
@@ -22,7 +22,7 @@ A minimal configuration with one single linter would look as:
 ```
 
 
-## Available linters
+## Linters
 A short description of the available linters is found below. Their parameters are documented in the configuration files found in the [config](https://github.com/zgornel/DataLinter/tree/master/config) folder.
 
 ### Data-only linters

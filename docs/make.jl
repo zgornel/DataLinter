@@ -5,7 +5,6 @@ Pkg.add("DocumenterMermaid")
 using Documenter
 using DocumenterMermaid
 using DataLinter
-using ParSitter
 
 # Make src directory available
 push!(LOAD_PATH,"../src/")
@@ -20,8 +19,8 @@ makedocs(
     debug = true,
     pages = [
         "Introduction" => "index.md",
-        "Linters, configuration" => "linters_config.md",
         "Usage examples" => "examples.md",
+        "Linters and configuration" => "linters_config.md",
         "API Reference" => "api.md"
     ],
     repo = "github.com:zgornel/DataLinter.git",
