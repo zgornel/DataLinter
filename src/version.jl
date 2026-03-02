@@ -9,12 +9,7 @@ an empty string.
 function version(; commit = "", date = "", ver = "")
     _commit, _date, _ver = try
         root_path = dirname(abspath(pathof(DataLinter)))
-        # Check that the current git repository is the garamond one
-        cd(root_path)
-        #@assert occursin("master", read(pipeline(`git branch --contains $(replace(commit, "*"=>""))`,
-        #                                         stderr=devnull), String))
-        # Try reading the latest commit and date
-        gitstr = read(pipeline(`git show --oneline -s --format="%h%ci"`, stderr = devnull), String)
+        gitstr = read(pipeline(`git -C $root_path show --oneline -s --format="%h%ci"`, stderr = devnull), String)
         _commit = gitstr[1:7]
         _date = gitstr[8:17]
         _commit, _date, ver

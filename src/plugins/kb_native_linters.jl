@@ -6,6 +6,8 @@ using HypothesisTests
 using Tables
 using ParSitter
 
+include("rformula.jl")
+
 # Meta-types for varius column element types
 NumericEltype = Union{<:Number, Union{Missing, <:Number}}
 FloatEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
@@ -186,7 +188,7 @@ function enum_detector(
 end
 
 
-has_uncommon_sings(::Type{<:ListEltype}, args...; kwargs...) = nothing
+has_uncommon_signs(::Type{<:ListEltype}, args...; kwargs...) = nothing
 has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = nothing
 has_uncommon_signs(::T, args...; kwargs...) where {T} = nothing
 
@@ -202,7 +204,7 @@ function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwarg
     # i.e. if the dataset has 100 samples one '-', '+' or 'NaN' would trigger the linter
     ranges = [
         1:1000 => 2,
-        1001 => 100_000 => 5,
+        1001:100_000 => 5,
         100_000:1_000_000 => 10,
     ]
     r_outlier = try
@@ -352,7 +354,8 @@ function is_lm_data_correct(
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        dvars = split(replace(dvars_str, r"\s" => ""), r"[+,]+") |> filter(!isempty)
+        #TODO: Add '.' processing
+        dvars = RFormulaParser.extract_identifiers(dvars_str)
         result = true
         for dvar in dvars
             _vals = getindex(tblref[], __process_target_col(dvar))
@@ -380,7 +383,8 @@ function is_glm_data_correctly_modelled(
         query_results = linting_ctx.parsing_data
         tc = getindex(tblref[], __process_target_col(col))
         dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        dvars = split(replace(dvars_str, r"\s" => ""), r"[+,]+") |> filter(!isempty)
+        #TODO: Add '.' processing
+        dvars = RFormulaParser.extract_identifiers(dvars_str)
         result = true
         for dvar in dvars
             _vals = getindex(tblref[], __process_target_col(dvar))

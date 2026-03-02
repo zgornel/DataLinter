@@ -4,39 +4,29 @@ CurrentModule=DataLinter
 
 # Introduction
 
-DataLinter is a library for contextual linting of data and code. The main idea behind the linter is that by providing additional context, more complex issues relating to data and code quality can be detected as issues in data modelling can arise due to both data structure as well as algorithmic or parameter choices. 'Context' here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for or. Hence, the assumptions about what the data will be used for are implicit. Alternatively, one could provide, for example, the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language where the data is used. This provides a much higher degree of flexibility in the types of checks that can be implemented.
+DataLinter is a library for contextual linting of data and code. The main idea behind the linter is that by providing additional context, more complex issues relating to data and code quality can be detected as issues in data modelling can arise due to both data structure as well as algorithmic or parameter choices. 'Context' here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Alternatively, one could provide, for example, the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language where the data is used. This provides a much higher degree of flexibility in the types of checks that can be implemented.
 
 DataLinter development started by rewriting [Google's data linter project](https://github.com/brain-research/data-linter) in the Julia language. We aim for a redesign that aims at a richer and faster experience.
 
-## Installation
-There are several ways to install DataLinter: cloning the Github repository or pulling a Docker image from the [Github container registry](https://ghcr.io). Unless one wants to develop DataLinter, the Docker installation is recommended.
+## Features
+Features at a glance:
+ - orignal set of data linters from Google
+ - additional data-only linters
+ - [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
+ - R language linting support
+ - CLI tool (`datalinter`)
+ - HTTP server-client tool (`datalinterserver`)
 
-### Docker image (recommended)
+## Installation
+
+There are several ways to install DataLinter: cloning the Github repository or pulling a Docker image from the [Github container registry](https://ghcr.io). Unless one wants to develop DataLinter, the Docker installation is recommended which is done with
 ```
 $ docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
 
-### Quick run
-The first step is to start the linting server and provide a configuration file which is already present in the Docker image:
-```
-$ docker run -it --rm -p10000:10000\
-    ghcr.io/zgornel/datalinter-compiled:latest\
-        /datalinterserver/bin/datalinterserver\
-            -i 0.0.0.0\
-            --config-path /datalinter/config/r_glmmTMB_imbalanced_data.toml\
-            --log-level debug
-```
-The next step is to install code dependencies for the client in a temporary Julia project:
-```
-$ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
-```
-Finally, we need to run the client providing a dataset and a code snippet that uses the dataset. The following line assumes that the current directory is the root directory of the project as the paths to the client script, data and code are relative to it:
-```
-$ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./test/code/r_snippet_binomial.r
-```
-
 ## Architecture (from [the wiki](https://github.com/zgornel/DataLinter/wiki/DataLinter-architecture))
-So far the architecture looks like:
+
+The current architecture looks like:
 
 > Note:  arrows indicate dependencies and the arrow labels indicate intermediary modules
  
@@ -63,5 +53,5 @@ The modules and corresponding implementations are shown below:
 - [`DataInterface`](https://github.com/zgornel/DataLinter/blob/master/src/data.jl)
 - [`DataCSV` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/csv.jl)
 - [`KnowledgeBaseInterface`](https://github.com/zgornel/DataLinter/blob/master/src/kb.jl)
-- [`KnwoledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb_native.jl)
+- [`KnowledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb_native.jl)
 - [`OutputInterface`](https://github.com/zgornel/DataLinter/blob/master/src/output.jl)

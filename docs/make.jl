@@ -13,14 +13,14 @@ push!(LOAD_PATH,"../src/")
 makedocs(
     #modules = [DataLinter],
     format = Documenter.HTML(),
-    sitename = "A Data Linter",
-    authors = "Corneliu Cofaru, Vrije Universiteit Brussel",
+    sitename = "DataLinter",
+    authors = "Corneliu Cofaru",
     clean = true,
     debug = true,
     pages = [
         "Introduction" => "index.md",
-        "Linters, configuration" => "linters_config.md",
         "Usage examples" => "examples.md",
+        "Linters and configuration" => "linters_config.md",
         "API Reference" => "api.md"
     ],
     repo = "github.com:zgornel/DataLinter.git",

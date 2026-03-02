@@ -9,7 +9,7 @@ Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
 using Logging
 using ArgParse
 using DataLinter
-
+using JSON
 
 function get_arguments(args::Vector{String})
     s = ArgParseSettings()
@@ -19,6 +19,10 @@ function get_arguments(args::Vector{String})
         nargs = '+'  # at least one value required
         arg_type = String
         action = :store_arg
+        "--code-path"
+        help = "path to code file"
+        default = ""
+        arg_type = String
         "--kb-path"
         help = "path to knowledge base '.toml' file"
         default = ""
@@ -26,6 +30,10 @@ function get_arguments(args::Vector{String})
         "--config-path"
         help = "path to linter configuration '.toml' file"
         default = ""
+        arg_type = String
+        "--output-type"
+        help = "output type \"text\" or \"json\""
+        default = "text"
         arg_type = String
         "--log-level"
         help = "logging level"
@@ -91,27 +99,41 @@ function real_main()
     logger = ConsoleLogger(stdout, log_level)
     global_logger(logger)
     ### Lint input(s)
+    codepath = args["code-path"]
     kbpath = args["kb-path"]
+    output_type = args["output-type"]
     configpath = args["config-path"]
     filepaths = unique!(args["input(s)"])
     linters = unique!(args["linters"])
     if isempty(filepaths)
         @error "Provide at least one file to lint."
     end
+    buffer = if output_type == "json"
+            IOBuffer()
+        else
+            stdout
+        end
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
-                DataLinter.cli_linting_workflow(
+                # lintout is raw output, not used
+                # can be potantially used as 'raw' output
+                _, lintout = DataLinter.cli_linting_workflow(
                     filepath,
+                    codepath,
                     kbpath,
                     configpath;
-                    buffer = stdout,
+                    buffer = buffer,
                     show_stats = true,
                     show_passing = false,
                     show_na = false,
                     progress = progress,
                     linters = linters
                 )
+            end
+            if output_type == "json"
+               string_buf = read(seekstart(buffer), String)
+               print(stdout, JSON.json("linting_output" => string_buf))
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t
@@ -134,11 +156,17 @@ end
 ##############
 # Run client #
 ##############
+Base.exit_on_sigint(false)
 
 main_script_file = abspath(PROGRAM_FILE)
 
 if occursin("debugger", main_script_file) || main_script_file == @__FILE__
-    real_main()
+    try
+        real_main()
+    catch e
+        "Exception $e caught, exiting..."
+        return 1
+    end
 end
 
 end  # module

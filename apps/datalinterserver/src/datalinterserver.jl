@@ -11,6 +11,7 @@ using JSON
 using DelimitedFiles
 using ArgParse
 using DataLinter
+using CSV
 
 # Default forecaster port
 const SERVER_HTTP_PORT = 10000
@@ -20,6 +21,11 @@ const SERVER_HTTP_PORT = 10000
 const LOG_LEVEL = Logging.Debug
 global_logger(ConsoleLogger(stdout, LOG_LEVEL))
 
+# Linting request values
+const DEFAULT_LINTERS = ["all"]
+const DEFAULT_SHOW_NA = false
+const DEFAULT_SHOW_STATS = false
+const DEFAULT_SHOW_PASSING = false
 
 function get_server_commandline_arguments(args::Vector{String})
     s = ArgParseSettings()
@@ -78,35 +84,37 @@ function real_main()
     # Get IP, port, directory
     http_ip = args["http-ip"]
     http_port = args["http-port"]
-    config_path = args["config-path"]
-    if isempty(config_path) || !isfile(config_path)
+    configpath = args["config-path"]
+    if isempty(configpath) || !isfile(configpath)
         @warn "Config file not correctly specified (--config-path),  defaults will be used."
     end
-    kb_path = args["kb-path"]
-    if isempty(kb_path) || !isfile(kb_path)
-        @warn "KB file not correctly specified (--kb-path), defaults will be used."
+    kbpath = args["kb-path"]
+    if isempty(kbpath) || !isfile(kbpath)
+        @debug "KB file not correctly specified (--kb-path), defaults will be used."
     end
 
     # Start I/O server(s) #
     # ################### #
-    linting_server(http_ip, http_port; config_path = config_path, kb_path = kb_path)
+    linting_server(http_ip, http_port; configpath = configpath, kbpath = kbpath)
     return 0
 end
 
 
-function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config_path = "", kb_path = "")
+function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; configpath = "", kbpath = "")
     #Checks
     if port <= 0 || port == nothing
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
     end
-
+    # Assign addresses: try IPv4 first, IPv6 second
     addr = try
         IPv4(addr)
-        IPv6(addr)
-        addr
     catch
-        @warn "HTTP IP $addr is not valid, using `localhost`..."
-        Sockets.localhost
+        try
+            IPv6(addr)
+        catch
+            @warn "HTTP IP $addr is not valid, using `localhost`..."
+            Sockets.localhost
+        end
     end
 
     # Define REST endpoints to dispatch to "service" functions
@@ -114,18 +122,17 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config_path
     HTTP.register!(ROUTER, "GET", "/*", noop_req_handler)
     HTTP.register!(ROUTER, "GET", "/api/kill", kill_req_handler)
     HTTP.register!(ROUTER, "POST", "/*", noop_req_handler)
-    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(config_path, kb_path))
+    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(configpath, kbpath))
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    return HTTP.serve(Sockets.IPv4(addr), port, readtimeout = 0) do http_req::HTTP.Request
+    return HTTP.serve(addr, port, readtimeout = 0) do http_req::HTTP.Request
         handler_output = try
             ROUTER(http_req)
         catch e
             @debug "Error handling HTTP request.\n$e"
             -1  # will be visible in HTTP headers, "Status"=>"ERROR"
         end
-        #TODO(Corneliu): Differentiate between types of errors
         if handler_output === nothing
             # An unsupported endpoint was called
             return HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
@@ -155,60 +162,76 @@ kill_req_handler(req::HTTP.Request) = begin
 end
 
 
-linting_handler_wrapper(config_path, kb_path) = (req::HTTP.Request) -> begin
+linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
     @debug "HTTP request $(req.target) received."
-    _request = JSON.parse(IOBuffer(HTTP.payload(req)))
-    config = if !isempty(config_path)
+    config = if !isempty(configpath)
         try
-            DataLinter.LinterCore.load_config(config_path)
+            DataLinter.Configuration.load_config(configpath)
         catch e
-            @warn "Error loading the config @$config_path\n$e"
+            @warn "Error loading the config @$configpath\n$e"
             nothing
         end
     end
-    config !== nothing && @debug "config loaded @$config_path"
-    kb = if !isempty(kb_path)
+    config !== nothing && @debug "config loaded @$configpath"
+    kb = if !isempty(kbpath)
         try
-            DataLinter.kb_load(kb_path)
+            DataLinter.kb_load(kbpath)
         catch e
-            @warn "Error loading the KB @$kb_path\n$e"
+            @debug "Error loading the KB @$kbpath\n$e"
             nothing
         end
     end
-    kb !== nothing && @debug "KB loaded @$kb_path"
-    ctx = _request["linter_input"]["context"]
-    _raw = try
-        readdlm(IOBuffer(ctx["data"]), first(ctx["data_delim"]), Any, header = ctx["data_header"])
+    kb !== nothing && @debug "KB loaded @$kbpath"
+    _request = try
+        JSON.parse(IOBuffer(HTTP.payload(req)))
     catch e
-        @warn "Error parsing data\n$e"
-        nothing, nothing
+        @debug "Could not parse HTTP request\n$e"
+        return nothing
     end
-    raw_data, raw_header = if ctx["data_header"] == false
-        _raw, ["x" * string(i) for i in 1:size(_raw, 2)]
-    else
-        _raw
+
+    #JSON validation
+    try
+        @assert haskey(_request, "linter_input") "Missing \"linter_input\" key"
+        @assert haskey(_request["linter_input"], "context") "Missing \"context\" key"
+        @assert haskey(_request["linter_input"], "options") "Missing \"options\" key"
+    catch e
+        @warn "Malformed request:\n$e"
     end
-    isnothing(raw_data) && return nothing
-    for dv in eachcol(raw_data)
-        try
-            dv[isnothing.(dv)] .= missing
-        catch
-        end
-        try
-            dv[isempty.(dv)] .= missing
-        catch
-        end
+    ctx = _request["linter_input"]["context"]
+    opts = _request["linter_input"]["options"]
+
+    # Read data from request
+    data = try
+        data_source = if ctx["data_type"] == "dataset"
+                seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
+            elseif ctx["data_type"] == "filepath"
+                _path = abspath(expanduser(ctx["data"]))  # take the absolute pathabspath(expanduser(ctx["data"]))  # take the absolute path
+                @assert ispath(_path) "No valid entity @$_path"
+                _path
+            else
+                @error "Data type $(ctx["data_type"]) not supported"
+            end
+        CSV.read(data_source,
+                 CSV.Tables.Columns,
+                 delim=first(ctx["data_delim"]),
+                 header=ctx["data_header"])
+    catch e
+        @debug "Error loading data\n$e"
+        nothing
     end
-    data = Dict(Symbol(h) => col for (h, col) in zip(raw_header, collect(eachcol(raw_data))))
-    @debug "CSV data loaded and succesfully processed."
-    code = ctx["code"]
-    show_passing = get(_request["linter_input"]["options"], "show_passing", false)
-    show_stats = get(_request["linter_input"]["options"], "show_stats", false)
-    show_na = get(_request["linter_input"]["options"], "show_na", false)
+    isnothing(data) && return nothing
+    @debug "CSV data loaded and succesfully processed.\n$data"
+
+    # Read code and options from request
+    code = get(ctx, "code", nothing)
+    linters = get(ctx, "linters", DEFAULT_LINTERS)
+    show_passing = get(opts, "show_passing", DEFAULT_SHOW_PASSING)
+    show_stats = get(opts, "show_stats", DEFAULT_SHOW_STATS)
+    show_na = get(opts, "show_na", DEFAULT_SHOW_NA)
     try
         buffer = IOBuffer()
-        ctx_code = DataLinter.build_data_context(data, code)
-        lintout = DataLinter.lint(ctx_code, kb; config = config)
+        data_ctx = DataLinter.DataInterface.build_data_context(data, code)
+        lintout = DataLinter.lint(data_ctx, kb; config, linters)
         process_output(lintout; buffer, show_passing, show_stats, show_na)
         score = DataLinter.OutputInterface.score(lintout; normalize = true)
         string_buf = read(seekstart(buffer), String)
@@ -223,8 +246,14 @@ end
 ##############
 # Run server #
 ##############
+Base.exit_on_sigint(false)
 if abspath(PROGRAM_FILE) == @__FILE__
-    real_main()
+    try
+        real_main()
+    catch e
+        "Exception $e caught, exiting..."
+        return 1
+    end
 end
 
 end  # module
