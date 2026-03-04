@@ -10,6 +10,7 @@
 #               --log-level debug`
 
 FROM debian:trixie-slim
+LABEL org.opencontainers.image.source https://github.com/zgornel/DataLinter
 RUN apt-get update
 RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
 #RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
