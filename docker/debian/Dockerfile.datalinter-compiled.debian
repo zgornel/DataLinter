@@ -1,0 +1,169 @@
+# Debian (Trixie) Linux based commands
+
+# Example run of the datalinter server
+# `docker run -it --rm\
+#       -p 10000:10000\
+#       ghcr.io/zgornel/datalinter-compiled:latest\
+#           /datalinterserver/bin/datalinterserver\
+#               -i 0.0.0.0\
+#               --config-path /datalinter/config/r_modelling_config.toml\
+#               --log-level debug`
+
+FROM debian:trixie-slim
+RUN apt-get update
+RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
+#RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
+#RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
+
+# Create directories, copy files
+# ------------------------------
+
+# Directories
+RUN mkdir -p /_config
+RUN mkdir -p /_data
+RUN mkdir -p /output
+RUN mkdir -p /workspace
+RUN mkdir -p /datalinter/knowledge
+RUN mkdir -p /datalinter/config
+RUN mkdir -p /datalinterserver/knowledge
+RUN mkdir -p /datalinterserver/config
+RUN mkdir -p /tmp/test/data
+RUN mkdir -p /tmp/test/code
+
+
+# Copy binaries
+WORKDIR /
+COPY ./build/datalinter /datalinter
+COPY ./build/datalinterserver /datalinterserver
+# Copy other files
+COPY ./knowledge /datalinter/knowledge
+COPY ./knowledge /datalinterserver/knowledge
+COPY ./config /datalinter/config
+COPY ./config /datalinterserver/config
+COPY ./test/data /tmp/test/data
+COPY ./test/code /tmp/test/code
+COPY ./test/test_config.toml /tmp/test/test_config.toml
+
+# Prime dependencies for top level script
+RUN datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level error > /dev/null
+RUN datalinterserver/bin/datalinterserver --help > /dev/null
+
+# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
+### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
+
+
+# Tree sitter stuff
+# ----------------------------------------
+RUN mkdir -p /root/dev/
+RUN mkdir -p /root/src/
+RUN mkdir -p /workspace
+
+# Install tree-sitter from Debian Sid (unstable), v0.25
+RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
+RUN apt-get update
+RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.25 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990'> /etc/apt/preferences.d/tree-sitter
+RUN apt-get -y install libtree-sitter0.25 tree-sitter-cli
+
+# Other tree-sitter installs (disabled)
+# -------------------------------------
+# To install tree-sitter from Debian Trixie, v0.22, use line below
+### RUN apt-get -y install libtree-sitter0.22 tree-sitter-cli
+
+# Install tree-sitter from source
+### RUN apt-get -y install build-essential cmake pkg-config rustc
+### RUN git clone https://github.com/tree-sitter/tree-sitter.git /root/src/tree-sitter
+### WORKDIR /root/src/tree-sitter
+### RUN git checkout v0.25.10
+### RUN make
+### RUN make install
+### WORKDIR /root/src/tree-sitter/cli
+### RUN cargo build --release
+### RUN cargo install --path /usr/local/bin
+### RUN apt-get -y remove build-essential cmake pkg-config rustc
+### RUN apt-get autoremove
+
+
+# tree-sitter set-up and grammar installation
+# ------------------------------------------------
+# Generate /root/.config/tree-sitter/config.json with:
+# { "parser-directories": [
+#       "/root/dev/",
+#       "/root/src/"
+#   ], ... }
+WORKDIR /
+RUN tree-sitter init-config
+
+# R parser
+WORKDIR /root/dev
+RUN git clone https://github.com/r-lib/tree-sitter-r
+WORKDIR /root/dev/tree-sitter-r
+RUN tree-sitter generate
+
+# Python parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-python
+WORKDIR /root/dev/tree-sitter-python
+RUN tree-sitter generate
+
+# Julia parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-julia
+WORKDIR /root/dev/tree-sitter-julia
+RUN tree-sitter generate
+
+# C parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-c
+WORKDIR /root/dev/tree-sitter-c
+RUN tree-sitter generate
+
+# C-sharp parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-c-sharp
+WORKDIR /root/dev/tree-sitter-c-sharp
+RUN tree-sitter generate
+
+# GO parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-go
+WORKDIR /root/dev/tree-sitter-go
+RUN tree-sitter generate
+
+# Java parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-java
+WORKDIR /root/dev/tree-sitter-java
+RUN tree-sitter generate
+
+# Javascript parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
+WORKDIR /root/dev/tree-sitter-javascript
+RUN tree-sitter generate
+
+# Typescript parser --> FAILS
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-typescript
+#WORKDIR /root/dev/tree-sitter-typescript
+#RUN tree-sitter generate
+
+# Angular parser --> FAILS
+#WORKDIR /root/dev
+#RUN git clone https://github.com/dlvandenberg/tree-sitter-angular
+#WORKDIR /root/dev/tree-sitter-angular
+#RUN tree-sitter generate
+
+# HTML parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-html
+WORKDIR /root/dev/tree-sitter-html
+RUN tree-sitter generate
+
+# JSON parser
+WORKDIR /root/dev
+RUN git clone https://github.com/tree-sitter/tree-sitter-json
+WORKDIR /root/dev/tree-sitter-json
+RUN tree-sitter generate
+
+WORKDIR /
+

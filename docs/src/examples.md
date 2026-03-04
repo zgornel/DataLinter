@@ -129,7 +129,7 @@ $ docker run -it --rm -p10000:10000 \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinterserver/bin/datalinterserver \
             -i 0.0.0.0 \
-			-p 10000 \
+            -p 10000 \
             --config-path /datalinter/config/r_modelling_config.toml \
             --log-level error
 ```
