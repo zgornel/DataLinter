@@ -12,6 +12,7 @@ docker run -it --rm \
     --volume="${DIR}":/tmp ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinter/bin/datalinter \
             "/tmp/${FILE}" \
+            --config-path /datalinter/config/default.toml \
             --progress \
             --timed \
             --print-exceptions \
