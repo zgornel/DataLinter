@@ -330,7 +330,6 @@ function is_glmmTMB_data_correctly_modelled(
         else  # nvars != 2
             return false
         end
-        return result
     catch e
         @debug "is_glmmTMB_data_correctly_modelled: Failed\n$e"
         return nothing

@@ -18,7 +18,7 @@
     tokenizable_string = false
     number_as_string = true
     zipcodes_as_values = false
-    large_outliers = true
+    large_outliers = false
     int_as_float = true
     enum_detector = false
     uncommon_list_lengths = false
@@ -36,8 +36,8 @@
     # Specific R linters
     R_glmmTMB_target_variable = true
     R_glmmTMB_binomial_modelling = true
-    R_lm_modelling = true
-    R_glm_binomial_modelling = true
+    R_lm_modelling = false
+    R_glm_binomial_modelling = false
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
 # ```
