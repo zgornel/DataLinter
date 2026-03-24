@@ -321,9 +321,14 @@ function is_glmmTMB_data_correctly_modelled(
         nvars = length(unique(tc))
         arg_name, _... = ParSitter.get_capture(query_results, "arg_name")
         arg_value, _... = ParSitter.get_capture(query_results, "arg_value")
-        result = true
-        if nvars == 2  # we have a binomial target variable
-            result = arg_name == "link" && arg_value ∈ acceptable_link_values
+        if nvars == 2
+            if arg_name == "link"
+                return arg_value ∈ acceptable_link_values
+            else
+                return true
+            end
+        else  # nvars != 2
+            return false
         end
         return result
     catch e
