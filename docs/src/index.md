@@ -4,14 +4,16 @@ CurrentModule=DataLinter
 
 # Introduction
 
-DataLinter is a library for contextual linting of data and code. The main idea behind the linter is that by providing additional context, more complex issues relating to data and code quality can be detected as issues in data modelling can arise due to both data structure as well as algorithmic or parameter choices. 'Context' here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Alternatively, one could provide, for example, the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language where the data is used. This provides a much higher degree of flexibility in the types of checks that can be implemented.
+DataLinter is a library for contextual linting of data and code. Its main ideea is that providing additional context leads to the detection of  more complex issues relating to data and code quality. These can arise due to both data structure as well as algorithmic or parameter choices.
 
-DataLinter development started by rewriting [Google's data linter project](https://github.com/brain-research/data-linter) in the Julia language. We aim for a redesign that aims at a richer and faster experience.
+*Context* here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Context in this case could be the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language which uses the data. This provides a much higher degree of flexibility in the types of checks that can be implemented.
+
+DataLinter development started by rewriting [Google's data linter project](https://github.com/brain-research/data-linter) in the Julia language. The aim of the redesign is to provide a richer and faster experience.
 
 ## Features
 Features at a glance:
- - orignal set of data linters from Google
- - additional data-only linters
+ - [CSV.jl](https://github.com/JuliaData/CSV.jl) data support
+ - data linters (includes original Google set)
  - [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
  - R language linting support
  - CLI tool (`datalinter`)

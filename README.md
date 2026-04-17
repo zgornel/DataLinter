@@ -30,7 +30,7 @@ DataLinter ships with **20 built-in linters**. Description available [here](http
 
 ## License
 
-This code has an GPLv3 license.
+This code has an MIT license.
 
 
 ## Reporting Bugs
