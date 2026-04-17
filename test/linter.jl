@@ -13,7 +13,7 @@
         @test fieldtypes(LC.Linter) == (
             Symbol, String, Function, Function,
             Function, String, Function,
-            Union{Nothing, Tuple}, Union{Nothing, Symbol},
+            Union{Nothing, Tuple, String}, Union{Nothing, Symbol},
             Union{Nothing, String}, Dict{String},
         )
     end
