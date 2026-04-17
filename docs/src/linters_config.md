@@ -1,4 +1,4 @@
-## Lint Catalog
+## Full lint catalog & Configuration guide
 
 DataLinter ships with **20 built-in linters** divided into two families:
 

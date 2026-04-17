@@ -1,11 +1,62 @@
 module KnowledgeBaseNative
 
 using TOML
+using Dates
+using StatsBase
+using Distributions
+using HypothesisTests
+using Tables
+using ParSitter
+
 import ..KnowledgeBaseInterface:
     kb_load, kb_query,
     AbstractKnowledgeBase,
     build_linters,
     Linter
+
+# Meta-types for varius column element types
+NumericEltype = Union{<:Number, Union{Missing, <:Number}}
+FloatEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
+StringEltype = Union{<:AbstractString, Union{Missing, <:AbstractString}}
+TimeEltype = Union{<:Dates.AbstractTime, Union{Missing, <:Dates.AbstractTime}}
+ListEltype = Union{Any, Vector{Any}}
+
+check_correctness(check_against) =
+    (result) -> begin
+    if result === nothing
+        return nothing
+    elseif result == check_against
+        return true
+    else
+        return false
+    end
+end
+
+include("rformula.jl")
+
+# Load linters code
+const NATIVE_KB_DIR = joinpath(dirname(abspath(@__FILE__)),
+                        "..", "..", "..", "knowledge", "native")
+for (root, _, files) in walkdir(NATIVE_KB_DIR)
+    for file in files
+        full_file = joinpath(NATIVE_KB_DIR, file)
+        try
+            include(full_file)
+            @debug "Included KB Native file @$full_file"
+        catch e
+            @warn "Could not include KB Native file @$full_file\n$e"
+        end
+    end
+end
+
+_LINTERS = Dict(
+    "google" => [GOOGLE_LINTERS],
+    "experimental" => [EXPERIMENTAL_LINTERS],
+    "r" => [R_LINTERS],
+    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS]
+)
+
+
 
 struct KnowledgeBase <: AbstractKnowledgeBase
     data::Dict
@@ -32,8 +83,6 @@ end
 function __query(::KnowledgeBase, query)
     return @error "KB query is not implemented"
 end
-
-include("kb_native_linters.jl")
 
 # Actual implementation of the Interface
 """
@@ -66,14 +115,6 @@ end
 function kb_query(kb::KnowledgeBase, query::String)
     return __query(kb.data, query)
 end
-
-
-_LINTERS = Dict(
-    "google" => [GOOGLE_LINTERS],
-    "experimental" => [EXPERIMENTAL_LINTERS],
-    "r" => [R_LINTERS],
-    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS]
-)
 
 function build_linters(kb, ctx; linters = ["all"])
     #TODO: Implement query of the knowledge base
