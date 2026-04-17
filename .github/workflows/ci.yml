@@ -52,13 +52,13 @@ jobs:
         run: |
           docker push ghcr.io/zgornel/datalinter-compiled:latest
 
-      #- name: Upload Artifact GitHub Action
-      #  uses: actions/upload-artifact@v6
-      #  with:
-      #    name: datalinter-compiled-binary
-      #    path: ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}/build
-      #    compression-level: 7 # high compression (max 9)
-      #    retention-days: 5
+      - name: Upload Artifact GitHub Action
+        uses: actions/upload-artifact@v6
+        with:
+          name: datalinter-compiled-binary
+          path: ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}/build
+          compression-level: 9 # high compression (max 9)
+          retention-days: 15
 
       - id: cleanup
         name: Cleanup of Docker containers and images
