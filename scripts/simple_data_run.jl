@@ -1,11 +1,9 @@
-#using Revise
-#using Pkg
-#Pkg.activate(joinpath(dirname(@__FILE__),".."))  # we assume that this file lies in ./scripts
-Base.set_active_project(joinpath(dirname(@__FILE__), "..", "Project.toml"))
+using Pkg
+const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..")
+Pkg.activate(joinpath(PROJECT_PATH))  # we assume that this file lies in ./scripts
 using Random
 using Dates
 using Tables
-using Revise
 using DataLinter
 
 n = 10_000
@@ -28,21 +26,16 @@ for (srow, drow) in duplicates
         col[drow] = col[srow]
     end
 end
-code = "apply_some_classifier"  # some sample code, will activate only the missing rule
 
 kbpath = joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")
 kb = DataLinter.kb_load(kbpath)
 
+config_path = joinpath(PROJECT_PATH, "config", "r_modelling_config.toml")
+config = DataLinter.LinterCore.load_config(config_path)
+
 # First case, print to stdout linting on data
 buf = stdout
 ctx_no_code = DataLinter.build_data_context(data)
-lintout = DataLinter.lint(ctx_no_code, kb; config = nothing);
+lintout = DataLinter.lint(ctx_no_code, kb; config);
 DataLinter.LinterCore.process_output(lintout; buffer = buf, show_stats = true, show_passing = false)
-
-println("------------")
-# Second case, print to buffer (and print the buffer), linting on data+code
-buf = stdout; #buf = IOBuffer();
-ctx_code = DataLinter.build_data_context(data, code)
-@time lintout = DataLinter.lint(ctx_code, kb; config = nothing);
-DataLinter.LinterCore.process_output(lintout; buffer = buf, show_stats = true, show_passing = true, show_na = true)
 buf isa IOBuffer && DataLinter.OutputInterface.print_buffer(buf);
