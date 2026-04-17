@@ -24,7 +24,7 @@ function get_arguments(args::Vector{String})
         default = ""
         arg_type = String
         "--kb-path"
-        help = "path to knowledge base '.toml' file"
+        help = "path to knowledge base file"
         default = ""
         arg_type = String
         "--config-path"
