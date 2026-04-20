@@ -35,8 +35,10 @@ end
 include("rformula.jl")
 
 # Load linters code
-const NATIVE_KB_DIR = joinpath(dirname(abspath(@__FILE__)),
-                        "..", "..", "..", "knowledge", "native")
+const NATIVE_KB_DIR = joinpath(
+    dirname(abspath(@__FILE__)),
+    "..", "..", "..", "knowledge", "native"
+)
 for (root, _, files) in walkdir(NATIVE_KB_DIR)
     for file in files
         full_file = joinpath(NATIVE_KB_DIR, file)
@@ -55,7 +57,6 @@ _LINTERS = Dict(
     "r" => [R_LINTERS],
     "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS]
 )
-
 
 
 struct KnowledgeBase <: AbstractKnowledgeBase

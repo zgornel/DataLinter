@@ -32,6 +32,8 @@
     many_missing_values = true
     negative_values = false
     imbalanced_target_variable = false
+    vif_colinearity = true
+    cnc_colinearity = true
 
     # Specific R linters
     R_glmmTMB_target_variable = true
@@ -103,6 +105,12 @@
 
     [parameters.imbalanced_target_variable]
         threshold = 0.1
+
+    [parameters.vif_colinearity]
+        vif_threshold = 20.0
+
+    [parameters.cnc_colinearity]
+        cnc_threshold = 150.0
 
     # R modelling linters
     [parameters.R_glmmTMB_target_variable]
