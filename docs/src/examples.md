@@ -54,6 +54,8 @@ total 24
 -rw-r--r--    1 root     root          4392 Feb 19 11:14 r_modelling_config.toml
 ```
 
+> Note: To use custom i.e. local configuration files, one should map the local configuration directory to one in the Docker image, `_config` for example. Therefore, when running the `docker run` command one should have the mapping as `--volume=<PATH/TO/LOCAL/CONFIG>:/_config`.
+
 ## `datalinter` CLI-based linting
 
 The CLI-based linter is useful for one-time linting, as is the case in CI pipelines. Contexts can be described easily with simple options i.e. type of experiment, target columns, data columns in the configuration file and also by providing a path to a code snippet relevant to the data.
@@ -178,7 +180,7 @@ Optional arguments:
 
 ### Running the server
 
-To start the linting server and listen on address `0.0.0.0` and port `10000` one can run
+To start the linting server with one of the default configurations and listen on address `0.0.0.0` and port `10000` one can run
 ```
 $ docker run -it --rm -p10000:10000 \
     ghcr.io/zgornel/datalinter-compiled:latest \
@@ -219,20 +221,20 @@ The HTTP server expects the following requests:
 
 For lint requests, a representative example of the `body` of the request is shown below:
 ```json
-{
-  "options" : {
-         "show_na" : false,
-         "show_passing" : false,
-         "show_stats" : true
-         },
-  "context" : {
-         "data_header" : true,
-         "data_delim" : ",",
-         "data_type" : "dataset",
-         "data" : "a,b,c\n1,2,3\n4,5,6",
-         "code" : "",
-         "linters" : ["all"]
-         }
+"linter_input": {
+    "options" : {
+        "show_na" : false,
+        "show_passing" : false,
+        "show_stats" : true
+    },
+    "context" : {
+        "data_header" : true,
+        "data_delim" : ",",
+        "data_type" : "dataset",
+        "data" : "a,b,c\n1,2,3\n4,5,6",
+        "code" : "",
+        "linters" : ["all"]
+    }
 }
 ```
 The available fields are:
