@@ -1,10 +1,23 @@
-"""
-A data linter developed at the Vrije Universiteit Brussel, 2024.
+#=
+oooooooodxOKWMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMxoooooooOMMMMMMMMMd  :NMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+0o   .xxo:. .:0MMMMMMMMMMMMMMMMMMWKKMMMMMMMMMMMMMMMMKk.   d0XMMMMMMMMMd. ;NMMMMMMMMMMMMMMMMMMK0WMMMMMMMMMMMMMMMMMMMMMMMM
+MO   ,MMMMNc   :NMMMMWNXXXWMMMMMX, .NWWMMMWNXXXNMMMMMW.   XMMMMMMMMMMWWNNWMMWWWWWMMNXXWMMMMWd  kWWMMMMNXXXWMMMWWWWWMMMNK
+MO   ,MMMMMW,   dMM0.;lo:. 'kMNd.   clOMN';lo:  .xMMMW.   XMMMMMMMMMM0,  .XMO,  .do;   :NWk;   ;lkMNl'.:c..cNMO;  .kl.
+MO   ,MMMMMM:   cMMXxNMMM:  .XMM,  .WMMMWkWMMMc  .NMMW.   XMMMMMMMMMMM:   KMMc  .NMMl   OMMd   OMMW;  ,MMc  ;WMd   ;xO0;
+MO   ,MMMMMM;   oMWkc;;lo.  .XMM,  .WMMM0l;;lo'  .NMMW.   XMMMMMMMMMMM:   KMMc  .WMMo   OMMd   OMMX.  .lc;'':NMd   kMMMM
+MO   ,MMMMMK.  'XMd   kMM:  .XMM,  .WMM0   lMMc  .NMMW.   XMMMMMMN,kMM:   KMMc  .WMMo   OMMd   OMMN.  ,MMMMMMMMd   kMMMM
+Nx   .000kc  .dWMMx   lK0'  .KMM:   xKK0   ;00,  .XMWK.   kKKK00Oc 0MW:   0MW:  .NMMl   kMMO   c00Wk.  lO00OKMWo   xWMMM
+'.........'ckWMMMMWo.  .:l...,XMXc.  .cMk.  .:o...;Xc.............'XMo....'Kl....cWO....'0MMx.   ;NMNl.   .;0Mo.....cNMM
+---
+   `- DataLinter, a code and data linter by Corneliu Cofaru, ©2026.
+=#
 
+
+#=
   I. Architecture (dataflow diagram):
   ----------------------------------
 
-```
+    ```
                                         .---------------.
        (knowledge) -------------------->|  KB INTERFACE |
                                         '---------------'
@@ -16,13 +29,13 @@ A data linter developed at the Vrije Universiteit Brussel, 2024.
                   '----------------'        '---------'        '-----------------'
                                                  ^
        (config) --------------(2)----------------'
-```
+    ```
 
   II. Functional components:
   -------------------------
 
     • KB INTERFACE (`src/kb*.jl`)
-      - handles communication with the knowledgebase
+      - handles communication with the knowledge base
       Note: at this point the knowledge i.e. the data linters, is embedded in code
 
     • DATA INTERFACE (`src/data.jl`)
@@ -47,14 +60,12 @@ A data linter developed at the Vrije Universiteit Brussel, 2024.
 
     • config
       - keeps configuration of the linter
-      - should be self explanatory '.TOML' file
+      - it is a self explanatory '.TOML' file
       - option names for linter parameters are also keyword argument names in the code
 
     • knowledge
-      - knowledge relevant for the functioning of the data linter
-      - currently all knowledge is present in `src/kb*.jl` in the form of data structures and
-        throughout the code as functions
-        Note: this will change over time
+      - code that implements the linters, found in the `knowledge/` directory
+      - currently, in the form of data structures and functions
 
     • output
       - what the user receives from the linter
@@ -65,7 +76,9 @@ A data linter developed at the Vrije Universiteit Brussel, 2024.
     • (2) - linter configuration information
     • (3) - knowledge i.e. linters, applicability conditions etc.
     • (4) - linting output i.e. linters/context, output, data stats etc.
-"""
+=#
+
+
 module DataLinter
 
 using Reexport
