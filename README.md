@@ -24,9 +24,13 @@ Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for info
 
 Integrations are available for [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter) and [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
 
+## Lint Catalog
+
+DataLinter ships with **23 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+
 ## License
 
-This code has an GPLv3 license.
+This code has an MIT license.
 
 
 ## Reporting Bugs

@@ -38,16 +38,16 @@ function get_server_commandline_arguments(args::Vector{String})
         help = "HTTP IP address"
         default = "127.0.0.1"
         "--config-path"
-        help = "Path for the configuration file"
+        help = "path to linter configuration '.toml' file"
         arg_type = String
         default = ""
         "--kb-path"
-        help = "Path for the KB file"
+        help = "path to knowledge base file"
         arg_type = String
         default = ""
         "--log-level"
         help = "logging level"
-        default = "debug"
+        default = "error"
     end
     return parse_args(args, s)
 end

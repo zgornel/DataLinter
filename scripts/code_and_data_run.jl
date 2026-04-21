@@ -14,9 +14,8 @@ kb = DataLinter.kb_load(joinpath(PROJECT_PATH, "knowledge", "linting.toml"))
 filepath = joinpath(PROJECT_PATH, "data", "imbalanced_data.csv")
 code_path = joinpath(PROJECT_PATH, "data", "r_snippet.r")
 
-#configpath = "config/default.toml"
-config_imbalanced = joinpath(PROJECT_PATH, "config", "r_glmmTMB_imbalanced_data.toml")
-config = DataLinter.LinterCore.load_config(config_imbalanced)
+config_path = joinpath(PROJECT_PATH, "config", "r_modelling_config.toml")
+config = DataLinter.LinterCore.load_config(config_path)
 
 ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, String))
 

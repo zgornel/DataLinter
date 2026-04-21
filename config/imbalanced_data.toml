@@ -56,6 +56,8 @@
     many_missing_values = true
     negative_values = true
     imbalanced_target_variable = true
+    vif_colinearity = true
+    cnc_colinearity = true
 
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
@@ -122,3 +124,9 @@
 
     [parameters.imbalanced_target_variable]
         threshold = 0.1
+
+    [parameters.vif_colinearity]
+        vif_threshold = 20.0
+
+    [parameters.cnc_colinearity]
+        cnc_threshold = 150.0

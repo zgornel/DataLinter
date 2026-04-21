@@ -4,6 +4,8 @@
     kb = nothing
 
     DATA_PATHS = [
+        joinpath(TEST_PATH, "data", "correlated_data.csv"),
+        joinpath(TEST_PATH, "data", "correlated_target_data.csv"),
         joinpath(TEST_PATH, "data", "imbalanced_data.csv"),
         joinpath(TEST_PATH, "data", "data.csv"),
     ]

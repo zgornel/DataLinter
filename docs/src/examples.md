@@ -7,6 +7,12 @@ There are two tools through which linting can be done, both available in the Doc
 
 ## Quick start
 
+All the examples below use code and data available in the repository. These are located in
+ - [`test/data`](https://github.com/zgornel/DataLinter/tree/master/test/data) for datasets; these are `.csv` files
+ - [`test/code`](https://github.com/zgornel/DataLinter/tree/master/test/code) for code snippets
+ - [`config/`](https://github.com/zgornel/DataLinter/tree/master/config) for configuration files
+
+
 ### Testing the Docker image
 The Docker image contains compiled versions of the CLI utility and server. To test that everything works, run:
 ```
@@ -27,6 +33,7 @@ The commands are meant to show the help of the two executables and exit.
 > Note: Before running the linter, make sure that the Docker container has mapped all the relevant directories.
 
 ### Docker image folders, default configs
+
 Currently, in the root directory of the `datalinter-compiled` Docker image, the following empty directories are available for mapping:
  - `/_data` - for mapping data folders
  - `/_config` - for mapping folders with multiple configuration files
@@ -47,9 +54,32 @@ total 24
 -rw-r--r--    1 root     root          4392 Feb 19 11:14 r_modelling_config.toml
 ```
 
-## CLI-based linting
+> Note: To use custom i.e. local configuration files, one should map the local configuration directory to one in the Docker image, `_config` for example. Therefore, when running the `docker run` command one should have the mapping as `--volume=<PATH/TO/LOCAL/CONFIG>:/_config`.
 
-The CLI-based linter is useful for one-time linting, as is the case in CI pipelines. Contexts can be described easily with simple options i.e. type of experiment, target columns, data columns in the configuration file and also by providing a path to a code snippet relevant to the data. To lint a test dataset with no context, run the following command in the root of the repository:
+## `datalinter` CLI-based linting
+
+The CLI-based linter is useful for one-time linting, as is the case in CI pipelines. Contexts can be described easily with simple options i.e. type of experiment, target columns, data columns in the configuration file and also by providing a path to a code snippet relevant to the data.
+
+### Input arguments
+
+Positional arguments:
+ - `input(s)`, file(s) to be linted
+
+Optional arguments:
+ - `--code-path`, path to code file (default: `""`)
+ - `--kb-path`, path for the knowledge base file (default: `""`) (**not used**)
+ - `--config-path`, path for the `.toml` configuration file (default: `""`)
+ - `--output-type`, output type `"text"` or `"json"` (default: `"text"`)
+ - `--log-level`, logging level (default: `"error"`)
+ - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"all"` (default: `"all"`)
+ - `-v`, `--version`, print version
+ - `--progress`, show progress
+ - `-t`, `--timed`, print timings
+ - `--print-exceptions`, print encountered exceptions while linting
+ - `-h`, `--help`, show help message and exit
+
+### Linting with no context
+The example below lints a dataset with no context. The command can be run in the root of the repository:
 ```
 $ docker run -it --rm \
     --volume=./test/data:/_data \
@@ -78,7 +108,9 @@ The output should look something like:
 12 issues found from 15 linters applied (14 OK, 1 N/A) .
 ```
 
-The following lint uses a configuration file where the some context is provided as well in the config:
+### Linting with `config.toml` context
+
+The command below uses a configuration file where the some context is provided:
 ```
 $ time docker run -it --rm \
     --volume=./test/data:/_data \
@@ -99,7 +131,18 @@ which outputs,
 6 issues found from 16 linters applied (11 OK, 5 N/A) .
 ```
 
-Finally, one can provide code to the linter through the `--code-path` option:
+### Linting with code context
+
+Finally, one can provide code to the linter through the `--code-path` option. The command below will send the following code
+```r
+library(glmmTMB)
+data_path <- "~/projects/DataLinter/test/data/imbalanced_data.csv"
+out1 <- read.csv(data_path, header=TRUE)
+m2 <- glmmTMB(col4 ~ col1 + col2 + col3,
+              data = out1,
+              family=binomial(link="linear"))
+```
+to the linter in addition to the data:
 ```
 time docker run -it --rm \
     --volume=./test/code:/tmp \
@@ -121,9 +164,23 @@ which outputs:
 3 issues found from 11 linters applied (7 OK, 4 N/A) .
 ```
 
-## Server-based linting
+## `datalinterserver` HTTP-based linting
 
-The server version of the linter is useful for integration with editors and other third party apps that can integrate outputs from a remote linter. To start the linting server and listen on address `0.0.0.0` and port `10000` one can run
+The server version of the linter is useful for integration with editors and other third party apps that can interactively communicate by sending data and receiving outputs from a remote linter.
+
+### Input arguments
+
+Optional arguments:
+ - `-p`, `--http-port`, HTTP port (default: `10000`)
+ - `-i`, `--http-ip`, HTTP IP address (default: `"127.0.0.1"`)
+ - `--config-path`, path for the `.toml` configuration file (default: `""`)
+ - `--kb-path`, path for the knowledge base file (default: `""`) (**not used**)
+ - `--log-level`, logging level (default: `"error"`)
+ - `-h`, `--help`, show help over parameters
+
+### Running the server
+
+To start the linting server with one of the default configurations and listen on address `0.0.0.0` and port `10000` one can run
 ```
 $ docker run -it --rm -p10000:10000 \
     ghcr.io/zgornel/datalinter-compiled:latest \
@@ -131,15 +188,14 @@ $ docker run -it --rm -p10000:10000 \
             -i 0.0.0.0 \
             -p 10000 \
             --config-path /datalinter/config/r_modelling_config.toml \
-            --log-level error
+            --log-level info
 ```
 Upon starting, the server outputs:
 ```
- Warning: KB file not correctly specified, defaults will be used.
- └ @ datalinterserver /DataLinter/apps/datalinterserver/src/datalinterserver.jl:83
- [ Info: • Data linting server online @0.0.0.0:10000...
- [ Info: Listening on: 0.0.0.0:10000, thread id: 1
+[ Info: • Data linting server online @0.0.0.0:10000...
+[ Info: Listening on: 0.0.0.0:10000, thread id: 1
 ```
+
 The server accepts HTTP requests with a specific JSON payload containing data or, data and code. Upon receiving a request, it will try to run the linter and return a JSON with the output. A client script can be found in `scripts/client.jl`. The following command sets up a temporary environment for the script to run:
 ```
 $ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
@@ -164,21 +220,21 @@ The HTTP server expects the following requests:
  - `POST` at `/api/lint` which triggers a linting request. This requires a JSON body with data, code and options specified.
 
 For lint requests, a representative example of the `body` of the request is shown below:
-```
-{
-  "options" : {
-         "show_na" : false,
-         "show_passing" : false,
-         "show_stats" : true
-         },
-  "context" : {
-         "data_header" : true,
-         "data_delim" : ",",
-         "data_type" : "dataset",
-         "data" : "a,b,c\n1,2,3\n4,5,6",
-         "code" : "",
-         "linters" : ["all"]
-         }
+```json
+"linter_input": {
+    "options" : {
+        "show_na" : false,
+        "show_passing" : false,
+        "show_stats" : true
+    },
+    "context" : {
+        "data_header" : true,
+        "data_delim" : ",",
+        "data_type" : "dataset",
+        "data" : "a,b,c\n1,2,3\n4,5,6",
+        "code" : "",
+        "linters" : ["all"]
+    }
 }
 ```
 The available fields are:
@@ -190,7 +246,7 @@ The available fields are:
  - `data_type` string that indicates data source: if `"dataset"`, the `"data"` field contains the data; if `"filepath"`, the `"data"` field is a path to the data file
  - `data` a string that can contain either a path to the data or a string with the raw data, depending on the value of `data_type` whether the data has a header
  - `code` a string which contains any relevant code
- - `linters` a list which selects linters. Available values are `"all"` for all linters, `"r"` for r linters, `"google"` for the Google linters and `"experimental"` for linters marked as experimental. The default is `"all"`.
+ - `linters` a list which selects linters. Available values are `"all"` for all linters, `"r"` for r linters, `"google"` for the Google linters and `"extended"` for new data-only linters. The default is `"all"`.
 
 The response is a HTTP message with the following JSON in the body:
 ```
@@ -206,30 +262,6 @@ $ ./datalinter.sh ./test/data/data.csv
 ```
 The script can be ran from any directory and accepts a single argument, the dataset that is to be linted.
 
-## Running in the Julia REPL
-First, generate some random data:
-```@repl index
-using DataLinter
+## Additional resources
 
-ncols, nrows = 3, 10
-data = [rand(nrows) for _ in 1:ncols]
-```
-then, generate a context object:
-```@repl index
-ctx = DataLinter.build_data_context(data)
-```
-Context objects are the main linter inputs along with a knowledge base and the config.
-!!! note
-
-    At this point the knowledge base is not used.
-
-```@repl index
-kb = DataLinter.kb_load("")         # raises Warning
-lintout = DataLinter.LinterCore.lint(ctx, kb)
-lintout = DataLinter.LinterCore.lint(ctx, nothing)  # also works
-```
-
-Lastly, one can print output of activate linters i.e. the ones that found problems in the data.
-```@repl index
-DataLinter.process_output(lintout)
-```
+More working examples of running the Julia API of the linter can be found in the [`scripts/`](https://github.com/zgornel/DataLinter/tree/master/scripts) directory.

@@ -38,7 +38,7 @@ function build_linters end
     correct_message::Function
     warn_level::String
     correct_if::Function
-    query::Union{Nothing, Tuple}
+    query::Union{Nothing, Tuple, String}
     query_match_type::Union{Nothing, Symbol}
     programming_language::Union{Nothing, String}
     requirements::Dict{String}
@@ -77,35 +77,76 @@ const SPINNER = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 end
 
 
+const QUERY_HELPER_FUNCTIONS = Dict(
+    ("r", ParSitter.TreeQueryExpr{String}) => (
+        target_tree_nodevalue = n -> strip(replace(n.content, r"[\s]" => "")),
+        query_tree_nodevalue = n -> ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head, "@")[1]), n.head),
+        capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
+        node_comparison_yields_true = (tn, qn) -> ParSitter.is_capture_node(qn; capture_sym = "@").is_match || qn.head == "*",
+        node_equality_function = Base.isequal,
+    ),
+    ("r", ParSitter.TreeQueryExpr{ParSitter.TreeQueryNode}) => (
+        target_tree_nodevalue = n -> (string.(strip(replace(n.content, r"[\s]" => ""))), n.name),
+        query_tree_nodevalue = n -> (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
+        capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
+        node_comparison_yields_true = (tn, qn) -> begin
+            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type)
+            return (ParSitter.is_capture_node(qn; capture_sym = "@").is_match && isempty(first(_query_nodevalue(qn)))) || first(_query_nodevalue(qn)) == "*"
+        end,
+        node_equality_function = (tv, qv) -> begin
+            if qv[2] in ("string", "identifier")  # check query capturable types
+                return tv[2] == qv[2] && tv[1] == qv[1] # type and value equality
+            else
+                return tv[1] == qv[1]  # value equality
+            end
+        end,
+    ),
+    ("python", ParSitter.TreeQueryExpr{ParSitter.TreeQueryNode}) => (
+        target_tree_nodevalue = n -> (string.(strip(replace(n.content, r"[\s]" => ""))), n.name),
+        query_tree_nodevalue = n -> (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
+        capture_function = n -> (v = strip(replace(n.content, r"[\s]" => "")), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
+        node_comparison_yields_true = (tn, qn) -> begin
+            _target_nodevalue(n) = (string.(strip(replace(n.content, r"[\s]" => ""))), n.name)
+            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
+                return (
+                    (
+                        ParSitter.is_capture_node(qn; capture_sym = "@").is_match &&
+                        isempty(first(_query_nodevalue(qn)))
+                    ) || first(_query_nodevalue(qn)) == "*"
+                ) && _target_nodevalue(tn)[2] == _query_nodevalue(qn)[2]
+        end,
+        node_equality_function = (tv, qv) -> tv[2] == qv[2] && tv[1] == qv[1],
+    )
+
+)
+
+# Function to get query helper functions based on language and query tree type
+_build_helper_functions(query_tree::T, language) where {T} = QUERY_HELPER_FUNCTIONS[language, T]
+
+# Function that handles different forms of queries (`Tuples` or `Strings`)
+_build_query_tree(query::Tuple, ::String) = ParSitter.build_tq_tree(query)
+
+_build_query_tree(query_code_snippet::String, language::String) = first(ParSitter.parse_code_snippet_to_query(query_code_snippet, language))
+
 "Function that builds a `LintingContext` from code and code query"
 function build_linting_context(code::String, linter::Linter)
-    # Query helper functions
-    __target_nodevalue(n) = strip(replace(n.content, r"[\s]" => ""))
-    __query_nodevalue(n) = ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head, "@")[1]), n.head)
-    __apply_regex_glob(tn, qn) = ParSitter.is_capture_node(qn; capture_sym = "@").is_match || qn.head == "*"
-    __capture_function(n) = (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"])
     # Start parsing and query matching
-    query = linter.query
     language = linter.programming_language
-    if query !== nothing && language !== nothing
+    if linter.query !== nothing && language !== nothing
         try
-            query_tree = ParSitter.build_tq_tree(query)
-            code_struct = (ParSitter.Code(code), language)
-            code_tree = ParSitter.build_xml_tree(
-                first(
-                    values(
-                        ParSitter.parse(code_struct...)
-                    )
-                )
-            )
+            query_tree = _build_query_tree(linter.query, language)
+            code_tree = ParSitter.build_xml_tree(ParSitter.parse(ParSitter.Code(code), language))
+            helper_functions = _build_helper_functions(query_tree, language)
+            # Run query
             query_results = ParSitter.query(
                 code_tree.root,
                 query_tree;
                 match_type = linter.query_match_type,
-                target_tree_nodevalue = __target_nodevalue,
-                query_tree_nodevalue = __query_nodevalue,
-                capture_function = __capture_function,
-                node_comparison_yields_true = __apply_regex_glob
+                target_tree_nodevalue = helper_functions.target_tree_nodevalue,
+                query_tree_nodevalue = helper_functions.query_tree_nodevalue,
+                capture_function = helper_functions.capture_function,
+                node_comparison_yields_true = helper_functions.node_comparison_yields_true,
+                node_equality_function = helper_functions.node_equality_function
             )
             filter!(first, query_results) # keep only matches
             if length(query_results) == 0
