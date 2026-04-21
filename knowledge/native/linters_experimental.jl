@@ -179,5 +179,5 @@ const EXPERIMENTAL_LINTERS = [
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :dataset),
-    )
+    ),
 ]
