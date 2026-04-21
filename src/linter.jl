@@ -126,7 +126,7 @@ _build_helper_functions(query_tree::T, language) where {T} = QUERY_HELPER_FUNCTI
 # Function that handles different forms of queries (`Tuples` or `Strings`)
 _build_query_tree(query::Tuple, ::String) = ParSitter.build_tq_tree(query)
 
-_build_query_tree(query_code_snippet::String, language::String) = ParSitter.parse_code_snippet_to_query(query_code_snippet, language)
+_build_query_tree(query_code_snippet::String, language::String) = first(ParSitter.parse_code_snippet_to_query(query_code_snippet, language))
 
 "Function that builds a `LintingContext` from code and code query"
 function build_linting_context(code::String, linter::Linter)
