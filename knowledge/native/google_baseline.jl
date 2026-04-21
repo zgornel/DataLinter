@@ -235,7 +235,7 @@ end
 
 
 # Linters from http://learningsys.org/nips17/assets/papers/paper_19.pdf
-const GOOGLE_LINTERS = [
+const GOOGLE_BASELINE_LINTERS = [
     # 1. DateTime wrongly encoded as string
     (
         name = :datetime_as_string,

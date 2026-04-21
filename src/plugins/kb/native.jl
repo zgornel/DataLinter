@@ -54,10 +54,10 @@ for (root, _, files) in walkdir(NATIVE_KB_DIR)
 end
 
 _LINTERS = Dict(
-    "google" => [GOOGLE_LINTERS],
-    "experimental" => [EXPERIMENTAL_LINTERS],
-    "r" => [R_LINTERS],
-    "all" => [GOOGLE_LINTERS, EXPERIMENTAL_LINTERS, R_LINTERS]
+    "google" => [GOOGLE_BASELINE_LINTERS],
+    "extended" => [EXTENDED_BASELINE_LINTERS],
+    "r" => [R_BASELINE_LINTERS],
+    "all" => [GOOGLE_BASELINE_LINTERS, EXTENDED_BASELINE_LINTERS, R_BASELINE_LINTERS]
 )
 
 

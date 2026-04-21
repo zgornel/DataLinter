@@ -25,7 +25,7 @@ function client_main(args)
             "data_type" => "dataset",   # "dataset" or "filepath"
             #"data" => data_path,
             #"data_type" => "filepath",
-            "linters" => ["all"],       # which linters to use: "google", "r", "experimental" or "all"
+            "linters" => ["all"],       # which linters to use: "google", "r", "extended" or "all"
             "data_delim" => ",",        # csv delimiter
             "data_header" => true,      # header
             "code" => r_code            # code

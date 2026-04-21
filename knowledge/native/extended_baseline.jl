@@ -107,7 +107,7 @@ function condition_number_check(
     return condition_number_check(Tables.matrix(tblref[]); cnc_threshold)
 end
 
-const EXPERIMENTAL_LINTERS = [
+const EXTENDED_BASELINE_LINTERS = [
     # No missing values in the column
     (
         name = :many_missing_values,

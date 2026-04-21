@@ -71,7 +71,7 @@ Optional arguments:
  - `--config-path`, path for the `.toml` configuration file (default: `""`)
  - `--output-type`, output type `"text"` or `"json"` (default: `"text"`)
  - `--log-level`, logging level (default: `"error"`)
- - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"experimental"`, `"r"`, `"all"` (default: `"all"`)
+ - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"all"` (default: `"all"`)
  - `-v`, `--version`, print version
  - `--progress`, show progress
  - `-t`, `--timed`, print timings
@@ -246,7 +246,7 @@ The available fields are:
  - `data_type` string that indicates data source: if `"dataset"`, the `"data"` field contains the data; if `"filepath"`, the `"data"` field is a path to the data file
  - `data` a string that can contain either a path to the data or a string with the raw data, depending on the value of `data_type` whether the data has a header
  - `code` a string which contains any relevant code
- - `linters` a list which selects linters. Available values are `"all"` for all linters, `"r"` for r linters, `"google"` for the Google linters and `"experimental"` for linters marked as experimental. The default is `"all"`.
+ - `linters` a list which selects linters. Available values are `"all"` for all linters, `"r"` for r linters, `"google"` for the Google linters and `"extended"` for new data-only linters. The default is `"all"`.
 
 The response is a HTTP message with the following JSON in the body:
 ```

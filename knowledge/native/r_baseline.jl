@@ -158,7 +158,7 @@ function check_colinearity_with_target(
 end
 
 
-const R_LINTERS = [
+const R_BASELINE_LINTERS = [
     # Imbalanced target variable in data (R code, glmmTMB algorithm)
     (
         name = :R_glmmTMB_target_variable,
