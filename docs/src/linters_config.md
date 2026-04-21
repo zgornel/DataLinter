@@ -1,6 +1,6 @@
 ## Full lint catalog & Configuration guide
 
-DataLinter ships with **20 built-in linters** divided into two families:
+DataLinter ships with **23 built-in linters** divided into two families:
 
 - **Data-only linters** – work on any tabular dataset, regardless of modeling language.
 - **R-language specific linters** – understand R modeling functions (`lm`, `glm`, `glmmTMB`, …) and their statistical assumptions.
@@ -49,6 +49,8 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |`many_missing_values`|Warns about columns with high missingness|Any dataset|`threshold`|
 |`negative_values`|Checks for negative values in a column|Count / amount columns|-|
 |`imbalanced_target_variable`|Detects imbalanced target classes|Classification targets|`threshold`|
+|`vif_colinearity`|Detects high multicolinearity using VIF |Numerical data|`vif_threshold`|
+|`cnc_colinearity`|Detects high multicolinearity using condition number analysis |Numerical data|`cnc_threshold`|
 
 ### R language specific linters
 |Linter|Description|Model Context|Key Parameters (see config/)|
@@ -57,3 +59,4 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |`R_glmmTMB_binomial_modelling`|Validates link parameter for binomial family in `glmmTMB`|glmmTMB binomial|`acceptable_link_values`|
 |`R_lm_modelling`|Checks normality of non-binary numeric columns in lm models|Linear regression|`pvalue_threshold`|
 |`R_glm_binomial_modelling`|Checks normality of non-binary numeric columns in binomial glm|Logistic regression|`pvalue_threshold`|
+|`R_colinearity_with_target`|Detects whether any dependent variable is highly colinear with the target|Regression algorithms|`threshold`, `algorithms`|

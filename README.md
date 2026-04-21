@@ -26,7 +26,7 @@ Integrations are available for [RStudio](https://github.com/zgornel/Rstudio-Addi
 
 ## Lint Catalog
 
-DataLinter ships with **20 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+DataLinter ships with **23 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
 
 ## License
 
