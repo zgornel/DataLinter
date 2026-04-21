@@ -14,4 +14,4 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 [compat]
 DataLinter = "0.1.0"
 JSON = "^1"
-ParSitter = "0.1.0"
+ParSitter = "0.2.0"
