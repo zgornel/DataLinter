@@ -38,7 +38,8 @@ jobs:
         name:  Build DataLinter
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
+          mkdir ./julia_packages
+          docker run --rm --volume=./build:/DataLinter/build --volume=./julia_packages:/root/.julia/packages ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
 
       - id: build_datalinter-compiled_image
         name:  Build datalinter-compiled image
@@ -47,6 +48,7 @@ jobs:
           docker build --no-cache -f ./docker/debian/Dockerfile.datalinter-compiled.debian -t ghcr.io/zgornel/datalinter-compiled:debian .
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:latest
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.1.0
+          rm -rf ./julia_packages
 
       - id: push_datalinter-compiled_image
         name:  Push to ghcr.io datalinter-compiled image

@@ -45,6 +45,9 @@ COPY ./test/data /tmp/test/data
 COPY ./test/code /tmp/test/code
 COPY ./test/test_config.toml /tmp/test/test_config.toml
 
+# Copy ParSitter repos (needed for the languages/ folder)
+COPY ./julia_packages/ParSitter /root/.julia/packages/ParSitter
+
 # Prime dependencies for top level script
 RUN datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level error > /dev/null
 RUN datalinterserver/bin/datalinterserver --help > /dev/null
