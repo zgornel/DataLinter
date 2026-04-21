@@ -48,7 +48,6 @@ jobs:
           docker build --no-cache -f ./docker/debian/Dockerfile.datalinter-compiled.debian -t ghcr.io/zgornel/datalinter-compiled:debian .
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:latest
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.1.0
-          rm -rf ./julia_packages
 
       - id: push_datalinter-compiled_image
         name:  Push to ghcr.io datalinter-compiled image
