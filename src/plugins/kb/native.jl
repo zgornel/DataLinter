@@ -2,6 +2,8 @@ module KnowledgeBaseNative
 
 using TOML
 using Dates
+using Statistics
+using LinearAlgebra
 using StatsBase
 using Distributions
 using HypothesisTests

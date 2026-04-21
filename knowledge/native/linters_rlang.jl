@@ -97,6 +97,66 @@ end
 
 is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
 
+const PAIRWISE_COLINEARITY_THRESHOLD = 0.9
+
+"""
+    check_pairwise_colinearity(v1, v2; threshold=0.9)
+
+Check if two numeric vectors have high pairwise correlation (colinearity).
+Returns true if correlation exceeds threshold, false otherwise.
+Handles missing values by filtering them out.
+"""
+function check_pairwise_colinearity(v1, v2; threshold = PAIRWISE_COLINEARITY_THRESHOLD)
+    # Filter out missing values
+    mask = .!ismissing.(v1) .& .!ismissing.(v2)
+    if sum(mask) < 3  # Need at least 3 points for meaningful correlation
+        return nothing
+    end
+    v1_clean = v1[mask]
+    v2_clean = v2[mask]
+    # Calculate Pearson correlation coefficient
+    try
+        corr = abs(cor(v1_clean, v2_clean))
+        return corr >= threshold
+    catch
+        return nothing
+    end
+end
+
+const PAIRWISE_COLINEARITY_ALGORITHMS = ["lm", "glm", "glmmTMB"]
+
+function check_colinearity_with_target(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        threshold = PAIRWISE_COLINEARITY_THRESHOLD,
+        algorithms = PAIRWISE_COLINEARITY_ALGORITHMS
+    )
+    try
+        col = linting_ctx.target_variable
+        query_results = linting_ctx.parsing_data
+        tc = getindex(tblref[], __process_target_col(col))
+        alg, _... = ParSitter.get_capture(linting_ctx.parsing_data, "algorithm")
+        if alg ∉ algorithms
+            return nothing
+        end
+        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
+        dvars = RFormulaParser.extract_identifiers(dvars_str)
+        result = false
+        for dvar in dvars
+            _vals = getindex(tblref[], __process_target_col(dvar))
+            _corr = check_pairwise_colinearity(tc, _vals; threshold)
+            if !isnothing(_corr)
+                result |= _corr
+            end
+        end
+        return result
+    catch e
+        @debug "check_colinearity_with_target: Failed\n$e"
+        return nothing
+    end
+end
+
 
 const R_LINTERS = [
     # Imbalanced target variable in data (R code, glmmTMB algorithm)
@@ -249,6 +309,21 @@ const R_LINTERS = [
             ),
         ),
         query_match_type = :nonstrict,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Check colinearity between target variable and dependent variables for specific algorithms
+    (
+        name = :R_colinearity_with_target,
+        description = """ Checks colinearities between target variable and its target variables""",
+        f = check_colinearity_with_target,
+        failure_message = name -> "At least one dependent variable is highly colinear with target variable",
+        correct_message = name -> "No colinearities between target and dependent variables",
+        warn_level = "important",
+        correct_if = check_correctness(false),
+        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{dependent_variables::IDENTIFIER}}, data={{::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),

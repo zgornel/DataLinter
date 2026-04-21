@@ -1,6 +1,3 @@
-using Statistics
-using LinearAlgebra
-
 const MISSING_VALUES_THRESHOLD = 0.9
 function has_many_missing_values(::T, v, vm, name, args...; threshold = MISSING_VALUES_THRESHOLD) where {T}
     n_missings = sum(ismissing.(v))

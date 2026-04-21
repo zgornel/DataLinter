@@ -136,7 +136,7 @@ function build_linting_context(code::String, linter::Linter)
         try
             query_tree = _build_query_tree(linter.query, language)
             code_tree = ParSitter.build_xml_tree(ParSitter.parse(ParSitter.Code(code), language))
-            helper_functions = _build_helper_functions(query_tree, laguage)
+            helper_functions = _build_helper_functions(query_tree, language)
             # Run query
             query_results = ParSitter.query(
                 code_tree.root,
