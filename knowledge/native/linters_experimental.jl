@@ -54,9 +54,9 @@ function high_vif(data_matrix; vif_threshold = DEFAULT_VIF_THRESHOLD)
         # Remove columns with all missing values
         data_clean = data_matrix[:, vec(sum(ismissing.(data_matrix), dims = 1)) .!= size(data_matrix, 1)]
         size(data_clean, 2) < 2 && return nothing
-        corr_matrix = cor(Matrix{Float64}(skipmissing(data_clean)))  # correlation matrix
+        data_clean[ismissing.(data_clean)] .= 0
         try
-            vif_values = diag(inv(corr_matrix))
+            vif_values = diag(inv(cor(data_clean)))
             return any(vif_values .>= threshold)
         catch
             return true  # Singular matrix, indicates perfect multicolinearity
@@ -89,8 +89,8 @@ function condition_number_check(data_matrix; cnc_threshold = DEFAULT_CNC_THRESHO
         # Remove columns with all missing values
         data_clean = data_matrix[:, vec(sum(ismissing.(data_matrix), dims = 1)) .!= size(data_matrix, 1)]
         size(data_clean, 2) < 2 && return nothing
-        corr_matrix = cor(Matrix{Float64}(skipmissing(data_clean)))
-        eigenvalues = eigvals(corr_matrix)
+        data_clean[ismissing.(data_clean)] .= 0
+        eigenvalues = eigvals(cor(data_clean))
         cond_num = maximum(abs.(eigenvalues)) / minimum(abs.(eigenvalues) .+ 1.0e-10)
         return cond_num >= threshold
     catch

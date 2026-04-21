@@ -108,10 +108,10 @@
         threshold = 0.1
 
     [parameters.vif_colinearity]
-        vif_threshold = 20.0
+        vif_threshold = 10.0
 
     [parameters.cnc_colinearity]
-        cnc_threshold = 150.0
+        cnc_threshold = 100.0
 
     # R modelling linters
     [parameters.R_glmmTMB_target_variable]
