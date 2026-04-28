@@ -36,7 +36,7 @@
     cnc_colinearity = true
 
     # Specific R linters
-    R_glmmTMB_target_variable = true
+    R_imbalanced_target_variable = true
     R_glmmTMB_binomial_modelling = true
     R_data_normally_distributed = true
     R_glm_binomial_modelling = true
@@ -114,7 +114,7 @@
         cnc_threshold = 150.0
 
     # R modelling linters
-    [parameters.R_glmmTMB_target_variable]
+    [parameters.R_imbalanced_target_variable]
         threshold = 0.1
 
     [parameters.R_glmmTMB_binomial_modelling]

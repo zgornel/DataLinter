@@ -196,34 +196,17 @@ end
 
 
 const R_BASELINE_LINTERS = [
-    # Imbalanced target variable in data (R code, glmmTMB algorithm)
+    # Imbalanced target variable in data (R code version)
     (
-        name = :R_glmmTMB_target_variable,
-        description = """ Tests that data labels are balanced (no class less than θ%)""",
+        name = :R_imbalanced_target_variable,
+        description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = name -> "Imbalanced target variable (glmmTMB)",
-        correct_message = name -> "Target variable is balanced (glmmTMB)",
+        failure_message = name -> "Imbalanced distribution of target variable values",
+        correct_message = name -> "Target variable values are balanced",
         warn_level = "warning",
         correct_if = check_correctness(false),
-        query = (
-            "*",
-            "glmmTMB",                      # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",
-                    (
-                        "*",
-                        "@target_variable",
-                        (
-                            "@predictor_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :strict,
+        query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),

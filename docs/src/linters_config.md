@@ -55,7 +55,7 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 ### R language specific linters
 |Linter|Description|Model Context|Key Parameters (see config/)|
 |------|-----------|-------------|----------------------------|
-|`R_glmmTMB_target_variable`|Checks target variable imbalance in `glmmTMB` regressions|Mixed-effects models|`threshold`|
+|`R_imbalanced_target_variable`|Checks target variable imbalance in any regression function with a formula|Regression algorithms|`threshold`|
 |`R_glmmTMB_binomial_modelling`|Validates link parameter for binomial family in `glmmTMB`|glmmTMB binomial|`acceptable_link_values`|
 |`R_data_normally_distributed`|Checks normality of non-binary numeric columns or target in models|Regression methods|`pvalue_threshold`, `algorithms`, `check_target`, `check_predictors`|
 |`R_glm_binomial_modelling`|Checks normality of non-binary numeric columns in binomial glm|Logistic regression|`pvalue_threshold`|

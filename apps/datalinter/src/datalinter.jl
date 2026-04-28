@@ -112,7 +112,7 @@ function real_main()
     filepaths = unique!(args["input(s)"])
     linters = unique!(args["linters"])
     if isempty(filepaths)
-        @error "Provide at least one file to lint."
+        @error "Provide at least one data file."
     end
     buffer = if output_type == "json"
         IOBuffer()

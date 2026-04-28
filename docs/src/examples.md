@@ -1,5 +1,7 @@
 # Usage examples
 
+> Note: Results from running the commands below may vary depending on the current state of the configuration files. Take the outputs are representative samples of the expected output only.
+
 There are two tools through which linting can be done, both available in the Docker container:
  - `datalinter`, a command-line (CLI) tool, best suited for linting data outside an experimental environment. It builds its linting context through the configuration file and command line arguments.
  - `datalinterserver`, a HTTP server to which one can easily connect with a client. The server builds the context from configuration file and data, code provided in HTTP requests. It is best suited for online and interactive workflows, where code is readily available with the data to be linted.
@@ -158,10 +160,11 @@ time docker run -it --rm \
 ```
 which outputs:
 ```
-! warning       (large_outliers)        column: col4         the values of 'column: col4' contain large outliers
 ! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
-! warning       (R_glmmTMB_target_variable)     dataset              Imbalanced target variable (glmmTMB)
-3 issues found from 11 linters applied (7 OK, 4 N/A) .
+! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
+! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
+• info          (R_data_normally_distributed)   dataset              Non-normal variables present
+4 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
 
 ## `datalinterserver` HTTP-based linting
@@ -207,10 +210,12 @@ $ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./t
 outputs:
 ```
 --- Linting output (HTTP Status: 200):
-• n/a           (imbalanced_target_variable)    dataset              linter not applicable (or failed) for 'dataset'
-• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced target variable (glmmTMB)
-• experimental  (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
-1 issues found from 3 linters applied (2 OK, 1 N/A) .
+! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
+! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
+! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
+! warning       (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
+• info          (R_data_normally_distributed)   dataset              Non-normal variables present
+5 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
 
 ### Server HTTP API
