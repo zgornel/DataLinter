@@ -18,3 +18,7 @@ For any seemingly missing or incomplete features, file a bug report as well. It 
 - Squash commits in a PR.
 - Outside package dependencies should be minimized
 - If the code refers to a feature, it should be discussed in a PR before starting to code
+
+## Formatting/style checks - run the runic linter
+`./runrunic.jl` # Unix-like / Git Bash / WSL
+`julia --startup-file=no --project=@runic runrunic.jl`   # Windows

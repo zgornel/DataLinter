@@ -244,7 +244,7 @@ For lint requests, a representative example of the `body` of the request is show
 ```
 The available fields are:
  - `show_na`, a boolean that enables to show linters that were not available. Default is `false`
- - `show_passing` boolean that enables to show linters that raised no issuesa. Default is `false`
+ - `show_passing` boolean that enables to show linters that raised no issues. Default is `false`
  - `show_passing` boolean that enables to show statistics. Default is `false`
  - `data_header` boolean that indicates whether the data has a header
  - `data_delim` string that sets the data delimiter
@@ -258,13 +258,13 @@ The response is a HTTP message with the following JSON in the body:
 {"linter_output" : "<Same linting output that gets printed at stdout...>"}
 ```
 
-## Using the `datalinter.sh` script
-> Note: This option does not support the specification of a config file and will use the default linters and parameter values.
+## Using the `datalinter.jl` script
+> Note: This option does not support the specification of a config file or code.
 
-The linter can also be run quickly through the `datalinter.sh` shell script. To run in on the test dataset, one can do:
-```
-$ ./datalinter.sh ./test/data/data.csv
-```
+The linter can also be run quickly through the `datalinter.jl` shell script. To run in on the test dataset, one can do
+ - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter.jl path/to/yourfile.csv [extra flags...]`
+ - Windows (PowerShell or cmd): `julia --startup-file=no datalinter.jl "C:\path\to\yourfile.csv" [extra flags...]`
+
 The script can be ran from any directory and accepts a single argument, the dataset that is to be linted.
 
 ## Additional resources
