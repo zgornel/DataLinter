@@ -86,11 +86,12 @@ function real_main()
     http_port = args["http-port"]
     configpath = args["config-path"]
     if isempty(configpath) || !isfile(configpath)
-        @warn "Config file not correctly specified (--config-path),  defaults will be used."
+        @error "Config file not correctly specified (--config-path), linters disabled by default, will exit."
+        return -1
     end
     kbpath = args["kb-path"]
     if isempty(kbpath) || !isfile(kbpath)
-        @debug "KB file not correctly specified (--kb-path), defaults will be used."
+        @debug "KB file not correctly specified (--kb-path), using native knowledge."
     end
 
     # Start I/O server(s) #

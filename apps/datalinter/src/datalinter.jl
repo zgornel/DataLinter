@@ -100,9 +100,15 @@ function real_main()
     global_logger(logger)
     ### Lint input(s)
     codepath = args["code-path"]
-    kbpath = args["kb-path"]
-    output_type = args["output-type"]
     configpath = args["config-path"]
+    if isempty(configpath) || !isfile(configpath)
+        @error "Config file not correctly specified (--config-path), linters disabled by default, will exit."
+    end
+    kbpath = args["kb-path"]
+    if isempty(kbpath) || !isfile(kbpath)
+        @debug "KB file not correctly specified (--kb-path), using native knowledge."
+    end
+    output_type = args["output-type"]
     filepaths = unique!(args["input(s)"])
     linters = unique!(args["linters"])
     if isempty(filepaths)
