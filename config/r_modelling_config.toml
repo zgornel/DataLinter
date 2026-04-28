@@ -121,13 +121,13 @@
         acceptable_link_values = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
     [parameters.R_data_normally_distributed]
-        pvalue_threshold = 0.5
+        pvalue_threshold = 0.05
         algorithms = ["lm", "glm", "glmmTMB"]
         check_target = false
         check_predictors = true
 
     [parameters.R_glm_binomial_modelling]
-        pvalue_threshold = 0.1
+        pvalue_threshold = 0.05
 
     [parameters.R_colinearity_with_target]
         threshold = 0.9

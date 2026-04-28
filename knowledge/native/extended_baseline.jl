@@ -14,10 +14,10 @@ has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = 
 
 const PERC_MINORITY_CLASS = 0.01
 
-__process_target_col(col::Number) = Int(col)
-__process_target_col(col::AbstractString) = Symbol(col)
-__process_target_col(col::Symbol) = col
-__process_target_col(::Nothing) = nothing
+process_column_for_indexing(col::Number) = Int(col)
+process_column_for_indexing(col::AbstractString) = Symbol(col)
+process_column_for_indexing(col::Symbol) = col
+process_column_for_indexing(::Nothing) = nothing
 
 function is_imbalanced_target_variable(
         tblref::Base.RefValue{<:Tables.Columns},
@@ -27,7 +27,7 @@ function is_imbalanced_target_variable(
     )
     try
         col = linting_ctx.target_variable
-        tc = getindex(tblref[], __process_target_col(col))
+        tc = getindex(tblref[], process_column_for_indexing(col))
         n = length(tc)
         for (val, cnt) in countmap(tc)
             cnt / n < threshold && return true

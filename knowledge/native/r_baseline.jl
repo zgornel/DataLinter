@@ -31,18 +31,14 @@ function is_glmmTMB_data_correctly_modelled(
         acceptable_link_values = ACCEPTABLE_LINK_VALUES
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        link_type = extract_capture_value(linting_ctx.parsing_data, "link_type")
+        tc = getindex(tblref[], target_variable)
         nvars = length(unique(tc))
-        arg_name, _... = ParSitter.get_capture(query_results, "arg_name")
-        arg_value, _... = ParSitter.get_capture(query_results, "arg_value")
         if nvars == 2
-            if arg_name == "link"
-                return arg_value ∈ acceptable_link_values
-            else
-                return true
-            end
+            acceptable_link_values_strings = ["\"$v\"" for v in acceptable_link_values]
+            return link_type ∈ acceptable_link_values || link_type in acceptable_link_values_strings
         else  # nvars != 2
             return false
         end
@@ -84,9 +80,8 @@ function is_data_normally_distributed(
         result = true
         if check_predictors
             for pv in predictor_variables
-                _vals = getindex(tblref[], __process_target_col(pv))
+                _vals = getindex(tblref[], process_column_for_indexing(pv))
                 if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
-                    @info "\t ->$pv: $(is_normally_distributed(_vals, pvalue_threshold))"
                     result &= is_normally_distributed(_vals, pvalue_threshold)
                 end
             end
@@ -112,20 +107,21 @@ function is_glm_data_correctly_modelled(
         pvalue_threshold = PVALUE_THRESHOLD
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
-        pvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "predictor_variables")
-        #TODO: Add '.' processing
-        pvars = RFormulaParser.extract_identifiers(pvars_str)
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        family = extract_capture_value(linting_ctx.parsing_data, "family")
         result = true
-        for pvar in pvars
-            _vals = getindex(tblref[], __process_target_col(pvar))
+        for pv in predictor_variables
+            _vals = getindex(tblref[], process_column_for_indexing(pv))
             if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
                 result &= is_normally_distributed(_vals, pvalue_threshold)
             end
         end
-        return result && length(unique(tc)) == 2
+        if family == "\"binomial\"" || family == "binomial"
+            tc = getindex(tblref[], target_variable)
+            result &= length(unique(tc)) == 2
+        end
+        return result
     catch e
         @debug "is_glm_data_correctly_modelled: Failed\n$e"
         return nothing
@@ -170,18 +166,17 @@ function check_colinearity_with_target(
         algorithms = PAIRWISE_COLINEARITY_ALGORITHMS
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
-        alg, _... = ParSitter.get_capture(linting_ctx.parsing_data, "algorithm")
+
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        tc = getindex(tblref[], target_variable)
+        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
         if alg ∉ algorithms
             return nothing
         end
-        pvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "predictor_variables")
-        pvars = RFormulaParser.extract_identifiers(pvars_str)
         result = false
-        for pvar in pvars
-            _vals = getindex(tblref[], __process_target_col(pvar))
+        for pv in predictor_variables
+            _vals = getindex(tblref[], process_column_for_indexing(pv))
             _corr = check_pairwise_colinearity(tc, _vals; threshold)
             if !isnothing(_corr)
                 result |= _corr
@@ -220,44 +215,8 @@ const R_BASELINE_LINTERS = [
         correct_message = name -> "Correct binomial data modelling (glmmTMB)",
         warn_level = "warning",
         correct_if = check_correctness(true),
-        query = (
-            "*",
-            "glmmTMB",                      # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",                       # -> argument
-                    (
-                        "*",                    # -> binary_operator
-                        "@target_variable",
-                        (
-                            "@predictor_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-                (
-                    "*",                       # -> family = binomial(link=...)
-                    "family",                # -> family
-                    (
-                        "*",                    # -> binomial(link=...)
-                        "binomial",           # -> binomial
-                        (
-                            "*",                 # -> argument
-                            (
-                                "*",
-                                "@arg_name",
-                                (
-                                    "*",
-                                    "@arg_value",
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :nonstrict,
+        query = "glmmTMB({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family=binomial(link={{link_type::IDENTIFIER}}))",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
@@ -280,38 +239,14 @@ const R_BASELINE_LINTERS = [
     # Binary target data modelled by binomial family modelling
     (
         name = :R_glm_binomial_modelling,
-        description = """ Ensures that binary variables are modelled with correct data values""",
+        description = """ Ensures that binary variables are modelled by 'glm' with correct data values""",
         f = is_glm_data_correctly_modelled,
-        failure_message = name -> "Incorrect binomial data modelling (glm), non-normal variables present",
+        failure_message = name -> "Incorrect binomial data modelling (glm): non-normal predictors or target with more than 2 values",
         correct_message = name -> "Correct binomial data modelling (glm)",
         warn_level = "warning",
         correct_if = check_correctness(true),
-        query = (
-            "*",
-            "glm",                            # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",                       # -> argument
-                    (
-                        "*",                    # -> binary_operator
-                        "@target_variable",
-                        (
-                            "@predictor_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-                (
-                    "*",                      # -> family = "binomial"
-                    "family",                 # -> family
-                    (
-                        "\"binomial\"",           # -> binomial
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :nonstrict,
+        query = "glm({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family={{family::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
