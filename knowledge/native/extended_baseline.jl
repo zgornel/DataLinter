@@ -16,6 +16,7 @@ const PERC_MINORITY_CLASS = 0.01
 
 __process_target_col(col::Number) = Int(col)
 __process_target_col(col::AbstractString) = Symbol(col)
+__process_target_col(col::Symbol) = col
 __process_target_col(::Nothing) = nothing
 
 function is_imbalanced_target_variable(

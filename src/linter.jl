@@ -155,7 +155,7 @@ function build_linting_context(code::String, linter::Linter)
                 @debug "Multiple query matches, query is not specific enough"
                 return nothing
             else
-                _parsed_data = first(query_results) # of the form (match::Bool, captured::MultiDict)
+                _parsed_data = only(query_results) # of the form (match::Bool, captured::MultiDict, node::EzXML.Node)
                 code_ctx = LintingContext(name = "Online Context [$(now())]")
                 for (k, _captures) in _parsed_data[2]  # iterate over the MultiDict
                     @assert length(_captures) == 1 "Multiple captures, query is not specific enough"

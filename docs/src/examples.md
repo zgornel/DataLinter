@@ -160,7 +160,7 @@ which outputs:
 ```
 ! warning       (large_outliers)        column: col4         the values of 'column: col4' contain large outliers
 ! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
-! warning       (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
+! warning       (R_glmmTMB_target_variable)     dataset              Imbalanced target variable (glmmTMB)
 3 issues found from 11 linters applied (7 OK, 4 N/A) .
 ```
 
@@ -208,7 +208,7 @@ outputs:
 ```
 --- Linting output (HTTP Status: 200):
 • n/a           (imbalanced_target_variable)    dataset              linter not applicable (or failed) for 'dataset'
-• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
+• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced target variable (glmmTMB)
 • experimental  (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
 1 issues found from 3 linters applied (2 OK, 1 N/A) .
 ```

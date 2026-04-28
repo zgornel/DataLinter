@@ -20,9 +20,9 @@ Linters are **disabled by default**. You enable them in a `config.toml` configur
     # Enable only what you need
     # - code has to be R; checks for normality of columns
     large_outliers = true
-    R_lm_modelling = true
+    R_data_normally_distributed = true
 [parameters]
-    [parameters.R_lm_modelling]
+    [parameters.R_data_normally_distributed]
         # threshold for normality tests; higher values correspond
         # to more strict normal distribution assumptions
         pvalue_threshold = 0.1
@@ -57,6 +57,6 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |------|-----------|-------------|----------------------------|
 |`R_glmmTMB_target_variable`|Checks target variable imbalance in `glmmTMB` regressions|Mixed-effects models|`threshold`|
 |`R_glmmTMB_binomial_modelling`|Validates link parameter for binomial family in `glmmTMB`|glmmTMB binomial|`acceptable_link_values`|
-|`R_lm_modelling`|Checks normality of non-binary numeric columns in lm models|Linear regression|`pvalue_threshold`|
+|`R_data_normally_distributed`|Checks normality of non-binary numeric columns or target in models|Regression methods|`pvalue_threshold`, `algorithms`, `check_target`, `check_predictors`|
 |`R_glm_binomial_modelling`|Checks normality of non-binary numeric columns in binomial glm|Logistic regression|`pvalue_threshold`|
-|`R_colinearity_with_target`|Detects whether any dependent variable is highly colinear with the target|Regression algorithms|`threshold`, `algorithms`|
+|`R_colinearity_with_target`|Detects whether any predictor variable is highly colinear with the target|Regression algorithms|`threshold`, `algorithms`|

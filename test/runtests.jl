@@ -1,6 +1,8 @@
 using Test
-using DataLinter
 using Logging
+using DataLinter
+using Tables
+
 global_logger(ConsoleLogger(stdout, Logging.Error))  # supress test warnings
 
 include("config.jl")
