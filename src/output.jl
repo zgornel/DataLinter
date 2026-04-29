@@ -55,17 +55,17 @@ function process_output(
         if applicable
             if !result  # linter failed
                 n_failures += 1
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
                 printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
                 printstyled(buffer, "$(linter.failure_message(loc_name))\n"; color, bold = true)
             elseif show_passing
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
                 printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
                 printstyled(buffer, "$(linter.correct_message(loc_name))\n"; color, bold = true)
             end
         else
             if show_na
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
                 printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
                 printstyled(buffer, "linter not applicable (or failed) for '$(loc_name)'\n"; color, bold = true)
             end
