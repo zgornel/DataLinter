@@ -17,13 +17,13 @@ All the examples below use code and data available in the repository. These are 
 
 ### Testing the Docker image
 The Docker image contains compiled versions of the CLI utility and server. To test that everything works, run:
-```
+```bash
 $ docker run -it --rm \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinter/bin/datalinter --help
 ```
 and
-```
+```bash
 $ docker run -it --rm \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinterserver/datalinterserver --help
@@ -113,7 +113,7 @@ The output should look something like:
 ### Linting with `config.toml` context
 
 The command below uses a configuration file where the some context is provided:
-```
+```bash
 $ time docker run -it --rm \
     --volume=./test/data:/_data \
     --volume=./config:/_config \
@@ -145,8 +145,8 @@ m2 <- glmmTMB(col4 ~ col1 + col2 + col3,
               family=binomial(link="linear"))
 ```
 to the linter in addition to the data:
-```
-time docker run -it --rm \
+```bash
+$ time docker run -it --rm \
     --volume=./test/code:/tmp \
     --volume=./test/data:/_data \
     --volume=./config/:/_config \
@@ -184,7 +184,7 @@ Optional arguments:
 ### Running the server
 
 To start the linting server with one of the default configurations and listen on address `0.0.0.0` and port `10000` one can run
-```
+```bash
 $ docker run -it --rm -p10000:10000 \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinterserver/bin/datalinterserver \
@@ -200,11 +200,11 @@ Upon starting, the server outputs:
 ```
 
 The server accepts HTTP requests with a specific JSON payload containing data or, data and code. Upon receiving a request, it will try to run the linter and return a JSON with the output. A client script can be found in `scripts/client.jl`. The following command sets up a temporary environment for the script to run:
-```
+```bash
 $ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
 ```
 Running the client script with data and code arguments
-```
+```bash
 $ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./test/code/r_snippet_binomial.r
 ```
 outputs:
@@ -217,6 +217,16 @@ outputs:
 • info          (R_data_normally_distributed)   dataset              Non-normal variables present
 5 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
+
+### Send data using `wget` and `jq`
+
+One could send data to the HTTP server using the `wget` and `jq` tools. Running the following command from the root of the repository will send both data and code to the linting server.
+```bash
+$ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --rawfile zz ./test/data/imbalanced_data.csv '$zz'), \"data_type\" : \"dataset\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile zz ./test/code/r_snippet_imbalanced.r '$zz')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" \
+  --header='Content-Type:application/json' \
+  'http://0.0.0.0:10000/api/lint'
+```
+
 
 ### Server HTTP API
 
