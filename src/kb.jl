@@ -1,7 +1,8 @@
 @reexport module KnowledgeBaseInterface
 
 using Reexport
-import ..LinterCore: AbstractKnowledgeBase, build_linters, Linter
+import ..LinterCore: AbstractKnowledgeBase, build_linters, Linter,
+    AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 export kb_load, kb_query
 
 """

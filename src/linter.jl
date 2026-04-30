@@ -37,7 +37,6 @@ function build_linters end
     failure_message::Function
     correct_message::Function
     warn_level::String
-    correct_if::Function
     query::Union{Nothing, Tuple, String}
     query_match_type::Union{Nothing, Symbol}
     programming_language::Union{Nothing, String}
@@ -47,6 +46,21 @@ end
 Base.show(io::IO, linter::Linter) = begin
     func = last(split(string(linter.f), "."))
     print(io, "Linter (name=$(linter.name), f=$func)")
+end
+
+
+abstract type AbstractCheck end
+
+@Base.kwdef struct PassedCheck <: AbstractCheck
+    info
+end
+
+@Base.kwdef struct FailedCheck <: AbstractCheck
+    info
+end
+
+@Base.kwdef struct NotAvailableCheck <: AbstractCheck
+    info
 end
 
 
@@ -234,7 +248,7 @@ function lint(
     )
     # TODO: Improve the `lintout` structure to something more workable
     #       that includes timings, outputs, easy referencing i.e. Dict
-    lintout = Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}()
+    lintout = Vector{Pair{Tuple{Linter, String}, AbstractCheck}}()
     datait = build_data_iterator(data_ctx)
 
     _progress = ProgressUnknown(desc = "Linting...", spinner = true, color = :white, showspeed = true)
@@ -261,9 +275,7 @@ function lint(
                     for (i, col) in enumerate(datait.column_iterator)
                         _name = columnname(datait, i)
                         _type = columntype(datait, i)
-                        result = linter.correct_if(
-                            linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
-                        )
+                        result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
                         push!(lintout, (linter, "column: $_name") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end
@@ -273,24 +285,20 @@ function lint(
                     irow = 1
                     no_empty_rows = true
                     for row in datait.row_iterator
-                        result = linter.correct_if(
-                            linter.f(row, linting_ctx; linter_kwargs...)
-                        )
-                        if !isnothing(result) && !result  # skip trues or nothings as there may be too many
+                        result = linter.f(row, linting_ctx; linter_kwargs...)
+                        if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
                             push!(lintout, (linter, "row: $irow") => result)
                             no_empty_rows = false
                             progress && next!(_progress, spinner = SPINNER)
                         end
                         irow += 1
                     end
-                    # if there are no empty rows add a single entry, to mark the linter was applied and passed (true)
-                    no_empty_rows && push!(lintout, (linter, "row: N/A") => true)
+                    # if there are no empty rows add a single entry for all, mark the linter as passed (true)
+                    no_empty_rows && push!(lintout, (linter, "row: **all**") => PassedCheck(nothing))
                 end
                 # 3. Apply over whole dataset
                 if applicable(linter, linting_ctx, :dataset)
-                    result = linter.correct_if(
-                        linter.f(datait.tblref, linting_ctx; linter_kwargs...)
-                    )
+                    result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
                     push!(lintout, (linter, "dataset") => result)
                     progress && next!(_progress, spinner = SPINNER)
                 end

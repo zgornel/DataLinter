@@ -1,13 +1,13 @@
-is_int_as_float(::Type{<:StringEltype}, args...; kwargs...) = nothing
-is_int_as_float(::Type{<:ListEltype}, args...; kwargs...) = nothing
-is_int_as_float(::Type{<:NumericEltype}, args...; kwargs...) = nothing
+is_int_as_float(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_int_as_float(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_int_as_float(::Type{<:NumericEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
-is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...; kwargs...) = all(isinteger.(vm))
+is_int_as_float(::Type{<:FloatEltype}, v, vm, name, args...; kwargs...) = all(isinteger.(vm)) ? FailedCheck(nothing) : PassedCheck(nothing)
 
 
-is_datetime_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
-is_datetime_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
-is_datetime_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
+is_datetime_as_string(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_datetime_as_string(::Type{<:NumericEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_datetime_as_string(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const DATETIME_MATCH_PERC = 0.9
 function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc = DATETIME_MATCH_PERC)
@@ -40,13 +40,17 @@ function is_datetime_as_string(::Type{<:StringEltype}, v, vm, name, args...; mat
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
     # Strict output, needs at least one expression to fully match the column
-    return any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
+    if any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-is_tokenizable_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
-is_tokenizable_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
-is_tokenizable_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
+is_tokenizable_string(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_tokenizable_string(::Type{<:NumericEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_tokenizable_string(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const TOKENIZABLE_REGEXES = [r"\s+"]
 const MIN_TOKENS = 2
@@ -57,13 +61,17 @@ function is_tokenizable_string(::Type{<:StringEltype}, v, vm, name, args...; reg
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > min_tokens - 1 for count_matches in values(matches))
+    if any(count_matches > min_tokens - 1 for count_matches in values(matches))
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-is_number_as_string(::Type{<:ListEltype}, args...; kwargs...) = nothing
-is_number_as_string(::Type{<:NumericEltype}, args...; kwargs...) = nothing
-is_number_as_string(::Type{<:FloatEltype}, args...; kwargs...) = nothing
+is_number_as_string(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_number_as_string(::Type{<:NumericEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_number_as_string(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const NUMBER_AS_STRING_MATCH_PERC = 0.9
 function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match_perc = NUMBER_AS_STRING_MATCH_PERC)
@@ -77,7 +85,11 @@ function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match
         # count how many matches of the expression are in the column
         push!(matches, i => sum(.!isnothing.(match.(rdt, _vm))))
     end
-    return any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
+    if any(count_matches > match_perc * length(_vm) for count_matches in values(matches))
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
@@ -92,12 +104,16 @@ function is_empty_example(row, args...; kwargs...)
         out &= empty_checker(v)
         !out && break  # stop if encountered a false value
     end
-    return out
+    if out
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-is_zipcode(::Type{<:ListEltype}, args...; kwargs...) = nothing
-is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = nothing
+is_zipcode(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const NUM_ZIPCODES = [9000, 9001, 1000, 1010, 1020, 1030, 1040, 1050, 1060, 1070, 1080, 1090, 1100]
 const ZIPCODES_MATCH_PERC = 0.99
@@ -109,18 +125,26 @@ function is_zipcode(
     zipcodes_strings = string.(zipcodes)
     _count_in_zipcode(::Type{<:NumericEltype}, vm) = sum(z in zipcodes for z in vm)
     _count_in_zipcode(::Type{<:StringEltype}, vm) = sum(z in zipcodes_strings for z in vm)
-    return _count_in_zipcode(typ, vm) >= match_perc * length(collect(vm))
+    if _count_in_zipcode(typ, vm) >= match_perc * length(collect(vm))
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
 function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...; kwargs...)
     _rows = Tables.rows(tblref[])
-    return length(unique(hash(r) for r in _rows)) != length(_rows)
+    if length(unique(hash(r) for r in _rows)) != length(_rows)
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = nothing
-has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 """
     tukey_fences(data; k=1.5)
@@ -140,7 +164,11 @@ end
 const TUKEY_FENCES_K = 1.5
 function has_large_outliers(::Type{<:NumericEltype}, v, vm, name, args...; tukey_fences_k = TUKEY_FENCES_K)
     minf, maxf = tukey_fences(vm; k = tukey_fences_k)
-    return any(x -> ((x < minf) | (x > maxf)), vm)
+    if any(x -> ((x < minf) | (x > maxf)), vm)
+        return FailedCheck(info = (tukey_fences = (minf, maxf),))
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
@@ -154,13 +182,17 @@ function enum_detector(
     # if unique values < distinct_ratio % of the total number => we have an enum
     n_uniques = length(unique(vm))
     n = length(collect(vm))
-    return (n_uniques <= floor(distinct_ratio * n) + 1) | (n_uniques < distinct_max_limit)
+    if (n_uniques <= floor(distinct_ratio * n) + 1) | (n_uniques < distinct_max_limit)
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-has_uncommon_signs(::Type{<:ListEltype}, args...; kwargs...) = nothing
-has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = nothing
-has_uncommon_signs(::T, args...; kwargs...) where {T} = nothing
+has_uncommon_signs(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_uncommon_signs(::T, args...; kwargs...) where {T} = NotAvailableCheck(nothing)
 
 #TODO: See if it makes sense to make this configurable through kwargs
 function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
@@ -182,12 +214,16 @@ function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwarg
     catch # bounds error, many samples
         20
     end
-    return any(cnt in 1:r_outlier for cnt in (zs, negs, poss, nans))
+    if any(cnt in 1:r_outlier for cnt in (zs, negs, poss, nans))
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-has_long_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = nothing
-has_long_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = nothing
+has_long_tailed_distribution(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_long_tailed_distribution(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const LTD_DROP_PROPORTION = 0.001
 const LTD_ZSCORE_MULTIPLIER = 1.0
@@ -201,7 +237,11 @@ function has_long_tailed_distribution(
     μ, σ = mean_and_std(vt)
     zs = abs.(zscore(v, μ, σ))
     n_outliers = sum(zs .>= zscore_multiplier * mean(zs))
-    return n_outliers > 0
+    if n_outliers > 0
+        return FailedCheck(info = n_outliers)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
@@ -215,21 +255,25 @@ function has_circular_domain(::T, v, vm, name, args...; kwargs...) where {T}
         r"([\W_]|\b)(lat|lon)([\W_]|\b|\w*?itude)",                                     # latlon
         r"([\W_]|\b)angle([\W_]|\b)", r"heading", r"rotation", r"dir([\w]*|ection)",
     ]    # directions
-    return any(!isnothing(match(re, string(name))) for re in CIRCULAR_NAME_REGEXES)
+    if any(!isnothing(match(re, string(name))) for re in CIRCULAR_NAME_REGEXES)
+        return FailedCheck(nothing)
+    else
+        return PassedCheck(nothing)
+    end
 end
 
 
-has_uncommon_list_lengths(::Type{<:NumericEltype}, args...; kwargs...) = nothing
-has_uncommon_list_lengths(::Type{<:StringEltype}, args...; kwargs...) = nothing
-has_uncommon_list_lengths(::Type{<:TimeEltype}, args...; kwargs...) = nothing
+has_uncommon_list_lengths(::Type{<:NumericEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_uncommon_list_lengths(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_uncommon_list_lengths(::Type{<:TimeEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 function has_uncommon_list_lengths(::Type{<:ListEltype}, v, vm, name, args...; kwargs...)
     lens = map(length, vm)
     are_lists = length(collect(Iterators.flatten(vm))) != length(collect(vm))
     if are_lists && length(unique(lens)) > 1
-        return true
+        return FailedCheck(nothing)
     else
-        return false
+        return PassedCheck(nothing)
     end
 end
 
@@ -241,10 +285,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :datetime_as_string,
         description = """ Tests that the values string variable could be Date/DateTime(s) """,
         f = is_datetime_as_string,
-        failure_message = name -> "most of the string values of '$name' can be converted to times/dates",
-        correct_message = name -> "the string values of '$name' generally cannot be converted to times/dates",
+        failure_message = (name, args...) -> "most of the string values of '$name' can be converted to times/dates",
+        correct_message = (name, args...) -> "the string values of '$name' generally cannot be converted to times/dates",
         warn_level = "important",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -255,10 +298,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :tokenizable_string,
         description = """ Tests if the values of the string variable are tokenizable i.e. contain spaces """,
         f = is_tokenizable_string,
-        failure_message = name -> "the values of '$name' could be tokenizable i.e. contain spaces",
-        correct_message = name -> "the values of '$name' are not tokenizable i.e. no spaces",
+        failure_message = (name, args...) -> "the values of '$name' could be tokenizable i.e. contain spaces",
+        correct_message = (name, args...) -> "the values of '$name' are not tokenizable i.e. no spaces",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -269,10 +311,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :number_as_string,
         description = """ Tests if the values of the string variable could be parsed as numbers """,
         f = is_number_as_string,
-        failure_message = name -> "most of the string values of '$name' can be converted to numbers",
-        correct_message = name -> "the string values of '$name' generally cannot be converted to numbers",
+        failure_message = (name, args...) -> "most of the string values of '$name' can be converted to numbers",
+        correct_message = (name, args...) -> "the string values of '$name' generally cannot be converted to numbers",
         warn_level = "important",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -283,10 +324,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :zipcodes_as_values,
         description = """ Tests if the values of the numerical variable could be zipcodes """,
         f = is_zipcode,
-        failure_message = name -> "many of the values of '$name' could be zipcodes",
-        correct_message = name -> "many the values of '$name' don't look like zipcodes",
+        failure_message = (name, args...) -> "many of the values of '$name' could be zipcodes",
+        correct_message = (name, args...) -> "many the values of '$name' don't look like zipcodes",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -297,10 +337,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :large_outliers,
         description = """ Tests that the values of a numerical variable do not contain large outliers """,
         f = has_large_outliers,
-        failure_message = name -> "the values of '$name' contain large outliers",
-        correct_message = name -> "there do not seem to be large outliers in '$name'",
+        failure_message = (name, args...) -> "the values of '$name' contain large outliers",
+        correct_message = (name, args...) -> "there do not seem to be large outliers in '$name'",
         warn_level = "warning",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -311,10 +350,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :int_as_float,
         description = """ Tests that no the values of a floating point variable can be converted to integers """,
         f = is_int_as_float,
-        failure_message = name -> "the values of '$name' are floating point but can be integers",
-        correct_message = name -> "no int-as-float in '$name'",
+        failure_message = (name, args...) -> "the values of '$name' are floating point but can be integers",
+        correct_message = (name, args...) -> "no int-as-float in '$name'",
         warn_level = "warning",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -325,10 +363,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :enum_detector,
         description = """ Tests that a variable has few variables and could be an enum """,
         f = enum_detector,
-        failure_message = name -> "just a few distinct values in '$name', it could be an enum",
-        correct_message = name -> "'$name' has quite a few values, unlikely to be an enum",
+        failure_message = (name, args...) -> "just a few distinct values in '$name', it could be an enum",
+        correct_message = (name, args...) -> "'$name' has quite a few values, unlikely to be an enum",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -339,10 +376,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :uncommon_list_lengths,
         description = """ Tests that the variable does not contain uncommon list lengths in its values """,
         f = has_uncommon_list_lengths,
-        failure_message = name -> "values in '$name' are lists inconsistent in length",
-        correct_message = name -> "'$name' does not contain lists incosistent in length",
+        failure_message = (name, args...) -> "values in '$name' are lists inconsistent in length",
+        correct_message = (name, args...) -> "'$name' does not contain lists incosistent in length",
         warn_level = "warning",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -353,10 +389,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :duplicate_examples,
         description = """ Tests that the dataset does not contain duplicates """,
         f = has_duplicates,
-        failure_message = name -> "dataset contains duplicates",
-        correct_message = name -> "the dataset does not contain duplicates",
+        failure_message = (name, args...) -> "dataset contains duplicates",
+        correct_message = (name, args...) -> "the dataset does not contain duplicates",
         warn_level = "important",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :dataset),
@@ -367,10 +402,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :empty_example,
         description = """ Tests that no example is completely empty """,
         f = is_empty_example,
-        failure_message = index -> "the example at '$index' looks empty",
-        correct_message = index -> "the example at '$index' is not empty",
+        failure_message = (index, args...) -> "the example at '$index' looks empty",
+        correct_message = (index, args...) -> "the example at '$index' is not empty",
         warn_level = "important",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :row),
@@ -381,10 +415,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :uncommon_signs,
         description = """ Tests for the existence of uncommon signs (+/-/NaN) in the variable """,
         f = has_uncommon_signs,
-        failure_message = name -> "uncommon signs (+/-/NaN/0) present in '$name'",
-        correct_message = name -> "no uncommon signs (+/-/NaN/0) present in '$name'",
+        failure_message = (name, args...) -> "uncommon signs (+/-/NaN/0) present in '$name'",
+        correct_message = (name, args...) -> "no uncommon signs (+/-/NaN/0) present in '$name'",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -395,10 +428,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :long_tailed_distrib,
         description = """ Tests if the distribution of the variable has long tails """,
         f = has_long_tailed_distribution,
-        failure_message = name -> "the distribution for '$name' has 'long tails'",
-        correct_message = name -> "no 'long tails' in the distribution of '$name'",
+        failure_message = (name, args...) -> "the distribution for '$name' has 'long tails'",
+        correct_message = (name, args...) -> "no 'long tails' in the distribution of '$name'",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -409,10 +441,9 @@ const GOOGLE_BASELINE_LINTERS = [
         name = :circular_domain,
         description = """ Tests if the domain of the variable may be circular""",
         f = has_circular_domain,
-        failure_message = name -> "the name of '$name' indicates its values may have a circular domain",
-        correct_message = name -> "the name of '$name' do not indicate its values having a circular domain",
+        failure_message = (name, args...) -> "the name of '$name' indicates its values may have a circular domain",
+        correct_message = (name, args...) -> "the name of '$name' do not indicate its values having a circular domain",
         warn_level = "info",
-        correct_if = check_correctness(false),
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),

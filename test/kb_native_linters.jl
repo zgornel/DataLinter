@@ -24,7 +24,7 @@
                 out = DataLinter.lint(ctx, kb; config = config)
                 # Basic functionality test: output works and type assertion
                 @test !isempty(out)
-                @test out isa Vector{Pair{Tuple{Linter, String}, Union{Nothing, Bool}}}
+                @test out isa Vector{Pair{Tuple{Linter, String}, DataLinter.LinterCore.AbstractCheck}}
             end
         end
     end

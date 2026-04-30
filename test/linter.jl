@@ -6,13 +6,13 @@
     @testset "Linter struct" begin
         @test fieldnames(LC.Linter) == (
             :name, :description, :f, :failure_message,
-            :correct_message, :warn_level, :correct_if,
+            :correct_message, :warn_level,
             :query, :query_match_type,
             :programming_language, :requirements,
         )
         @test fieldtypes(LC.Linter) == (
             Symbol, String, Function, Function,
-            Function, String, Function,
+            Function, String,
             Union{Nothing, Tuple, String}, Union{Nothing, Symbol},
             Union{Nothing, String}, Dict{String},
         )
