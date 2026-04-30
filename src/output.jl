@@ -56,18 +56,18 @@ function process_output(
             if !result  # linter failed
                 n_failures += 1
                 printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "$(linter.failure_message(loc_name))\n"; color, bold = true)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
+                printstyled(buffer, "$(linter.failure_message(loc_name))\n"; color, bold)
             elseif show_passing
                 printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "$(linter.correct_message(loc_name))\n"; color, bold = true)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold)
+                printstyled(buffer, "$(linter.correct_message(loc_name))\n"; color, bold)
             end
         else
             if show_na
                 printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "linter not applicable (or failed) for '$(loc_name)'\n"; color, bold = true)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
+                printstyled(buffer, "linter not applicable (or failed) for '$(loc_name)'\n"; color, bold)
             end
         end
     end
@@ -85,16 +85,16 @@ print_buffer(buf::IOBuffer) = print(stdout, read(seekstart(buf), String))
 _print_options(linter, result, applicable) = begin
     if applicable
         if !result
-            (linter.warn_level == "warning") && (return (msg = "! warning", color = :yellow, bold = true))
-            (linter.warn_level == "info") && (return (msg = "• info", color = :cyan, bold = true))
-            (linter.warn_level == "important") && (return (msg = "× important", color = :red, bold = true))
-            (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = true))
+            (linter.warn_level == "warning") && (return (msg = "! warning", color = :light_yellow, bold = false))
+            (linter.warn_level == "info") && (return (msg = "• info", color = :light_cyan, bold = false))
+            (linter.warn_level == "important") && (return (msg = "× important", color = :light_magenta, bold = false))
+            (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = false))
         else
             # linter passed
-            return (msg = "✓ pass", color = :default, bold = true)
+            return (msg = "✓ pass", color = :default, bold = false)
         end
     else
-        return (msg = "• n/a", color = :gray, bold = true)
+        return (msg = "• n/a", color = :gray, bold = false)
     end
 end
 
