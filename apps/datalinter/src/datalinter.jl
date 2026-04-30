@@ -44,8 +44,14 @@ function get_arguments(args::Vector{String})
         default = ["all"]
         arg_type = String
         action = :store_arg
-        "--version", "-v"
-        help = "prints version"
+        "--show-stats"
+        help = "shows statistics"
+        action = :store_true
+        "--show-passing"
+        help = "shows linters that passed"
+        action = :store_true
+        "--show-na"
+        help = "shows linters that were not applicable"
         action = :store_true
         "--progress"
         help = "shows progress"
@@ -55,6 +61,9 @@ function get_arguments(args::Vector{String})
         action = :store_true
         "--print-exceptions"
         help = "print encountered exceptions while linting"
+        action = :store_true
+        "--version", "-v"
+        help = "prints version"
         action = :store_true
     end
     return parse_args(args, s)
@@ -111,6 +120,9 @@ function real_main()
     output_type = args["output-type"]
     filepaths = unique!(args["input(s)"])
     linters = unique!(args["linters"])
+    show_stats = args["show-stats"]
+    show_passing = args["show-passing"]
+    show_na = args["show-na"]
     if isempty(filepaths)
         @error "Provide at least one data file."
     end
@@ -129,12 +141,12 @@ function real_main()
                     codepath,
                     kbpath,
                     configpath;
-                    buffer = buffer,
-                    show_stats = true,
-                    show_passing = false,
-                    show_na = false,
-                    progress = progress,
-                    linters = linters
+                    linters,
+                    buffer,
+                    show_stats,
+                    show_passing,
+                    show_na,
+                    progress
                 )
             end
             if output_type == "json"
