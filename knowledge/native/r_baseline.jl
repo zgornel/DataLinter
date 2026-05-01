@@ -94,7 +94,7 @@ function is_data_normally_distributed(
             tc = getindex(tblref[], target_variable)
             check &= is_normally_distributed(tc, pvalue_threshold)
         end
-        return check ? PassedCheck(nothing) : FailedCheck(nothing)
+        return check ? PassedCheck(info = alg) : FailedCheck(info = alg)
     catch e
         @debug "is_data_normally_distributed: Failed\n$e"
         return NotAvailableCheck(info = string(e))
@@ -188,7 +188,7 @@ function check_colinearity_with_target(
                 !_corr && push!(colinears, pv)
             end
         end
-        return check ? PassedCheck(nothing) : FailedCheck(info = colinears)
+        return check ? PassedCheck(info = alg) : FailedCheck(info = (colinears = colinears, alg = alg))
     catch e
         @debug "check_colinearity_with_target: Failed\n$e"
         return NotAvailableCheck(info = string(e))
@@ -230,8 +230,8 @@ const R_BASELINE_LINTERS = [
         name = :R_data_normally_distributed,
         description = """ Tests that variables are normally distributed""",
         f = is_data_normally_distributed,
-        failure_message = (name, args...) -> "Non-normal variables present",
-        correct_message = (name, args...) -> "Variables are normally distributed",
+        failure_message = (name, result) -> "Non-normal variables present ($(result.info))",
+        correct_message = (name, result) -> "Variables are normally distributed ($(result.info))",
         warn_level = "info",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
@@ -258,8 +258,8 @@ const R_BASELINE_LINTERS = [
         name = :R_colinearity_with_target,
         description = """ Checks colinearities between target variable and its target variables""",
         f = check_colinearity_with_target,
-        failure_message = (name, result) -> "Found highly colinear variables with target: $(result.info)",
-        correct_message = (name, args...) -> "No colinearities between target and predictor variables",
+        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(result.info.colinears)",
+        correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
         warn_level = "important",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
