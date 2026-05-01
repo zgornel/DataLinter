@@ -2,8 +2,8 @@ using datalinter
 using DataLinter
 
 # Use <PROJECT_ROOT>/test/data/data.csv
-datapath = joinpath(dirname(@__FILE__), "..", "..", "test", "data", "data.csv")
-codepath = joinpath(dirname(@__FILE__), "..", "..", "test", "code", "r_snippet_binomial")
+datapath = joinpath(dirname(@__FILE__), "..", "..", "test", "data", "correlated_target_data.csv")
+codepath = joinpath(dirname(@__FILE__), "..", "..", "test", "code", "r_snippet_binomial.r")
 configpath = joinpath(dirname(@__FILE__), "..", "..", "test", "test_config.toml")
 kb = DataLinter.kb_load("")
 data = DataLinter._generate_workload_data(1000)
