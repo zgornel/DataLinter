@@ -14,18 +14,21 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ## Installation
 
-The recommended way to install `DataLinter` is to download the docker image:
-```
-$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
-```
+- download cli and server **binaries** (linux-x86-64) from [releases](https://github.com/zgornel/DataLinter/releases) page: ([v0.1.0](https://github.com/zgornel/DataLinter/releases/download/v0.1.0/datalinter-compiled-binary.zip))
+- get the **Docker image** with `docker pull ghcr.io/zgornel/datalinter-compiled:latest`
+
+## Configuration
 
 Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters.
 
-
 ## Integrations
 
-Integrations are available for [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter) and [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
-
+Available integrations:
+ - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+ - [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
+ - [Github actions](https://github.com/OxoaResearch/datalinter-github-action)
+ - Gitlab (upcoming)
+ - VSCode (upcoming)
 
 ## Lint Catalog
 
