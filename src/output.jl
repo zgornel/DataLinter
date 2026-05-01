@@ -21,7 +21,7 @@ Returns a score corresponding to the severity of the issues found in
 the dataset. The score is based on the `WARN_LEVEL_TO_NUM` mapping.
 """
 function score(lintout; normalize = true)
-    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v == false)
+    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v isa FailedCheck)
     return if !isempty(vals)
         ifelse(normalize, mean(vals), sum(vals))
     else
