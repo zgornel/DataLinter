@@ -216,7 +216,11 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
             data_source,
             CSV.Tables.Columns,
             delim = first(ctx["data_delim"]),
-            header = ctx["data_header"]
+            header = ctx["data_header"],
+            pool = true,
+            missingstring = ["", "NA", "NaN", "N/A", "NAN"],
+            ignoreemptyrows = true,
+            ntasks = Threads.nthreads()
         )
     catch e
         @debug "Error loading data\n$e"

@@ -9,13 +9,29 @@ import ..DataInterface: build_data_context
 build_data_context(filepath::AbstractString) = begin
     # Extension and type checks would go here, along with
     # dispatch to specifie file handlers/loaders
-    build_data_context(CSV.read(filepath, CSV.Tables.Columns))
+    build_data_context(
+        CSV.read(
+            filepath, CSV.Tables.Columns;
+            pool = true,                        # string pooling
+            missingstring = ["", "NA", "NaN", "N/A", "NAN"],
+            ignoreemptyrows = true,             # ignore empty rows
+            ntasks = Threads.nthreads()         # parallel parse
+        )
+    )
 end
 
 build_data_context(filepath::AbstractString, code::AbstractString) = begin
     # Extension and type checks would go here, along with
     # dispatch to specifie file handlers/loaders
-    build_data_context(CSV.read(filepath, CSV.Tables.Columns), code)
+    build_data_context(
+        CSV.read(
+            filepath, CSV.Tables.Columns;
+            pool = true,                        # string pooling
+            missingstring = ["", "NA", "NaN", "N/A", "NAN"],
+            ignoreemptyrows = true,             # ignore empty rows
+            ntasks = Threads.nthreads()         # parallel parse
+        ), code
+    )
 end
 
 
