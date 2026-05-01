@@ -220,13 +220,21 @@ outputs:
 
 ### Send data using `wget` and `jq`
 
-One could send data to the HTTP server using the `wget` and `jq` tools. Running the following command from the root of the repository will send both data and code to the linting server.
+Data can also be sent to the linting server with generic tools. For example, using `wget` and `jq`. The following command sends reads data and code, interpolates them in a JSON string and sends it to the server.
 ```bash
 $ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --rawfile zz ./test/data/imbalanced_data.csv '$zz'), \"data_type\" : \"dataset\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile zz ./test/code/r_snippet_imbalanced.r '$zz')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" \
   --header='Content-Type:application/json' \
   'http://0.0.0.0:10000/api/lint'
 ```
+Alternatively, the server supports sending only the data file path
+```bash
+wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"./test/data/imbalanced_data.csv\", \"data_type\" : \"filepath\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" : $(jq -n --rawfile codevar ./test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint' && \
+```
 
+To stop the server remotely, run
+```bash
+$ wget -O- 'http://0.0.0.0:10000/api/kill'
+```
 
 ### Server HTTP API
 
