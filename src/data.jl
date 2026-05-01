@@ -84,13 +84,16 @@ julia> using DataLinter
 SimpleDataContext 0.00040435791015625 MB of data
 
 julia> kb = DataLinter.kb_load("")
-       DataLinter.LinterCore.lint(ctx, kb)
-38-element Vector{Pair{Tuple{DataLinter.LinterCore.Linter, String}, Union{Nothing, Bool}}}:
-         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x2") => nothing
-         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x3") => nothing
-         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x1") => nothing
-         (Linter (name=tokenizable_string, f=is_tokenizable_string), "column: x2") => nothing
-         ...
+       DataLinter.LinterCore.lint(ctx, kb)  # linters disabled
+Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}[]
+
+julia> config = DataLinter.LinterCore.load_config("./test/test_config.toml")
+       DataLinter.LinterCore.lint(ctx, kb; config)  # linters enabled
+49-element Vector{Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}}:
+                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x2") => DataLinter.LinterCore.NotAvailableCheck(nothing)
+                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x3") => DataLinter.LinterCore.NotAvailableCheck(nothing)
+                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x1") => DataLinter.LinterCore.NotAvailableCheck(nothing)
+                     ...
 ```
 """
 function build_data_context(; data = nothing, code = nothing)
