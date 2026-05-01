@@ -36,9 +36,9 @@
     cnc_colinearity = true
 
     # Specific R linters
-    R_glmmTMB_target_variable = true
+    R_imbalanced_target_variable = true
     R_glmmTMB_binomial_modelling = true
-    R_lm_modelling = true
+    R_data_normally_distributed = true
     R_glm_binomial_modelling = true
     R_colinearity_with_target = true
 
@@ -114,14 +114,17 @@
         cnc_threshold = 150.0
 
     # R modelling linters
-    [parameters.R_glmmTMB_target_variable]
+    [parameters.R_imbalanced_target_variable]
         threshold = 0.1
 
     [parameters.R_glmmTMB_binomial_modelling]
         acceptable_link_values = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
-    [parameters.R_lm_modelling]
+    [parameters.R_data_normally_distributed]
         pvalue_threshold = 0.1
+        algorithms = ["lm", "glm", "glmmTMB"]
+        check_target = false
+        check_predictors = true
 
     [parameters.R_glm_binomial_modelling]
         pvalue_threshold = 0.1

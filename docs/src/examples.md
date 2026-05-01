@@ -1,5 +1,7 @@
 # Usage examples
 
+> Note: Results from running the commands below may vary depending on the current state of the configuration files. Take the outputs are representative samples of the expected output only.
+
 There are two tools through which linting can be done, both available in the Docker container:
  - `datalinter`, a command-line (CLI) tool, best suited for linting data outside an experimental environment. It builds its linting context through the configuration file and command line arguments.
  - `datalinterserver`, a HTTP server to which one can easily connect with a client. The server builds the context from configuration file and data, code provided in HTTP requests. It is best suited for online and interactive workflows, where code is readily available with the data to be linted.
@@ -15,13 +17,13 @@ All the examples below use code and data available in the repository. These are 
 
 ### Testing the Docker image
 The Docker image contains compiled versions of the CLI utility and server. To test that everything works, run:
-```
+```bash
 $ docker run -it --rm \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinter/bin/datalinter --help
 ```
 and
-```
+```bash
 $ docker run -it --rm \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinterserver/datalinterserver --help
@@ -111,7 +113,7 @@ The output should look something like:
 ### Linting with `config.toml` context
 
 The command below uses a configuration file where the some context is provided:
-```
+```bash
 $ time docker run -it --rm \
     --volume=./test/data:/_data \
     --volume=./config:/_config \
@@ -143,8 +145,8 @@ m2 <- glmmTMB(col4 ~ col1 + col2 + col3,
               family=binomial(link="linear"))
 ```
 to the linter in addition to the data:
-```
-time docker run -it --rm \
+```bash
+$ time docker run -it --rm \
     --volume=./test/code:/tmp \
     --volume=./test/data:/_data \
     --volume=./config/:/_config \
@@ -158,10 +160,11 @@ time docker run -it --rm \
 ```
 which outputs:
 ```
-! warning       (large_outliers)        column: col4         the values of 'column: col4' contain large outliers
 ! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
-! warning       (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
-3 issues found from 11 linters applied (7 OK, 4 N/A) .
+! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
+! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
+• info          (R_data_normally_distributed)   dataset              Non-normal variables present
+4 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
 
 ## `datalinterserver` HTTP-based linting
@@ -181,7 +184,7 @@ Optional arguments:
 ### Running the server
 
 To start the linting server with one of the default configurations and listen on address `0.0.0.0` and port `10000` one can run
-```
+```bash
 $ docker run -it --rm -p10000:10000 \
     ghcr.io/zgornel/datalinter-compiled:latest \
         /datalinterserver/bin/datalinterserver \
@@ -197,21 +200,33 @@ Upon starting, the server outputs:
 ```
 
 The server accepts HTTP requests with a specific JSON payload containing data or, data and code. Upon receiving a request, it will try to run the linter and return a JSON with the output. A client script can be found in `scripts/client.jl`. The following command sets up a temporary environment for the script to run:
-```
+```bash
 $ julia --project=@datalinter -e 'using Pkg; Pkg.add(["HTTP", "JSON", "DelimitedFiles"])'
 ```
 Running the client script with data and code arguments
-```
+```bash
 $ julia --project=@datalinter ./scripts/client.jl ./data/imbalanced_data.csv ./test/code/r_snippet_binomial.r
 ```
 outputs:
 ```
 --- Linting output (HTTP Status: 200):
-• n/a           (imbalanced_target_variable)    dataset              linter not applicable (or failed) for 'dataset'
-• experimental  (R_glmmTMB_target_variable)     dataset              Imbalanced dependent variable (glmmTMB)
-• experimental  (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
-1 issues found from 3 linters applied (2 OK, 1 N/A) .
+! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
+! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
+! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
+! warning       (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
+• info          (R_data_normally_distributed)   dataset              Non-normal variables present
+5 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
+
+### Send data using `wget` and `jq`
+
+One could send data to the HTTP server using the `wget` and `jq` tools. Running the following command from the root of the repository will send both data and code to the linting server.
+```bash
+$ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --rawfile zz ./test/data/imbalanced_data.csv '$zz'), \"data_type\" : \"dataset\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile zz ./test/code/r_snippet_imbalanced.r '$zz')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" \
+  --header='Content-Type:application/json' \
+  'http://0.0.0.0:10000/api/lint'
+```
+
 
 ### Server HTTP API
 
@@ -239,7 +254,7 @@ For lint requests, a representative example of the `body` of the request is show
 ```
 The available fields are:
  - `show_na`, a boolean that enables to show linters that were not available. Default is `false`
- - `show_passing` boolean that enables to show linters that raised no issuesa. Default is `false`
+ - `show_passing` boolean that enables to show linters that raised no issues. Default is `false`
  - `show_passing` boolean that enables to show statistics. Default is `false`
  - `data_header` boolean that indicates whether the data has a header
  - `data_delim` string that sets the data delimiter
@@ -253,13 +268,13 @@ The response is a HTTP message with the following JSON in the body:
 {"linter_output" : "<Same linting output that gets printed at stdout...>"}
 ```
 
-## Using the `datalinter.sh` script
-> Note: This option does not support the specification of a config file and will use the default linters and parameter values.
+## Using the `datalinter.jl` script
+> Note: This option does not support the specification of a config file or code.
 
-The linter can also be run quickly through the `datalinter.sh` shell script. To run in on the test dataset, one can do:
-```
-$ ./datalinter.sh ./test/data/data.csv
-```
+The linter can also be run quickly through the `datalinter.jl` shell script. To run in on the test dataset, one can do
+ - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter.jl path/to/yourfile.csv [extra flags...]`
+ - Windows (PowerShell or cmd): `julia --startup-file=no datalinter.jl "C:\path\to\yourfile.csv" [extra flags...]`
+
 The script can be ran from any directory and accepts a single argument, the dataset that is to be linted.
 
 ## Additional resources

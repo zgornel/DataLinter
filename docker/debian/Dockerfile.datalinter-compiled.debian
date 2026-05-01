@@ -49,8 +49,19 @@ COPY ./test/test_config.toml /tmp/test/test_config.toml
 COPY ./julia_packages/ParSitter /root/.julia/packages/ParSitter
 
 # Prime dependencies for top level script
-RUN datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level error > /dev/null
-RUN datalinterserver/bin/datalinterserver --help > /dev/null
+# datalinter
+RUN datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
+RUN datalinter/bin/datalinter /tmp/test/data/correlated_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
+RUN datalinter/bin/datalinter /tmp/test/data/correlated_target_data.csv --code-path /tmp/test/code/r_snippet_binomial.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
+
+# datalinterserver
+RUN datalinterserver/bin/datalinterserver -p 11000 --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
+RUN wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"/tmp/test/data/imbalanced_data.csv\", \"data_type\" : \"filepath\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" : $(jq -n --rawfile codevar /tmp/test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:11000/api/lint' > /dev/null
+RUN wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\" : $(jq -n --rawfile datavar /tmp/test/data/imbalanced_data.csv '$datavar'), \"data_type\" : \"dataset\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" : $(jq -n --rawfile codevar /tmp/test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint' > /dev/null
+
+
+
+RUN wget -O- --header='Content-Type:application/json' 'http://0.0.0.0:11000/api/kill'
 
 # Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
 ### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]

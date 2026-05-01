@@ -1,7 +1,8 @@
 module OutputInterface
 
 using StatsBase
-import ..LinterCore: process_output
+import ..LinterCore: Linter, process_output,
+    AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
 """
 Structure that maps a warning level to a numeric value.
@@ -20,7 +21,7 @@ Returns a score corresponding to the severity of the issues found in
 the dataset. The score is based on the `WARN_LEVEL_TO_NUM` mapping.
 """
 function score(lintout; normalize = true)
-    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v == false)
+    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v isa FailedCheck)
     return if !isempty(vals)
         ifelse(normalize, mean(vals), sum(vals))
     else
@@ -46,28 +47,28 @@ function process_output(
     )
     n_failures = 0
     n_linters = map(lo -> lo[1][1].name, lintout) |> length ∘ unique
-    n_linters_applied = map(lo -> lo[1][1].name, filter(lo -> lo[2] != nothing, lintout)) |> length ∘ unique
+    n_linters_applied = map(lo -> lo[1][1].name, filter(lo -> !isa(lo[2], NotAvailableCheck), lintout)) |> length ∘ unique
     n_linters_na = n_linters - n_linters_applied
     sorted_out = sort(lintout, by = l -> WARN_LEVEL_TO_NUM[(l[1][1]).warn_level], rev = true)
+    give_reason_for_na(result) = result.info === nothing ? "*not applicable*" : "*FAILED*"
     for ((linter, loc_name), result) in sorted_out
-        applicable = !isnothing(result)
-        msg, color, bold = _print_options(linter, result, applicable)
-        if applicable
-            if !result  # linter failed
+        msg, color, bold = _print_options(result, linter)
+        if !(result isa NotAvailableCheck)
+            if result isa FailedCheck  # linter failed
                 n_failures += 1
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "$(linter.failure_message(loc_name))\n"; color, bold = true)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
+                printstyled(buffer, "$(linter.failure_message(loc_name, result))\n"; color, bold)
             elseif show_passing
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "$(linter.correct_message(loc_name))\n"; color, bold = true)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold)
+                printstyled(buffer, "$(linter.correct_message(loc_name, result))\n"; color, bold)
             end
         else
             if show_na
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 20))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold = true)
-                printstyled(buffer, "linter not applicable (or failed) for '$(loc_name)'\n"; color, bold = true)
+                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
+                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
+                printstyled(buffer, "linter $(give_reason_for_na(result)) for '$(loc_name)'\n"; color, bold)
             end
         end
     end
@@ -82,20 +83,19 @@ end
 print_buffer(buf::IOBuffer) = print(stdout, read(seekstart(buf), String))
 
 
-_print_options(linter, result, applicable) = begin
-    if applicable
-        if !result
-            (linter.warn_level == "warning") && (return (msg = "! warning", color = :yellow, bold = true))
-            (linter.warn_level == "info") && (return (msg = "• info", color = :cyan, bold = true))
-            (linter.warn_level == "important") && (return (msg = "× important", color = :red, bold = true))
-            (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = true))
-        else
-            # linter passed
-            return (msg = "✓ pass", color = :default, bold = true)
-        end
-    else
-        return (msg = "• n/a", color = :gray, bold = true)
-    end
+_print_options(::FailedCheck, linter::Linter) = begin
+    (linter.warn_level == "warning") && (return (msg = "! warning", color = :light_yellow, bold = false))
+    (linter.warn_level == "info") && (return (msg = "• info", color = :light_cyan, bold = false))
+    (linter.warn_level == "important") && (return (msg = "× important", color = :light_magenta, bold = false))
+    (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = false))
+end
+
+_print_options(::PassedCheck, linter::Linter) = begin
+    return (msg = "✓ pass", color = :default, bold = false)
+end
+
+_print_options(::NotAvailableCheck, linter::Linter) = begin
+    return (msg = "• n/a", color = :gray, bold = false)
 end
 
 end  # module

@@ -1,5 +1,29 @@
 const ACCEPTABLE_LINK_VALUES = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
+# Returns target and predictor variables from a R formula
+function process_formula_variables(target_variable, rhs, tbl)
+    # Extract target variable
+    target_variable_symbol(tbl, tv::Int) = Tables.columnnames(tbl)[tv]
+    target_variable_symbol(tbl, tv::Symbol) = tv
+    target_variable_symbol(tbl, tv::String) = Symbol(tv)
+    _target_variable = target_variable_symbol(tbl, target_variable)
+    # Extract predictor variables
+    rhs_symbols = Symbol.(RFormulaParser.extract_identifiers(rhs))
+    predictor_variables = setdiff(rhs_symbols, [_target_variable])
+    # Handle "."
+    if length(predictor_variables) == 1 && first(predictor_variables) == :.
+        predictor_variables = setdiff(Tables.columnnames(tbl), [_target_variable])
+    end
+    return _target_variable::Symbol, predictor_variables::Vector{Symbol}
+end
+
+# Extract the value of a captured symbol from query results (single match),
+# of the form: (match::Bool, captured::MultiDict, node::EzXML.Node)
+function extract_capture_value(query_results, capture_symbol)
+    return string(getproperty(ParSitter.get_capture(query_results, capture_symbol), :v))
+end
+
+
 function is_glmmTMB_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
@@ -7,24 +31,24 @@ function is_glmmTMB_data_correctly_modelled(
         acceptable_link_values = ACCEPTABLE_LINK_VALUES
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        link_type = extract_capture_value(linting_ctx.parsing_data, "link_type")
+        tc = getindex(tblref[], target_variable)
         nvars = length(unique(tc))
-        arg_name, _... = ParSitter.get_capture(query_results, "arg_name")
-        arg_value, _... = ParSitter.get_capture(query_results, "arg_value")
         if nvars == 2
-            if arg_name == "link"
-                return arg_value ∈ acceptable_link_values
+            acceptable_link_values_strings = ["\"$v\"" for v in acceptable_link_values]
+            if link_type ∈ acceptable_link_values || link_type in acceptable_link_values_strings
+                return PassedCheck(nothing)
             else
-                return true
+                return FailedCheck(info = "link type is: link_type")
             end
         else  # nvars != 2
-            return false
+            return FailedCheck(info = "target has $nvars values")
         end
     catch e
         @debug "is_glmmTMB_data_correctly_modelled: Failed\n$e"
-        return nothing
+        return NotAvailableCheck(info = string(e))
     end
 end
 
@@ -39,33 +63,45 @@ function is_normally_distributed(ux::AbstractVector, pvalue_threshold = PVALUE_T
     return p1 >= pvalue_threshold || p2 >= pvalue_threshold
 end
 
-function is_lm_data_correct(
+const NORMALITY_CHECK_ALGORITHMS = ["lm", "glm", "glmmTMB"]
+
+function is_data_normally_distributed(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        pvalue_threshold = PVALUE_THRESHOLD
+        pvalue_threshold = PVALUE_THRESHOLD,
+        algorithms = NORMALITY_CHECK_ALGORITHMS,
+        check_target = false,
+        check_predictors = true
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
-        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        #TODO: Add '.' processing
-        dvars = RFormulaParser.extract_identifiers(dvars_str)
-        result = true
-        for dvar in dvars
-            _vals = getindex(tblref[], __process_target_col(dvar))
-            #TODO: Check whether lm works with one-hot encoded variables i.e. 0 and 1's
-            result &= is_normally_distributed(_vals, pvalue_threshold)
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
+        if alg ∉ algorithms
+            return NotAvailableCheck(info = "unknown algorithm '$alg'")
         end
-        return result & is_normally_distributed(tc, pvalue_threshold)
+        check = true
+        if check_predictors
+            for pv in predictor_variables
+                _vals = getindex(tblref[], process_column_for_indexing(pv))
+                if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
+                    check &= is_normally_distributed(_vals, pvalue_threshold)
+                end
+            end
+        end
+        if check_target
+            tc = getindex(tblref[], target_variable)
+            check &= is_normally_distributed(tc, pvalue_threshold)
+        end
+        return check ? PassedCheck(info = alg) : FailedCheck(info = alg)
     catch e
-        @debug "is_lm_data_correct: Failed\n$e"
-        return nothing
+        @debug "is_data_normally_distributed: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
     end
 end
 
-is_lm_data_correct(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_data_normally_distributed(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 
 function is_glm_data_correctly_modelled(
@@ -75,27 +111,28 @@ function is_glm_data_correctly_modelled(
         pvalue_threshold = PVALUE_THRESHOLD
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
-        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        #TODO: Add '.' processing
-        dvars = RFormulaParser.extract_identifiers(dvars_str)
-        result = true
-        for dvar in dvars
-            _vals = getindex(tblref[], __process_target_col(dvar))
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        family = extract_capture_value(linting_ctx.parsing_data, "family")
+        check = true
+        for pv in predictor_variables
+            _vals = getindex(tblref[], process_column_for_indexing(pv))
             if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
-                result &= is_normally_distributed(_vals, pvalue_threshold)
+                check &= is_normally_distributed(_vals, pvalue_threshold)
             end
         end
-        return result && length(unique(tc)) == 2
+        if family == "\"binomial\"" || family == "binomial"
+            tc = getindex(tblref[], target_variable)
+            check &= length(unique(tc)) == 2
+        end
+        return check ? PassedCheck(nothing) : FailedCheck(nothing)
     catch e
         @debug "is_glm_data_correctly_modelled: Failed\n$e"
-        return nothing
+        return NotAvailableCheck(info = string(e))
     end
 end
 
-is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 
 const PAIRWISE_COLINEARITY_THRESHOLD = 0.9
 
@@ -103,7 +140,7 @@ const PAIRWISE_COLINEARITY_THRESHOLD = 0.9
     check_pairwise_colinearity(v1, v2; threshold=0.9)
 
 Check if two numeric vectors have high pairwise correlation (colinearity).
-Returns true if correlation exceeds threshold, false otherwise.
+Returns false if correlation exceeds threshold, true otherwise.
 Handles missing values by filtering them out.
 """
 function check_pairwise_colinearity(v1, v2; threshold = PAIRWISE_COLINEARITY_THRESHOLD)
@@ -117,7 +154,7 @@ function check_pairwise_colinearity(v1, v2; threshold = PAIRWISE_COLINEARITY_THR
     # Calculate Pearson correlation coefficient
     try
         corr = abs(cor(v1_clean, v2_clean))
-        return corr >= threshold
+        return corr < threshold
     catch
         return nothing
     end
@@ -133,60 +170,43 @@ function check_colinearity_with_target(
         algorithms = PAIRWISE_COLINEARITY_ALGORITHMS
     )
     try
-        col = linting_ctx.target_variable
-        query_results = linting_ctx.parsing_data
-        tc = getindex(tblref[], __process_target_col(col))
-        alg, _... = ParSitter.get_capture(linting_ctx.parsing_data, "algorithm")
+
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        tc = getindex(tblref[], target_variable)
+        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
         if alg ∉ algorithms
-            return nothing
+            return NotAvailableCheck(info = "unknown algorithm '$alg'")
         end
-        dvars_str, _... = ParSitter.get_capture(linting_ctx.parsing_data, "dependent_variables")
-        dvars = RFormulaParser.extract_identifiers(dvars_str)
-        result = false
-        for dvar in dvars
-            _vals = getindex(tblref[], __process_target_col(dvar))
+        check = true
+        colinears = Symbol[]
+        for pv in predictor_variables
+            _vals = getindex(tblref[], process_column_for_indexing(pv))
             _corr = check_pairwise_colinearity(tc, _vals; threshold)
             if !isnothing(_corr)
-                result |= _corr
+                check &= _corr
+                !_corr && push!(colinears, pv)
             end
         end
-        return result
+        return check ? PassedCheck(info = alg) : FailedCheck(info = (colinears = colinears, alg = alg))
     catch e
         @debug "check_colinearity_with_target: Failed\n$e"
-        return nothing
+        return NotAvailableCheck(info = string(e))
     end
 end
 
 
 const R_BASELINE_LINTERS = [
-    # Imbalanced target variable in data (R code, glmmTMB algorithm)
+    # Imbalanced target variable in data (R code version)
     (
-        name = :R_glmmTMB_target_variable,
-        description = """ Tests that data labels are balanced (no class less than θ%)""",
+        name = :R_imbalanced_target_variable,
+        description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = name -> "Imbalanced dependent variable (glmmTMB)",
-        correct_message = name -> "Dependent variable is balanced (glmmTMB)",
+        failure_message = (name, args...) -> "Imbalanced distribution of target variable values",
+        correct_message = (name, args...) -> "Target variable values are balanced",
         warn_level = "warning",
-        correct_if = check_correctness(false),
-        query = (
-            "*",
-            "glmmTMB",                      # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",
-                    (
-                        "*",
-                        "@target_variable",
-                        (
-                            "@dependent_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :strict,
+        query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
@@ -196,80 +216,25 @@ const R_BASELINE_LINTERS = [
         name = :R_glmmTMB_binomial_modelling,
         description = """ Ensures that binary varianles are modelled with correct family and link values""",
         f = is_glmmTMB_data_correctly_modelled,
-        failure_message = name -> "Incorrect binomial data modelling (glmmTMB)",
-        correct_message = name -> "Correct binomial data modelling (glmmTMB)",
+        failure_message = (name, args...) -> "Incorrect binomial data modelling (glmmTMB)",
+        correct_message = (name, args...) -> "Correct binomial data modelling (glmmTMB)",
         warn_level = "warning",
-        correct_if = check_correctness(true),
-        query = (
-            "*",
-            "glmmTMB",                      # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",                       # -> argument
-                    (
-                        "*",                    # -> binary_operator
-                        "@target_variable",
-                        (
-                            "@dependent_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-                (
-                    "*",                       # -> family = binomial(link=...)
-                    "family",                # -> family
-                    (
-                        "*",                    # -> binomial(link=...)
-                        "binomial",           # -> binomial
-                        (
-                            "*",                 # -> argument
-                            (
-                                "*",
-                                "@arg_name",
-                                (
-                                    "*",
-                                    "@arg_value",
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :nonstrict,
+        query = "glmmTMB({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family=binomial(link={{link_type::IDENTIFIER}}))",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
 
     # Corectness test for linear modelling
     (
-        name = :R_lm_modelling,
-        description = """ Tests that variables for linear modelling have correct values""",
-        f = is_lm_data_correct,
-        failure_message = name -> "Incorrect linear modelling (lm), non-normal variables present",
-        correct_message = name -> "Correct linear modelling (lm)",
-        warn_level = "warning",
-        correct_if = check_correctness(true),
-        query = (
-            "*",
-            "lm",                             # -> lm
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",
-                    (
-                        "*",
-                        "@target_variable",
-                        (
-                            "@dependent_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :strict,
+        name = :R_data_normally_distributed,
+        description = """ Tests that variables are normally distributed""",
+        f = is_data_normally_distributed,
+        failure_message = (name, result) -> "Non-normal variables present ($(result.info))",
+        correct_message = (name, result) -> "Variables are normally distributed ($(result.info))",
+        warn_level = "info",
+        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
@@ -277,52 +242,26 @@ const R_BASELINE_LINTERS = [
     # Binary target data modelled by binomial family modelling
     (
         name = :R_glm_binomial_modelling,
-        description = """ Ensures that binary variables are modelled with correct data values""",
+        description = """ Ensures that binary variables are modelled by 'glm' with correct data values""",
         f = is_glm_data_correctly_modelled,
-        failure_message = name -> "Incorrect binomial data modelling (glm), non-normal variables present",
-        correct_message = name -> "Correct binomial data modelling (glm)",
+        failure_message = (name, args...) -> "Incorrect binomial data modelling (glm): non-normal predictors or target with more than 2 values",
+        correct_message = (name, args...) -> "Correct binomial data modelling (glm)",
         warn_level = "warning",
-        correct_if = check_correctness(true),
-        query = (
-            "*",
-            "glm",                            # -> glmmTMB
-            (
-                "*",                          # -> (arguments...)
-                (
-                    "*",                       # -> argument
-                    (
-                        "*",                    # -> binary_operator
-                        "@target_variable",
-                        (
-                            "@dependent_variables",
-                            "*",
-                        ),
-                    ),
-                ),
-                (
-                    "*",                      # -> family = "binomial"
-                    "family",                 # -> family
-                    (
-                        "\"binomial\"",           # -> binomial
-                    ),
-                ),
-            ),
-        ),
-        query_match_type = :nonstrict,
+        query = "glm({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family={{family::IDENTIFIER}})",
+        query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
 
-    # Check colinearity between target variable and dependent variables for specific algorithms
+    # Check colinearity between target variable and predictor variables for specific algorithms
     (
         name = :R_colinearity_with_target,
         description = """ Checks colinearities between target variable and its target variables""",
         f = check_colinearity_with_target,
-        failure_message = name -> "At least one dependent variable is highly colinear with target variable",
-        correct_message = name -> "No colinearities between target and dependent variables",
+        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(result.info.colinears)",
+        correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
         warn_level = "important",
-        correct_if = check_correctness(false),
-        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{dependent_variables::IDENTIFIER}}, data={{::IDENTIFIER}})",
+        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),

@@ -14,7 +14,11 @@ import ..KnowledgeBaseInterface:
     kb_load, kb_query,
     AbstractKnowledgeBase,
     build_linters,
-    Linter
+    Linter,
+    AbstractCheck,
+    PassedCheck,
+    FailedCheck,
+    NotAvailableCheck
 
 # Meta-types for varius column element types
 NumericEltype = Union{<:Number, Union{Missing, <:Number}}
@@ -22,17 +26,6 @@ FloatEltype = Union{<:AbstractFloat, Union{Missing, <:AbstractFloat}}
 StringEltype = Union{<:AbstractString, Union{Missing, <:AbstractString}}
 TimeEltype = Union{<:Dates.AbstractTime, Union{Missing, <:Dates.AbstractTime}}
 ListEltype = Union{Any, Vector{Any}}
-
-check_correctness(check_against) =
-    (result) -> begin
-    if result === nothing
-        return nothing
-    elseif result == check_against
-        return true
-    else
-        return false
-    end
-end
 
 include("rformula.jl")
 
@@ -144,7 +137,6 @@ function _namedtuple_to_linter(nt)
         failure_message = nt.failure_message,
         correct_message = nt.correct_message,
         warn_level = nt.warn_level,
-        correct_if = nt.correct_if,
         query = nt.query,
         query_match_type = if isnothing(nt.query)
             nothing

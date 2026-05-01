@@ -36,10 +36,10 @@
     cnc_colinearity = true
 
     # Specific R linters
-    R_glmmTMB_target_variable = true
+    R_imbalanced_target_variable = true
     R_glmmTMB_binomial_modelling = true
-    R_lm_modelling = false
-    R_glm_binomial_modelling = false
+    R_data_normally_distributed = true
+    R_glm_binomial_modelling = true
     R_colinearity_with_target = true
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
@@ -114,17 +114,20 @@
         cnc_threshold = 100.0
 
     # R modelling linters
-    [parameters.R_glmmTMB_target_variable]
+    [parameters.R_imbalanced_target_variable]
         threshold = 0.1
 
     [parameters.R_glmmTMB_binomial_modelling]
         acceptable_link_values = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
-    [parameters.R_lm_modelling]
-        pvalue_threshold = 0.1
+    [parameters.R_data_normally_distributed]
+        pvalue_threshold = 0.05
+        algorithms = ["lm", "glm", "glmmTMB"]
+        check_target = false
+        check_predictors = true
 
     [parameters.R_glm_binomial_modelling]
-        pvalue_threshold = 0.1
+        pvalue_threshold = 0.05
 
     [parameters.R_colinearity_with_target]
         threshold = 0.9

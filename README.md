@@ -1,4 +1,4 @@
-# DataLinter
+# `data | linter`
 
 Linting library and tools for machine learning, statistical modelling, data, code.
 
@@ -11,22 +11,29 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ![til](./gifs/cli.gif)
 
+
 ## Installation
 
-The recommended way to install `DataLinter` is to download the docker image:
-```
-$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
-```
+- download cli and server **binaries** (linux-x86-64) from [releases](https://github.com/zgornel/DataLinter/releases) page: ([v0.1.0](https://github.com/zgornel/DataLinter/releases/download/v0.1.0/datalinter-compiled-binary.zip))
+- get the **Docker image** with `docker pull ghcr.io/zgornel/datalinter-compiled:latest`
+
+## Configuration
 
 Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters.
 
 ## Integrations
 
-Integrations are available for [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter) and [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
+Available integrations:
+ - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+ - [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
+ - [Github actions](https://github.com/OxoaResearch/datalinter-github-action)
+ - Gitlab (upcoming)
+ - VSCode (upcoming)
 
 ## Lint Catalog
 
 DataLinter ships with **23 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+
 
 ## License
 
@@ -42,7 +49,11 @@ Please [file an issue](https://github.com/zgornel/DataLinter/issues/new) to repo
 
 [1] https://en.wikipedia.org/wiki/Lint_(software)
 
-[2] A [data linter](https://github.com/brain-research/data-linter) written by Google
+[2] N. Hynes, D. Sculley, M. Terry "The data linter: Lightweight, automated sanity checking for ml data sets", NIPS MLSys Workshop, 2017; [paper](http://learningsys.org/nips17/assets/papers/paper_19.pdf)
+
+[3] The [data-linter](https://github.com/brain-research/data-linter) code repository
+
 
 ## Acknowledgements
+
 The initial version of DataLinter was fully inspired by [this work](https://github.com/brain-research/data-linter) written by Google brain research.

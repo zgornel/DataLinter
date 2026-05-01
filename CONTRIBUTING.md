@@ -10,6 +10,11 @@ If you experience any crashes, errors or linting mistakes, file a bug report. Th
 
 For any seemingly missing or incomplete features, file a bug report as well. It should be in the form of a Github issue as well containing a description of the feature, desired functioning and/or outcome as well as a minimal working example i.e. data, code.
 
+## How to help
+ - Trying it on your data, open an issue with what it missed.
+ - Test the [RStudio add-in](https://github.com/zgornel/Rstudio-Addin-DataLinter) and open issues
+ - Test the [Jupyter notebook magic](https://github.com/zgornel/Ipython-datalinter) and open issues
+
 ## Development guidelines
 
 - In order to bring changes to the codebase, open a Github PR
@@ -18,3 +23,7 @@ For any seemingly missing or incomplete features, file a bug report as well. It 
 - Squash commits in a PR.
 - Outside package dependencies should be minimized
 - If the code refers to a feature, it should be discussed in a PR before starting to code
+
+## Formatting/style checks - run the runic linter
+`./runrunic.jl` # Unix-like / Git Bash / WSL
+`julia --startup-file=no --project=@runic runrunic.jl`   # Windows

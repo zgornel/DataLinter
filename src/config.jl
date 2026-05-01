@@ -25,13 +25,17 @@ Dict{String, Any} with 2 entries:
 """
 load_config(::Nothing) = FALLBACK_CONFIG
 load_config(io::IO) = TOML.parse(io)
-load_config(configpath::AbstractString) = begin
+function load_config(configpath::AbstractString)
     config = try
+        if !isfile(configpath)
+            @warn "Configuration file not found @\"$configpath\", disabling all linters."
+            FALLBACK_CONFIG
+        end
         open(configpath, "r") do io
             load_config(io)
         end
     catch e
-        @warn "Could not parse configuration @\"$configpath\", using default configuration.\n"
+        @warn "Could not parse configuration @\"$configpath\", disabling all linters.\n$e"
         FALLBACK_CONFIG
     end
     return config
