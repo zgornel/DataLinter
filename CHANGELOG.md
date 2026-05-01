@@ -1,6 +1,8 @@
 # Changelog
 v0.1.1
 ------
+ - refactor queries
+ - performance, portability improvements
 
 v0.1.0
 ------
