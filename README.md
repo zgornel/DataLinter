@@ -1,4 +1,4 @@
-# DataLinter
+# `data | linter`
 
 Linting library and tools for machine learning, statistical modelling, data, code.
 
