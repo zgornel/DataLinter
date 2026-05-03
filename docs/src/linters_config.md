@@ -45,7 +45,7 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |`empty_example`|Detects completely empty rows|Any dataset|-|
 |`uncommon_signs`|Flags numerical columns with very few opposite signs|Signed numeric data|-|
 |`long_tailed_distrib`|Detects long-tailed distributions|Numerical features|`drop_proportion`, `zscore_multiplier`|
-|`circular_domain`|Identifies circular data (hours| degrees| etc.)|Angular / periodic data|-|
+|`circular_domain`|Identifies circular data (hours, degrees, etc.)|Angular / periodic data|-|
 |`many_missing_values`|Warns about columns with high missingness|Any dataset|`threshold`|
 |`negative_values`|Checks for negative values in a column|Count / amount columns|-|
 |`imbalanced_target_variable`|Detects imbalanced target classes|Classification targets|`threshold`|
