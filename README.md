@@ -14,8 +14,29 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ## Installation
 
-- download cli and server **binaries** (linux-x86-64) from [releases](https://github.com/zgornel/DataLinter/releases) page: ([v0.1.0](https://github.com/zgornel/DataLinter/releases/download/v0.1.0/datalinter-compiled-binary.zip))
-- get the **Docker image** with `docker pull ghcr.io/zgornel/datalinter-compiled:latest`
+### Docker image
+
+The latest Docker image can be downloaded with
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:latest`
+```
+
+For specific versions, use
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:v0.x.y`
+```
+
+### Binaries
+
+The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-binary.zip`.
+
+
+### Julia
+
+Installation can be performed also from the Julia REPL with
+```julia
+using Pkg; Pkg.add(url="https://github.com/zgornel/DataLinter")
+```
 
 ## Configuration
 
@@ -25,10 +46,10 @@ Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for info
 
 Available integrations:
  - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
- - [IPython notebooks](https://github.com/zgornel/Ipython-datalinter).
- - [Github actions](https://github.com/OxoaResearch/datalinter-github-action)
- - Gitlab (upcoming)
- - VSCode (upcoming)
+ - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter).
+ - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
+ - Gitlab CI **(upcoming)**
+ - Visual Studio Code **(upcoming)**
 
 ## Lint Catalog
 
