@@ -276,6 +276,27 @@ The response is a HTTP message with the following JSON in the body:
 {"linter_output" : "<Same linting output that gets printed at stdout...>"}
 ```
 
+## Running in the Julia REPL
+
+The following example represents the basic workflow behind linting:
+ - load a configuration file
+ - build context out of data and code contents
+ - apply the linter and print the output.
+```@example
+const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..", "..")
+using DataLinter
+
+kb = nothing
+configpath = joinpath(PROJECT_PATH, "config", "r_modelling_config.toml")
+datapath = joinpath(PROJECT_PATH, "test", "data", "imbalanced_data.csv")
+codepath = joinpath(PROJECT_PATH, "test", "code", "r_snippet_imbalanced.r")
+
+config = DataLinter.LinterCore.load_config(configpath)
+ctx = DataLinter.DataInterface.build_data_context(datapath, read(codepath, String))
+@time out = DataLinter.lint(ctx, kb; config = config);
+DataLinter.process_output(out; show_stats = true)
+```
+
 ## Using the `datalinter.jl` script
 > Note: This option does not support the specification of a config file or code.
 

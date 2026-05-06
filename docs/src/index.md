@@ -24,15 +24,41 @@ Features at a glance:
 ## Installation
 
 There are several ways to install DataLinter:
- - cloning the Github repository
- - pulling a Docker image from the [Github container registry](https://ghcr.io).
+ - pulling a Docker image from the [Github container registry](https://ghcr.io) (quick & safe)
+ - downloading binaries (Linux only)
+ - cloning the Github repository (for development of the library)
 
-Unless one wants to develop DataLinter, the Docker installation is recommended:
-```
-$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
+### Docker image
+
+The latest Docker image can be downloaded with
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:latest`
 ```
 
-Available packages i.e. Docker images can be viewed in the ['Packages'](https://github.com/users/zgornel/packages?repo_name=DataLinter) section of the repository's Github page.
+For specific versions, use
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:v0.x.y`
+```
+
+Available packages (Docker images) can be viewed in the ['Packages'](https://github.com/users/zgornel/packages?repo_name=DataLinter) section of the repository's Github page.
+
+### Binaries
+
+The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-binary.zip`.
+
+
+### Julia
+
+Installation can be performed also from the Julia REPL with
+```julia
+using Pkg; Pkg.add(url="https://github.com/zgornel/DataLinter")
+```
+
+The repository can also be directly cloned with
+```bash
+git clone https://github.com/zgornel/DataLinter
+```
+
 
 ## Architecture
 
