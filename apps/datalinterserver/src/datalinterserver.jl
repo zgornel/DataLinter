@@ -45,6 +45,14 @@ function get_server_commandline_arguments(args::Vector{String})
         help = "path to knowledge base file"
         arg_type = String
         default = ""
+        "--priming-data-path"
+        help = "priming data file path"
+        default = ""
+        arg_type = String
+        "--priming-code-path"
+        help = "priming code file path"
+        default = ""
+        arg_type = String
         "--log-level"
         help = "logging level"
         default = "error"
@@ -94,6 +102,30 @@ function real_main()
         @debug "KB file not correctly specified (--kb-path), using native knowledge."
     end
 
+    # Priming
+    priming_datapath = abspath(args["priming-data-path"])
+    priming_codepath = abspath(args["priming-code-path"])
+    if isempty(priming_datapath) || !isfile(priming_datapath)
+        @debug "Priming data file missing or incorrectly specified. Will not perform priming."
+    else
+        # cli_linting_workflow already handles missing/wrong code paths
+        @debug "Priming ...\n\t• data @ $priming_datapath\n\t• code @ $priming_codepath"
+        DataLinter.cli_linting_workflow(
+            priming_datapath,
+            priming_codepath,
+            kbpath,
+            configpath;
+            linters = ["all"],
+            buffer = IOBuffer(),
+            show_stats = false,
+            show_passing = false,
+            show_na = false,
+            progress = false
+        )
+        @debug "Priming done."
+    end
+
+    #######################
     # Start I/O server(s) #
     # ################### #
     linting_server(http_ip, http_port; configpath = configpath, kbpath = kbpath)
