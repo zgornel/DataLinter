@@ -57,7 +57,11 @@ RUN /datalinter/bin/datalinter /tmp/test/data/correlated_data.csv --code-path /t
 RUN /datalinter/bin/datalinter /tmp/test/data/correlated_target_data.csv --code-path /tmp/test/code/r_snippet_binomial.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
 
 # datalinterserver (no priming)
-RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 --config-path /tmp/test/test_config.toml --log-level error &
+RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 \
+        --config-path /tmp/test/test_config.toml \
+        --priming-data-path /tmp/test/data/correlated_data.csv \
+        --priming-code-path /tmp/test/code/r_snippet_imbalanced.r \
+        --log-level error &
 
 # Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
 ### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
