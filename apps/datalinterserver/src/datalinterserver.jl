@@ -160,6 +160,7 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config = no
     #Checks
     if port <= 0
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
+        return 2
     end
     # Assign addresses: try IPv4 first, IPv6 second
     addr = try
@@ -205,16 +206,16 @@ _process_handler_output(output::String, args...) = HTTP.Response(200, ["Access-C
 
 # Either something went wrong or server was killed
 _process_handler_output(output::Int, args...) = if output == 0
-        # Server was killed
-        HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
-    elseif output == ERROR_IN_REQ_HANDLING
-        # Error in request
-        body = JSON.json(Dict("error" => "Bad request", "message" => "Failure in processing request."))
-        HTTP.Response(400, ["Access-Control-Allow-Origin" => "*", "Status" => "ERROR"], body = body)
-    else
-        # Failsafe (should not ever arrive here)
-        HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
-    end
+    # Server was killed
+    HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
+elseif output == ERROR_IN_REQ_HANDLING
+    # Error in request
+    body = JSON.json(Dict("error" => "Bad request", "message" => "Failure in processing request."))
+    HTTP.Response(400, ["Access-Control-Allow-Origin" => "*", "Status" => "ERROR"], body = body)
+else
+    # Failsafe (should not ever arrive here)
+    HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
+end
 
 # Failsafe (should not ever arrive here)
 _process_handler_output(output, args...) = HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
@@ -244,15 +245,15 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     #JSON validation
     if !haskey(_request, "linter_input")
         @error "Missing \"linter_input\" key"
-       return ERROR_IN_REQ_HANDLING
+        return ERROR_IN_REQ_HANDLING
     end
     if !haskey(_request["linter_input"], "context")
         @error "Missing \"context\" key"
-       return ERROR_IN_REQ_HANDLING
+        return ERROR_IN_REQ_HANDLING
     end
     if !haskey(_request["linter_input"], "options")
         @error "Missing \"options\" key"
-       return ERROR_IN_REQ_HANDLING
+        return ERROR_IN_REQ_HANDLING
     end
     ctx = _request["linter_input"]["context"]
     opts = _request["linter_input"]["options"]
