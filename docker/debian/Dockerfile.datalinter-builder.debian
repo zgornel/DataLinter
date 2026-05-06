@@ -108,22 +108,22 @@ WORKDIR /root/dev/tree-sitter-c-sharp
 RUN tree-sitter generate
 
 # GO parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-go
-WORKDIR /root/dev/tree-sitter-go
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-go
+#WORKDIR /root/dev/tree-sitter-go
+#RUN tree-sitter generate
 
 # Java parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-java
-WORKDIR /root/dev/tree-sitter-java
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-java
+#WORKDIR /root/dev/tree-sitter-java
+#RUN tree-sitter generate
 
 # Javascript parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
-WORKDIR /root/dev/tree-sitter-javascript
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
+#WORKDIR /root/dev/tree-sitter-javascript
+#RUN tree-sitter generate
 
 # Typescript parser --> FAILS
 #WORKDIR /root/dev
@@ -138,15 +138,15 @@ RUN tree-sitter generate
 #RUN tree-sitter generate
 
 # HTML parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-html
-WORKDIR /root/dev/tree-sitter-html
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-html
+#WORKDIR /root/dev/tree-sitter-html
+#RUN tree-sitter generate
 
 # JSON parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-json
-WORKDIR /root/dev/tree-sitter-json
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-json
+#WORKDIR /root/dev/tree-sitter-json
+#RUN tree-sitter generate
 
 WORKDIR /

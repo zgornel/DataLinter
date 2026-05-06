@@ -13,8 +13,6 @@ FROM debian:trixie-slim
 LABEL org.opencontainers.image.source https://github.com/zgornel/DataLinter
 RUN apt-get update
 RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
-#RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
-#RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
 
 # Create directories, copy files
 # ------------------------------
@@ -22,14 +20,20 @@ RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip li
 # Directories
 RUN mkdir -p /_config
 RUN mkdir -p /_data
+RUN mkdir -p /_code
 RUN mkdir -p /output
 RUN mkdir -p /workspace
+
 RUN mkdir -p /datalinter/knowledge
 RUN mkdir -p /datalinter/config
 RUN mkdir -p /datalinterserver/knowledge
 RUN mkdir -p /datalinterserver/config
+
 RUN mkdir -p /tmp/test/data
 RUN mkdir -p /tmp/test/code
+
+RUN mkdir -p /root/dev/
+RUN mkdir -p /root/src/
 
 
 # Copy binaries
@@ -63,9 +67,6 @@ RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 --config-path /
 
 # Tree sitter stuff
 # ----------------------------------------
-RUN mkdir -p /root/dev/
-RUN mkdir -p /root/src/
-RUN mkdir -p /workspace
 
 # Install tree-sitter from Debian Sid (unstable), v0.25
 RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
@@ -133,22 +134,22 @@ WORKDIR /root/dev/tree-sitter-c-sharp
 RUN tree-sitter generate
 
 # GO parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-go
-WORKDIR /root/dev/tree-sitter-go
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-go
+#WORKDIR /root/dev/tree-sitter-go
+#RUN tree-sitter generate
 
 # Java parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-java
-WORKDIR /root/dev/tree-sitter-java
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-java
+#WORKDIR /root/dev/tree-sitter-java
+#RUN tree-sitter generate
 
 # Javascript parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
-WORKDIR /root/dev/tree-sitter-javascript
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
+#WORKDIR /root/dev/tree-sitter-javascript
+#RUN tree-sitter generate
 
 # Typescript parser --> FAILS
 #WORKDIR /root/dev
@@ -163,16 +164,21 @@ RUN tree-sitter generate
 #RUN tree-sitter generate
 
 # HTML parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-html
-WORKDIR /root/dev/tree-sitter-html
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-html
+#WORKDIR /root/dev/tree-sitter-html
+#RUN tree-sitter generate
 
 # JSON parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-json
-WORKDIR /root/dev/tree-sitter-json
-RUN tree-sitter generate
+#WORKDIR /root/dev
+#RUN git clone https://github.com/tree-sitter/tree-sitter-json
+#WORKDIR /root/dev/tree-sitter-json
+#RUN tree-sitter generate
 
+# Cleanup operations
+RUN apt-get -y remove gcc g++ make
+RUN apt-get -y autoclean
+RUN apt-get -y autoremove
+
+# Set up current directory to root
 WORKDIR /
-
