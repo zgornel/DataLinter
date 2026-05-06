@@ -2,62 +2,192 @@
 #=
 datalinter.jl
 
-Portable cross-platform Julia-based datalinter Docker execution
+Portable cross-platform Julia-based DataLinter Docker wrapper.
 
-This script:
-- Runs the datalinter from the Docker image with a data argument
-- Forwards ALL additional command-line arguments (extra flags) to the inner
-  /datalinter/bin/datalinter binary inside the Docker container.
-- Uses only Base Julia (no extra packages).
-- Handles paths correctly on Windows, Linux, and macOS.
+Features:
+- Directly supports --data-path (or positional first argument as data file(s)), --config-path, --code-path.
+- Mounts directories of these paths as **separate volumes**:
+  - Data directory → /_data in container
+  - Config directory → /_config in container
+  - Code directory → /_code in container
+- Full forwarding of extra arguments to the inner datalinter binary
+- Translates host paths to corresponding container paths when calling the inner binary.
+- Support for additional Docker arguments (via --docker-* prefix or -- separator)
+- Comprehensive error handling and validation
+- Minimal dependencies (Base Julia only).
+- Works on Windows, Linux, macOS
 
 Usage
 ─────
-• Unix-like (Linux/macOS/Git Bash/WSL):
-    ./datalinter.jl path/to/yourfile.csv [extra flags...]
+• Unix-like:
+    ./datalinter.jl path/to/data.csv [--config-path /host/config/dir/custom.toml] [--code-path /host/code/script.R] [extra flags...]
 
-• Windows (PowerShell or cmd):
-    julia --startup-file=no datalinter.jl "C:\path\to\yourfile.csv" [extra flags...]
+• Or with explicit --data-path:
+    ./datalinter.jl --data-path path/to/data.csv --config-path ... --code-path ...
 
-Examples
-────────
-./datalinter.jl mydata.csv --log-level debug
-./datalinter.jl data.csv --progress --timed
-./datalinter.jl report.csv --print-exceptions --config-path /datalinter/config/custom.toml
+• Windows (PowerShell/cmd):
+    julia --startup-file=no datalinter.jl "C:\path\to\data.csv" [flags...]
 =#
+using Base: abspath, dirname, basename, isdir, isfile, Cmd
 
-# Minimal argument check
-if length(ARGS) < 1 || isempty(ARGS[1])
-    println("First argument i.e. csv file doesn’t exist or is empty.")
-    exit(1)
+# ------------------------------------------------------------------
+# Argument Parsing
+# ------------------------------------------------------------------
+function parse_args(args::Vector{String})
+    data_paths = String[]
+    config_path = ""
+    code_path = ""
+    docker_extra = String[]      # e.g. --docker--memory=2g, --docker--env=KEY=val
+    inner_extra = String[]
+    use_separator = false
+
+    i = 1
+    while i ≤ length(args)
+        arg = args[i]
+
+        if arg == "--"
+            use_separator = true
+            i += 1
+            continue
+        end
+
+        if use_separator
+            push!(inner_extra, arg)
+            i += 1
+            continue
+        end
+
+        if arg == "--data-path" && i < length(args)
+            push!(data_paths, args[i+1])
+            i += 2
+        elseif arg == "--config-path" && i < length(args)
+            config_path = args[i+1]
+            i += 2
+        elseif arg == "--code-path" && i < length(args)
+            code_path = args[i+1]
+            i += 2
+
+        # Docker-specific arguments (strip --docker- prefix)
+        elseif startswith(arg, "--docker-")
+            docker_arg = "--" * arg[9:end]  # --docker-memory=2g → --memory=2g
+            push!(docker_extra, docker_arg)
+            if i < length(args) && !startswith(args[i+1], "-")
+                push!(docker_extra, args[i+1])
+                i += 1
+            end
+            i += 1
+
+        # Other flags go to inner binary (or could be Docker if user wants)
+        elseif startswith(arg, "--") || startswith(arg, "-")
+            push!(inner_extra, arg)
+            if i < length(args) && !startswith(args[i+1], "-")
+                push!(inner_extra, args[i+1])
+                i += 1
+            end
+            i += 1
+        else
+            # Positional → data file
+            push!(data_paths, arg)
+            i += 1
+        end
+    end
+
+    if isempty(data_paths)
+        println(stderr, "Error: No data file(s) provided. Use positional argument or --data-path.")
+        exit(1)
+    end
+
+    return (data_paths, config_path, code_path, docker_extra, inner_extra)
 end
 
-input_arg = ARGS[1]
+# ------------------------------------------------------------------
+# Path utilities
+# ------------------------------------------------------------------
+function safe_dir(path::String)::String
+    if isempty(path)
+        return ""
+    end
+    p = abspath(path)
+    d = isdir(p) ? p : dirname(p)
+    if !isdir(d)
+        println(stderr, "Warning: Directory does not exist for path '$path': $d")
+    end
+    return d
+end
 
-# Compute directory and filename portably (works with Windows paths, spaces, etc.)
-dir  = dirname(abspath(input_arg))
-file = basename(input_arg)
+# ------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------
+function main()
+    data_paths, config_path, code_path, docker_extra, inner_extra = parse_args(ARGS)
 
-# Build Docker command
-docker_cmd = Cmd([
-    "docker",
-    "run",
-    "-it",
-    "--rm",
-    "--volume=$(dir):/tmp",
-    "ghcr.io/zgornel/datalinter-compiled:latest",
-    "/datalinter/bin/datalinter",
-    "/tmp/$(file)",
-    "--config-path",
-    "/datalinter/config/default.toml",
-    "--progress",
-    "--timed",
-    "--print-exceptions",
-    "--log-level",
-    "error",
-    # Forward all extra flags passed by the user
-    ARGS[2:end]...
-])
+    # Resolve host directories
+    data_dirs = unique(safe_dir(p) for p in data_paths)
+    config_dir = isempty(config_path) ? "" : safe_dir(config_path)
+    code_dir   = isempty(code_path)   ? "" : safe_dir(code_path)
 
-# Execute (Docker output and exit code are forwarded exactly)
-run(docker_cmd)
+    # Build volume mounts (separate volumes as requested)
+    volumes = String[]
+    for d in data_dirs
+        push!(volumes, "--volume=$d:/_data")
+    end
+    if !isempty(config_dir)
+        push!(volumes, "--volume=$config_dir:/_config")
+    end
+    if !isempty(code_dir)
+        push!(volumes, "--volume=$code_dir:/_code")
+    end
+
+    # Translate paths to container
+    container_data   = [joinpath("/_data", basename(p)) for p in data_paths]
+    container_config = isempty(config_path) ? "/datalinter/config/default.toml" : joinpath("/_config", basename(config_path))
+    container_code   = isempty(code_path)   ? "" : joinpath("/_code", basename(code_path))
+
+    # Build inner datalinter command
+    inner_cmd = ["/datalinter/bin/datalinter"]
+    append!(inner_cmd, container_data)
+
+    push!(inner_cmd, "--config-path", container_config)
+    if !isempty(code_path)
+        push!(inner_cmd, "--code-path", container_code)
+    end
+
+    # Default sensible flags + user-provided inner flags
+    append!(inner_cmd, [
+        "--progress",
+        "--timed",
+        "--print-exceptions",
+        "--log-level", "error",
+    ])
+    append!(inner_cmd, inner_extra)
+
+    # Build full Docker command
+    docker_cmd_parts = vcat([
+        "docker", "run",
+        "-it",
+        "--rm",
+        volumes...,
+        docker_extra...,
+        "ghcr.io/zgornel/datalinter-compiled:latest",
+        inner_cmd...
+    ])
+
+    #println(stderr, "→ Running: ", join(docker_cmd_parts, " "))
+
+    # Execute with error handling
+    try
+        run(Cmd(docker_cmd_parts))
+    catch e
+        if isa(e, ProcessFailedException)
+            println(stderr, "\nError: Docker command failed with exit code $(e.exitcode)")
+            exit(e.exitcode)
+        else
+            println(stderr, "\nUnexpected error running Docker: $e")
+            exit(1)
+        end
+    end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end
