@@ -56,6 +56,9 @@ function get_server_commandline_arguments(args::Vector{String})
         "--log-level"
         help = "logging level"
         default = "error"
+        "--version", "-v"
+        help = "prints version"
+        action = :store_true
     end
     return parse_args(args, s)
 end
@@ -78,7 +81,12 @@ end
 function real_main()
     # Parse command line arguments
     args = get_server_commandline_arguments(ARGS)
-
+    # If version present, print and exit
+    ask_version = args["version"]
+    if ask_version
+        println(DataLinter.printable_version(; commit = "192fce5*", ver = DataLinter.DEFAULT_VERSION))
+        return 0
+    end
     # Logging
     log_levels = Dict(
         "debug" => Logging.Debug,
@@ -94,8 +102,8 @@ function real_main()
     http_port = args["http-port"]
     configpath = args["config-path"]
     if isempty(configpath) || !isfile(configpath)
-        @error "Config file not correctly specified (--config-path), linters disabled by default, will exit."
-        return -1
+        @error "Config file not correctly specified (--config-path), will exit."
+        return 2
     end
     kbpath = args["kb-path"]
     if isempty(kbpath) || !isfile(kbpath)
@@ -152,9 +160,9 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; configpath 
 
     # Define REST endpoints to dispatch to "service" functions
     ROUTER = HTTP.Router()
-    HTTP.register!(ROUTER, "GET", "/*", noop_req_handler)
+    HTTP.register!(ROUTER, "GET", "/**", noop_req_handler)
     HTTP.register!(ROUTER, "GET", "/api/kill", kill_req_handler)
-    HTTP.register!(ROUTER, "POST", "/*", noop_req_handler)
+    HTTP.register!(ROUTER, "POST", "/**", noop_req_handler)
     HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(configpath, kbpath))
 
     # Start serving requests
@@ -173,10 +181,17 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; configpath 
             # All OK, send request to search server and get response
             return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = handler_output)
         elseif handler_output isa Int
-            _status = ifelse(handler_output == 0, "OK", "ERROR")
-            return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => _status], body = "")
+            if handler_output == 0
+                # Server was killed
+                return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
+            else
+                # Error in request
+                body = JSON.json(Dict("error" => "Bad request", "message" => "Failure in processing request."))
+                return HTTP.Response(400, ["Access-Control-Allow-Origin" => "*", "Status" => "ERROR"], body = body)
+            end
         else
-            return HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")  # failsafe (not used)
+            # Failsafe (should not ever arrive here)
+            return HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
         end
     end
 end
@@ -205,7 +220,7 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
             nothing
         end
     end
-    config !== nothing && @debug "config loaded @$configpath"
+    !isnothing(config) && @debug "config loaded @$configpath"
     kb = if !isempty(kbpath)
         try
             DataLinter.kb_load(kbpath)
@@ -214,12 +229,12 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
             nothing
         end
     end
-    kb !== nothing && @debug "KB loaded @$kbpath"
+    !isnothing(kb) && @debug "KB loaded @$kbpath"
     _request = try
         JSON.parse(IOBuffer(HTTP.payload(req)))
     catch e
         @debug "Could not parse HTTP request\n$e"
-        return nothing
+        return -1
     end
 
     #JSON validation
@@ -228,7 +243,8 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         @assert haskey(_request["linter_input"], "context") "Missing \"context\" key"
         @assert haskey(_request["linter_input"], "options") "Missing \"options\" key"
     catch e
-        @warn "Malformed request:\n$e"
+        @debug "Malformed request:\n$e"
+        return -1
     end
     ctx = _request["linter_input"]["context"]
     opts = _request["linter_input"]["options"]
@@ -243,6 +259,7 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
             _path
         else
             @error "Data type $(ctx["data_type"]) not supported"
+            return -1
         end
         CSV.read(
             data_source,
@@ -258,7 +275,7 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         @debug "Error loading data\n$e"
         nothing
     end
-    isnothing(data) && return nothing
+    isnothing(data) && return -1
     @debug "CSV data loaded and succesfully processed.\n$data"
 
     # Read code and options from request
@@ -277,7 +294,7 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         return JSON.json("linting_output" => string_buf)
     catch e
         @warn "Linting error: $e"
-        return nothing
+        return -1
     end
 end
 
