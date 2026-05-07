@@ -14,12 +14,12 @@ Its main ideea is that providing additional context leads to the detection of  m
 ## Features
 
 Features at a glance:
- - [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
- - flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
- - [CSV.jl](https://github.com/JuliaData/CSV.jl)-based data support
- - R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
- - CLI tool ([`apps/datalinter`](https://github.com/zgornel/DataLinter/tree/master/apps/datalinter))
- - HTTP server-client tool ([`apps/datalinterserver`](https://github.com/zgornel/DataLinter/tree/master/apps/datalinterserver))
+- 23 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- Zero-config CLI and HTTP server modes
+- Production-ready Docker image and GitHub Actions integration
+- Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
+- First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
+- Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
 
 ## Installation
 
