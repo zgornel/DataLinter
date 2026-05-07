@@ -114,7 +114,7 @@ function parse_args(args::Vector{String})
 end
 
 # ------------------------------------------------------------------
-# Path utilities (identical to original datalinter.jl)
+# Path utilities
 # ------------------------------------------------------------------
 function safe_dir(path::String)::String
     if isempty(path)
@@ -190,13 +190,13 @@ function main()
         inner_cmd...
     ])
 
-    # Execute with error handling (identical to original)
+    # Execute with error handling
     try
         run(Cmd(docker_cmd_parts))
     catch e
         if isa(e, ProcessFailedException)
-            println(stderr, "\nError: Docker command failed with exit code $(e.exitcode)")
-            exit(e.exitcode)
+            println(stderr, "\nError: Docker command failed\n:$e")
+            exit(1)
         else
             println(stderr, "\nUnexpected error running Docker: $e")
             exit(1)

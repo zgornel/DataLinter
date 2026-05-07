@@ -297,12 +297,12 @@ ctx = DataLinter.DataInterface.build_data_context(datapath, read(codepath, Strin
 DataLinter.process_output(out; show_stats = true)
 ```
 
-## Using the `datalinter.jl` script
+## Using the `datalinter` script
 > Note: This option does not support the specification of a config file or code.
 
-The linter can also be run quickly through the `datalinter.jl` shell script. To run in on the test dataset, one can do
- - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter.jl path/to/yourfile.csv [extra flags...]`
- - Windows (PowerShell or cmd): `julia --startup-file=no datalinter.jl "C:\path\to\yourfile.csv" [extra flags...]`
+The linter can also be run quickly through the `datalinter` Julia script. To run in on the test dataset, one can do
+ - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter path/to/yourfile.csv [extra flags...]`
+ - Windows (PowerShell or cmd): `julia --startup-file=no datalinter "C:\path\to\yourfile.csv" [extra flags...]`
 
 The script can be ran from any directory and accepts a single argument, the dataset that is to be linted.
 

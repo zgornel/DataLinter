@@ -1,6 +1,6 @@
 #!/usr/bin/env -S julia --startup-file=no
 #=
-datalinter.jl
+datalinter
 
 Portable cross-platform Julia-based DataLinter Docker wrapper.
 
@@ -20,13 +20,13 @@ Features:
 Usage
 ─────
 • Unix-like:
-    ./datalinter.jl path/to/data.csv [--config-path /host/config/dir/custom.toml] [--code-path /host/code/script.R] [extra flags...]
+    ./datalinter path/to/data.csv [--config-path /host/config/dir/custom.toml] [--code-path /host/code/script.R] [extra flags...]
 
 • Or with explicit --data-path:
-    ./datalinter.jl --data-path path/to/data.csv --config-path ... --code-path ...
+    ./datalinter --data-path path/to/data.csv --config-path ... --code-path ...
 
 • Windows (PowerShell/cmd):
-    julia --startup-file=no datalinter.jl "C:\path\to\data.csv" [flags...]
+    julia --startup-file=no datalinter "C:\path\to\data.csv" [flags...]
 =#
 using Base: abspath, dirname, basename, isdir, isfile, Cmd
 
@@ -179,8 +179,8 @@ function main()
         run(Cmd(docker_cmd_parts))
     catch e
         if isa(e, ProcessFailedException)
-            println(stderr, "\nError: Docker command failed with exit code $(e.exitcode)")
-            exit(e.exitcode)
+            println(stderr, "\nError: Docker command failed:\n$e")
+            exit(1)
         else
             println(stderr, "\nUnexpected error running Docker: $e")
             exit(1)
