@@ -41,10 +41,16 @@ Try it in seconds with Docker (no installation required):
 
 ```bash
 # Lint a dataset (from the root directory of the repository)
-/datalinter ./test/data/imbalanced_data.csv \
+datalinter ./test/data/imbalanced_data.csv \
     --code-path ./test/code/r_snippet_imbalanced.r \
     --config-path ./config/r_modelling_config.toml \
     --log-level error
+
+# Or run the server for HTTP API use
+./datalinterserver \
+    -p 10000 \
+    --config-path ./config/r_modelling_config.toml \
+    --log-level debug
 ```
 
 ## Installation
@@ -55,7 +61,7 @@ The latest Docker image can be downloaded with
 ```bash
 docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
-Specific versions are also tagged and accessible with (example for `v0.1.2`)
+Specific versions are also tagged and **accessible** with (example for `v0.1.2`)
 ```bash
 docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.2
 ```
@@ -82,8 +88,8 @@ Available integrations:
  - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
  - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
  - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
- - Gitlab CI **(upcoming)**
- - VS Code **(upcoming)**
+ - Gitlab CI *(upcoming)*
+ - VS Code *(upcoming)*
 
 ## Lint Catalog
 
