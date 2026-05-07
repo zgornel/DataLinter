@@ -55,9 +55,9 @@ The latest Docker image can be downloaded with
 ```bash
 docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
-Specific versions are also tagged and accessible with (example for `v0.1.1`)
+Specific versions are also tagged and accessible with (example for `v0.1.2`)
 ```bash
-docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.1
+docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.2
 ```
 
 ### Pre-compiled binaries (Linux x86-64)

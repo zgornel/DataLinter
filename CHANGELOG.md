@@ -1,4 +1,11 @@
 # Changelog
+
+v0.1.2
+------
+ - 5 new linters
+ - improve server, scripts
+ - infrastructure optimizations
+
 v0.1.1
 ------
  - refactor queries
