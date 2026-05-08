@@ -42,6 +42,7 @@
     R_glm_binomial_modelling = true
     R_colinearity_with_target = true
 
+    R_sample_size_adequacy = true
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
 # ```
 #   [parameters]
@@ -131,4 +132,8 @@
 
     [parameters.R_colinearity_with_target]
         threshold = 0.9
+        algorithms = ["lm", "glm", "glmmTMB"]
+
+    [parameters.R_sample_size_adequacy]
+        epv_threshold = 10
         algorithms = ["lm", "glm", "glmmTMB"]

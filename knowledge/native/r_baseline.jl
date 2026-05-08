@@ -1,3 +1,5 @@
+has_only_these_values(thesevalues) = valstocheck -> isempty(symdiff(thesevalues, unique(valstocheck)))
+
 const ACCEPTABLE_LINK_VALUES = ["logit", "probit", "log-log", "cloglog", "cauchit"]
 
 # Returns target and predictor variables from a R formula
@@ -20,7 +22,11 @@ end
 # Extract the value of a captured symbol from query results (single match),
 # of the form: (match::Bool, captured::MultiDict, node::EzXML.Node)
 function extract_capture_value(query_results, capture_symbol)
-    return string(getproperty(ParSitter.get_capture(query_results, capture_symbol), :v))
+    try
+        return string(getproperty(ParSitter.get_capture(query_results, capture_symbol), :v))
+    catch
+        throw(ErrorException("Symbol '$capture_symbol' not found in query results"))
+    end
 end
 
 
@@ -85,7 +91,7 @@ function is_data_normally_distributed(
         if check_predictors
             for pv in predictor_variables
                 _vals = getindex(tblref[], process_column_for_indexing(pv))
-                if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
+                if !has_only_these_values([0.0, 1.0])(_vals)
                     check &= is_normally_distributed(_vals, pvalue_threshold)
                 end
             end
@@ -117,7 +123,7 @@ function is_glm_data_correctly_modelled(
         check = true
         for pv in predictor_variables
             _vals = getindex(tblref[], process_column_for_indexing(pv))
-            if !isempty(symdiff([0.0, 1], unique(_vals)))  # skip one-hot encoded vars
+            if !has_only_these_values([0.0, 1.0])(tocheck_vals)
                 check &= is_normally_distributed(_vals, pvalue_threshold)
             end
         end
@@ -196,13 +202,60 @@ function check_colinearity_with_target(
 end
 
 
+const SAMPLE_SIZE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
+const EPV_THRESHOLD = 10
+
+function check_sample_size_adequacy(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        epv_threshold = EPV_THRESHOLD,
+        algorithms = SAMPLE_SIZE_ALGORITHMS
+    )
+    try
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        tc = getindex(tblref[], target_variable)
+        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
+        n_rows = Tables.rowcount(tblref[])
+        n_predictors = length(predictor_variables)
+        n_per_predictor = n_rows / n_predictors
+        if alg ∈ algorithms
+            if has_only_these_values([0.0, 1.0])(tc) # Binomial case
+                n_events = min(sum(tc.==1.0), sum(tc.==0.0))
+                epv = n_events / n_predictors
+                if epv > epv_threshold
+                    return PassedCheck(info="EPV=$epv, higher than $epv_threshold")
+                else
+                    return FailedCheck(info="EPV=$epv, lower than $epv_threshold")
+                end
+            else  # linear case
+                min_n_liberal = 50 + 8 * n_predictors  # Green 1991
+                min_n_conservative = 104 + n_predictors # Green 1991
+                pass_rule_of_thumb = n_rows >= min_n_liberal && n_rows >= min_n_conservative
+                if pass_rule_of_thumb
+                    return PassedCheck(info="$n_rows samples pass [Green, 1991] rule of thumb")
+                else
+                    return FailedCheck(info="$n_rows samples did not pass [Green, 1991] rule of thumb")
+                end
+            end
+        else
+            return NotAvailableCheck(info = "unknown algorithm '$alg'")
+        end
+    catch e
+        @debug "check_sample_size_adequacy: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
+    end
+end
+
+
 const R_BASELINE_LINTERS = [
     # Imbalanced target variable in data (R code version)
     (
         name = :R_imbalanced_target_variable,
         description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = (name, args...) -> "Imbalanced distribution of target variable values",
+        failure_message = (name, result) -> "Imbalanced target column in '$name' for values=$(result.info)",
         correct_message = (name, args...) -> "Target variable values are balanced",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -266,4 +319,19 @@ const R_BASELINE_LINTERS = [
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
+
+    # Checks that the number of observations and predictors have stable ratios
+    (
+        name = :R_sample_size_adequacy,
+        description = """Checks number of observations vs. number of predictors / parameters against common rules""",
+        f = check_sample_size_adequacy,
+        failure_message = (name, result) -> "Sample size and power check failed: $(result.info)",
+        correct_message = (name, result) -> "Sample size and power check OK: $(result.info)",
+        warn_level = "warning",
+        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
 ]
