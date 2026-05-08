@@ -73,8 +73,15 @@ function process_output(
         end
     end
     if show_stats
-        printstyled(buffer, "$n_failures", bold = true)
-        printstyled(buffer, " $(ifelse(n_failures == 1, "issue", "issues")) found from $n_linters linters applied ($n_linters_applied OK, $n_linters_na N/A) .\n")
+        printstyled(buffer, "From $n_linters linters applied:")
+        printstyled(buffer, " $(n_linters-n_failures-n_linters_na) PASSED", color=:green)
+        printstyled(buffer, ",")
+        if n_failures > 0
+            printstyled(buffer, " $n_failures FAILED", color=:red)
+        else
+            printstyled(buffer, " $n_failures FAILED")
+        end
+        printstyled(buffer, ", $n_linters_na N/A\n")
     end
     return nothing
 end
