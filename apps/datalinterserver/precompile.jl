@@ -2,6 +2,7 @@ using datalinterserver
 using DelimitedFiles
 using HTTP
 using JSON
+using DataLinter
 
 # Use <PROJECT_ROOT>/test/data/data.csv
 datapath = joinpath(dirname(@__FILE__), "..", "..", "test", "data", "imbalanced_data.csv")
@@ -11,7 +12,8 @@ configpath = joinpath(dirname(@__FILE__), "..", "..", "test", "test_config.toml"
 # Start server
 IP = "127.0.0.1"
 PORT = 10_000
-@async datalinterserver.linting_server(IP, PORT; configpath)
+config = DataLinter.Configuration.load_config(configpath)
+@async datalinterserver.linting_server(IP, PORT; config)
 
 # Client part
 LINTER_INPUTS = [
@@ -48,7 +50,6 @@ LINTER_INPUTS = [
     ),
 ]
 
-request = Dict()
 for linter_input in LINTER_INPUTS
     request = Dict("linter_input" => linter_input)
 
@@ -65,4 +66,5 @@ for linter_input in LINTER_INPUTS
         @info output["linting_output"]
     end
 end
-HTTP.get("http://$IP:$PORT/api/kill", Dict(), JSON.json(request))
+
+HTTP.get("http://$IP:$PORT/api/kill", Dict(), JSON.json(Dict()))

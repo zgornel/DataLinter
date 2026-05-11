@@ -13,6 +13,7 @@ using CSV
 
 const DEFAULT_LOG_LEVEL = Logging.Info
 const SERVER_HTTP_PORT = 10000
+const LOCALHOST_IP = "127.0.0.1"
 const ERROR_IN_REQ_HANDLING = -1
 
 # Linting request values
@@ -30,7 +31,7 @@ function get_server_commandline_arguments(args::Vector{String})
         default = SERVER_HTTP_PORT
         "--http-ip", "-i"
         help = "HTTP IP address"
-        default = "127.0.0.1"
+        default = LOCALHOST_IP
         "--config-path"
         help = "path to linter configuration '.toml' file"
         arg_type = String
@@ -156,7 +157,7 @@ function real_main()
 end
 
 
-function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config = nothing, kb = nothing)
+function linting_server(addr = LOCALHOST_IP, port = SERVER_HTTP_PORT; config = nothing, kb = nothing)
     #Checks
     if port <= 0
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
@@ -170,7 +171,7 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config = no
             IPv6(addr)
         catch
             @warn "HTTP IP $addr is not valid, using `localhost`..."
-            Sockets.localhost
+            IPv4(LOCALHOST_IP)
         end
     end
 
