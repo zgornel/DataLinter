@@ -123,7 +123,7 @@ function is_glm_data_correctly_modelled(
         check = true
         for pv in predictor_variables
             _vals = getindex(tblref[], process_column_for_indexing(pv))
-            if !has_only_these_values([0.0, 1.0])(tocheck_vals)
+            if !has_only_these_values([0.0, 1.0])(_vals)
                 check &= is_normally_distributed(_vals, pvalue_threshold)
             end
         end
@@ -275,6 +275,46 @@ function check_variables_present_in_data(
     end
 end
 
+const DEFAULT_NP_LEVEL_RATIO = 10
+function check_high_cardinality_categoricals(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        n_p_level_ratio=DEFAULT_NP_LEVEL_RATIO
+    )
+    try
+        tbl = tblref[]
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
+        n_rows = Tables.rowcount(tbl)
+        high_cardinalities = []
+        for pv in process_column_for_indexing.(predictor_variables)
+            for categorical_type in [Integer, AbstractString, Symbol]
+                if Tables.columntype(tbl, pv) <: categorical_type
+                    _vals = getindex(tbl, pv)
+                    if n_rows / length(unique(_vals)) < n_p_level_ratio
+                        push!(high_cardinalities, pv)
+                    end
+                end
+            end
+        end
+        if isempty(high_cardinalities)
+            return PassedCheck()
+        else
+            return FailedCheck(info = join(string.(high_cardinalities), ", "))
+        end
+    catch e
+        @debug "check_high_cardinality_categoricals: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
+    end
+end
+
+
+
+
+
+
+
 const R_BASELINE_LINTERS = [
     # Imbalanced target variable in data (R code version)
     (
@@ -368,6 +408,20 @@ const R_BASELINE_LINTERS = [
         failure_message = (name, result) -> "Found formula variables not present in data: $(result.info)",
         correct_message = (name, result) -> "All formula variables present in data",
         warn_level = "important",
+        query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Checks for categorical predictors with too many unique levels relative to sample size
+    (
+        name = :R_high_cardinality_categoricals,
+        description = """Checks for categorical predictors with too many unique levels relative to sample size""",
+        f = check_high_cardinality_categoricals,
+        failure_message = (name, result) -> "Found categorical predictors with too many unique levels: $(result.info)",
+        correct_message = (name, result) -> "Found no categorical predictors with too many unique levels",
+        warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
         programming_language = "r",
