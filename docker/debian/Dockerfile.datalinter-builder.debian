@@ -81,8 +81,12 @@ WORKDIR /
 RUN tree-sitter init-config
 
 # Install parsers
-RUN for parser in r python julia c c-sharp; do \
-      REPO_NAME=$([ "$parser" = "c-sharp" ] && echo "tree-sitter-csharp" || echo "tree-sitter-$parser"); \
+RUN git clone "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r" && \
+    cd "/root/dev/tree-sitter-r" && \
+    tree-sitter generate;
+
+RUN for parser in python julia c c-sharp javascript; do \
+      REPO_NAME=$(echo "tree-sitter-$parser"); \
       git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
       cd "/root/dev/${REPO_NAME}" && \
       tree-sitter generate; \
