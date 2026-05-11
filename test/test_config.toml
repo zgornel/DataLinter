@@ -43,6 +43,8 @@
     R_colinearity_with_target = true
 
     R_sample_size_adequacy = true
+    R_variables_present_in_data = true
+
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
 # ```
 #   [parameters]
@@ -137,3 +139,6 @@
     [parameters.R_sample_size_adequacy]
         epv_threshold = 10
         algorithms = ["lm", "glm", "glmmTMB"]
+
+    [parameters.R_variables_present_in_data]
+        # no parameters

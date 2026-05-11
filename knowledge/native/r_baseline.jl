@@ -45,7 +45,7 @@ function is_glmmTMB_data_correctly_modelled(
         if nvars == 2
             acceptable_link_values_strings = ["\"$v\"" for v in acceptable_link_values]
             if link_type ∈ acceptable_link_values || link_type in acceptable_link_values_strings
-                return PassedCheck(nothing)
+                return PassedCheck()
             else
                 return FailedCheck(info = "link type is: link_type")
             end
@@ -107,7 +107,7 @@ function is_data_normally_distributed(
     end
 end
 
-is_data_normally_distributed(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_data_normally_distributed(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
 
 
 function is_glm_data_correctly_modelled(
@@ -131,14 +131,14 @@ function is_glm_data_correctly_modelled(
             tc = getindex(tblref[], target_variable)
             check &= length(unique(tc)) == 2
         end
-        return check ? PassedCheck(nothing) : FailedCheck(nothing)
+        return check ? PassedCheck() : FailedCheck()
     catch e
         @debug "is_glm_data_correctly_modelled: Failed\n$e"
         return NotAvailableCheck(info = string(e))
     end
 end
 
-is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
 
 const PAIRWISE_COLINEARITY_THRESHOLD = 0.9
 
@@ -222,21 +222,21 @@ function check_sample_size_adequacy(
         n_per_predictor = n_rows / n_predictors
         if alg ∈ algorithms
             if has_only_these_values([0.0, 1.0])(tc) # Binomial case
-                n_events = min(sum(tc.==1.0), sum(tc.==0.0))
+                n_events = min(sum(tc .== 1.0), sum(tc .== 0.0))
                 epv = n_events / n_predictors
                 if epv > epv_threshold
-                    return PassedCheck(info="EPV=$epv, higher than $epv_threshold")
+                    return PassedCheck(info = "EPV=$epv, higher than $epv_threshold")
                 else
-                    return FailedCheck(info="EPV=$epv, lower than $epv_threshold")
+                    return FailedCheck(info = "EPV=$epv, lower than $epv_threshold")
                 end
             else  # linear case
                 min_n_liberal = 50 + 8 * n_predictors  # Green 1991
                 min_n_conservative = 104 + n_predictors # Green 1991
                 pass_rule_of_thumb = n_rows >= min_n_liberal && n_rows >= min_n_conservative
                 if pass_rule_of_thumb
-                    return PassedCheck(info="$n_rows samples pass [Green, 1991] rule of thumb")
+                    return PassedCheck(info = "$n_rows samples pass [Green, 1991] rule of thumb")
                 else
-                    return FailedCheck(info="$n_rows samples did not pass [Green, 1991] rule of thumb")
+                    return FailedCheck(info = "$n_rows samples did not pass [Green, 1991] rule of thumb")
                 end
             end
         else
@@ -248,6 +248,32 @@ function check_sample_size_adequacy(
     end
 end
 
+function check_variables_present_in_data(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        kwargs...
+    )
+    try
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        missing_vars = []
+        data_columns = Tables.columnnames(tblref[])
+        for v in process_column_for_indexing.([target_variable, predictor_variables...])
+            if v ∉ data_columns
+                push!(missing_vars, v)
+            end
+        end
+        if isempty(missing_vars)
+            return PassedCheck()
+        else
+            return FailedCheck(info = join(string.(missing_vars), ", "))
+        end
+    catch e
+        @debug "check_variables_present_in_data: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
+    end
+end
 
 const R_BASELINE_LINTERS = [
     # Imbalanced target variable in data (R code version)
@@ -255,7 +281,7 @@ const R_BASELINE_LINTERS = [
         name = :R_imbalanced_target_variable,
         description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = (name, result) -> "Imbalanced target column in '$name' for values=$(result.info)",
+        failure_message = (name, result) -> "Imbalanced target column in '$name' for value(s): $(join(string.(result.info), ", "))",
         correct_message = (name, args...) -> "Target variable values are balanced",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -311,7 +337,7 @@ const R_BASELINE_LINTERS = [
         name = :R_colinearity_with_target,
         description = """ Checks colinearities between target variable and its target variables""",
         f = check_colinearity_with_target,
-        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(result.info.colinears)",
+        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(join(string.(result.info.colinears), ", "))",
         correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
         warn_level = "important",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -329,6 +355,20 @@ const R_BASELINE_LINTERS = [
         correct_message = (name, result) -> "Sample size and power check OK: $(result.info)",
         warn_level = "warning",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Checks that variables present in the formula are also present in the data as columns
+    (
+        name = :R_variables_present_in_data,
+        description = """Checks that the formula variables are present in the data""",
+        f = check_variables_present_in_data,
+        failure_message = (name, result) -> "Found formula variables not present in data: $(result.info)",
+        correct_message = (name, result) -> "All formula variables present in data",
+        warn_level = "important",
+        query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
