@@ -276,12 +276,33 @@ The response is a HTTP message with the following JSON in the body:
 {"linter_output" : "<Same linting output that gets printed at stdout...>"}
 ```
 
-## Using the `datalinter.jl` script
+## Running in the Julia REPL
+
+The following example represents the basic workflow behind linting:
+ - load a configuration file
+ - build context out of data and code contents
+ - apply the linter and print the output.
+```@example
+const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..", "..")
+using DataLinter
+
+kb = nothing
+configpath = joinpath(PROJECT_PATH, "config", "r_modelling_config.toml")
+datapath = joinpath(PROJECT_PATH, "test", "data", "imbalanced_data.csv")
+codepath = joinpath(PROJECT_PATH, "test", "code", "r_snippet_imbalanced.r")
+
+config = DataLinter.LinterCore.load_config(configpath)
+ctx = DataLinter.DataInterface.build_data_context(datapath, read(codepath, String))
+@time out = DataLinter.lint(ctx, kb; config = config);
+DataLinter.process_output(out; show_stats = true)
+```
+
+## Using the `datalinter` script
 > Note: This option does not support the specification of a config file or code.
 
-The linter can also be run quickly through the `datalinter.jl` shell script. To run in on the test dataset, one can do
- - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter.jl path/to/yourfile.csv [extra flags...]`
- - Windows (PowerShell or cmd): `julia --startup-file=no datalinter.jl "C:\path\to\yourfile.csv" [extra flags...]`
+The linter can also be run quickly through the `datalinter` Julia script. To run in on the test dataset, one can do
+ - Unix-like (Linux/macOS/Git Bash/WSL): `./datalinter path/to/yourfile.csv [extra flags...]`
+ - Windows (PowerShell or cmd): `julia --startup-file=no datalinter "C:\path\to\yourfile.csv" [extra flags...]`
 
 The script can be ran from any directory and accepts a single argument, the dataset that is to be linted.
 

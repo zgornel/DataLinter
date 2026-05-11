@@ -5,9 +5,12 @@
 #   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
 
 FROM debian:trixie-slim
-RUN apt-get update
-RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
+LABEL maintainer="zgornel"
 
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set up local folder structure and copy files for DataLinter
 # (This assumes local directory is the root of DataLinter/)
@@ -38,14 +41,14 @@ RUN git clone https://github.com/zgornel/julia_app_builder
 
 # Tree sitter stuff
 # ----------------------------------------
-RUN mkdir -p /root/dev/
-RUN mkdir -p /root/src/
-RUN mkdir -p /workspace
+RUN mkdir -p /root/dev/ \
+             /root/src/ \
+             /workspace
 
 # Install tree-sitter from Debian Sid (unstable), v0.25
 RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
 RUN apt-get update
-RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.25 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990'> /etc/apt/preferences.d/tree-sitter
+RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.25 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990' > /etc/apt/preferences.d/tree-sitter
 RUN apt-get -y install libtree-sitter0.25 tree-sitter-cli
 
 # Other tree-sitter installs (disabled)
@@ -77,76 +80,12 @@ RUN apt-get -y install libtree-sitter0.25 tree-sitter-cli
 WORKDIR /
 RUN tree-sitter init-config
 
-# R parser
-WORKDIR /root/dev
-RUN git clone https://github.com/r-lib/tree-sitter-r
-WORKDIR /root/dev/tree-sitter-r
-RUN tree-sitter generate
-
-# Python parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-python
-WORKDIR /root/dev/tree-sitter-python
-RUN tree-sitter generate
-
-# Julia parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-julia
-WORKDIR /root/dev/tree-sitter-julia
-RUN tree-sitter generate
-
-# C parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-c
-WORKDIR /root/dev/tree-sitter-c
-RUN tree-sitter generate
-
-# C-sharp parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-c-sharp
-WORKDIR /root/dev/tree-sitter-c-sharp
-RUN tree-sitter generate
-
-# GO parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-go
-WORKDIR /root/dev/tree-sitter-go
-RUN tree-sitter generate
-
-# Java parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-java
-WORKDIR /root/dev/tree-sitter-java
-RUN tree-sitter generate
-
-# Javascript parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
-WORKDIR /root/dev/tree-sitter-javascript
-RUN tree-sitter generate
-
-# Typescript parser --> FAILS
-#WORKDIR /root/dev
-#RUN git clone https://github.com/tree-sitter/tree-sitter-typescript
-#WORKDIR /root/dev/tree-sitter-typescript
-#RUN tree-sitter generate
-
-# Angular parser --> FAILS
-#WORKDIR /root/dev
-#RUN git clone https://github.com/dlvandenberg/tree-sitter-angular
-#WORKDIR /root/dev/tree-sitter-angular
-#RUN tree-sitter generate
-
-# HTML parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-html
-WORKDIR /root/dev/tree-sitter-html
-RUN tree-sitter generate
-
-# JSON parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-json
-WORKDIR /root/dev/tree-sitter-json
-RUN tree-sitter generate
+# Install parsers
+RUN for parser in r python julia c c-sharp; do \
+      REPO_NAME=$([ "$parser" = "c-sharp" ] && echo "tree-sitter-csharp" || echo "tree-sitter-$parser"); \
+      git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
+      cd "/root/dev/${REPO_NAME}" && \
+      tree-sitter generate; \
+    done
 
 WORKDIR /

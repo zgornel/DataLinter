@@ -78,7 +78,7 @@ function julia_main()::Cint  # for compilation to executable
         real_main()          # actual main function
     catch
         Base.invokelatest(Base.display_error, Base.catch_stack())
-        return 1
+        return 2
     end
     return 0
 end
@@ -90,7 +90,7 @@ function real_main()
     # If version present, print and exit
     ask_version = args["version"]
     if ask_version
-        print(DataLinter.printable_version(; commit = "906f2df*", ver = DataLinter.DEFAULT_VERSION))
+        println(DataLinter.printable_version(; commit = "192fce5*", ver = DataLinter.DEFAULT_VERSION))
         return 0
     end
     progress = args["progress"]
@@ -111,7 +111,8 @@ function real_main()
     codepath = args["code-path"]
     configpath = args["config-path"]
     if isempty(configpath) || !isfile(configpath)
-        @error "Config file not correctly specified (--config-path), linters disabled by default, will exit."
+        @error "Config file not correctly specified (--config-path), will exit."
+        return 2
     end
     kbpath = args["kb-path"]
     if isempty(kbpath) || !isfile(kbpath)
@@ -125,12 +126,9 @@ function real_main()
     show_na = args["show-na"]
     if isempty(filepaths)
         @error "Provide at least one data file."
+        return 2
     end
-    buffer = if output_type == "json"
-        IOBuffer()
-    else
-        stdout
-    end
+    buffer = ifelse(output_type == "json", IOBuffer(), stdout)
     for filepath in abspath.(filepaths)
         try
             _t = @timed begin
@@ -159,10 +157,11 @@ function real_main()
             end
         catch e
             if print_exceptions
-                @error "Linting failed for '$filepath':\n$(repeat("-", 10))\n$e"
+                @warn "Linting failed for '$filepath':\n$(repeat("-", 10))\n$e"
             else
-                @error "Linting failed for '$filepath'. Use '--print-exceptions' for more info."
+                @warn "Linting failed for '$filepath'. Use '--print-exceptions' for more info."
             end
+            return 1
         end
     end
     ###
@@ -182,8 +181,8 @@ if occursin("debugger", main_script_file) || main_script_file == @__FILE__
     try
         real_main()
     catch e
-        "Exception $e caught, exiting..."
-        return 1
+        Base.invokelatest(Base.display_error, Base.catch_stack())
+        return 2
     end
 end
 

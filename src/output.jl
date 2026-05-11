@@ -10,10 +10,10 @@ This can be used to obtain an numeric estimate of the issues
 over a dataset.
 """
 const WARN_LEVEL_TO_NUM = Dict(
-    "info" => 1,
-    "warning" => 3,
-    "important" => 5,
-    "experimental" => 0
+    "info" => 3,
+    "warning" => 5,
+    "important" => 10,
+    "experimental" => 1
 )
 
 """
@@ -21,7 +21,10 @@ Returns a score corresponding to the severity of the issues found in
 the dataset. The score is based on the `WARN_LEVEL_TO_NUM` mapping.
 """
 function score(lintout; normalize = true)
-    vals = (WARN_LEVEL_TO_NUM[l.warn_level] for ((l, _), v) in lintout if v isa FailedCheck)
+    vals = (
+        get(WARN_LEVEL_TO_NUM, l.warn_level, 0)
+            for ((l, _), v) in lintout if v isa FailedCheck
+    )
     return if !isempty(vals)
         ifelse(normalize, mean(vals), sum(vals))
     else
@@ -49,7 +52,7 @@ function process_output(
     n_linters = map(lo -> lo[1][1].name, lintout) |> length ∘ unique
     n_linters_applied = map(lo -> lo[1][1].name, filter(lo -> !isa(lo[2], NotAvailableCheck), lintout)) |> length ∘ unique
     n_linters_na = n_linters - n_linters_applied
-    sorted_out = sort(lintout, by = l -> WARN_LEVEL_TO_NUM[(l[1][1]).warn_level], rev = true)
+    sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
     give_reason_for_na(result) = result.info === nothing ? "*not applicable*" : "*FAILED*"
     for ((linter, loc_name), result) in sorted_out
         msg, color, bold = _print_options(result, linter)
@@ -73,8 +76,15 @@ function process_output(
         end
     end
     if show_stats
-        printstyled(buffer, "$n_failures", bold = true)
-        printstyled(buffer, " $(ifelse(n_failures == 1, "issue", "issues")) found from $n_linters linters applied ($n_linters_applied OK, $n_linters_na N/A) .\n")
+        printstyled(buffer, "Total of $n_linters linters:")
+        printstyled(buffer, " $(n_linters - n_failures - n_linters_na) Pass", bold=true, color = :green)
+        printstyled(buffer, ",")
+        if n_failures > 0
+            printstyled(buffer, " $n_failures Fail", bold=true, color = :red)
+        else
+            printstyled(buffer, " $n_failures Fail")
+        end
+        printstyled(buffer, ", $n_linters_na N/A\n")
     end
     return nothing
 end
@@ -88,6 +98,7 @@ _print_options(::FailedCheck, linter::Linter) = begin
     (linter.warn_level == "info") && (return (msg = "• info", color = :light_cyan, bold = false))
     (linter.warn_level == "important") && (return (msg = "× important", color = :light_magenta, bold = false))
     (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = false))
+    (linter.warn_level ∉ keys(WARN_LEVEL_TO_NUM)) && (return (msg = "• unknown", color = :default, bold = false))
 end
 
 _print_options(::PassedCheck, linter::Linter) = begin

@@ -1,0 +1,209 @@
+#!/usr/bin/env -S julia --startup-file=no
+#=
+datalinterserver.jl
+
+Portable cross-platform Julia-based DataLinterServer Docker wrapper.
+
+Features:
+- Directly supports --http-port (-p), --http-ip (-i), --config-path,
+  --log-level, --priming-data-path, --priming-code-path.
+- Mounts directories of these paths as **separate volumes**:
+  - Config directory   → /_config in container
+  - Priming data dir   → /_data
+  - Priming code dir   → /_code
+- Automatically publishes the HTTP port: -p <http-port>:<http-port>
+- Note: --http-ip defaults to 0.0.0.0 (instead of binary default 127.0.0.1)
+  for immediate host accessibility via the published port.
+- Full forwarding of extra arguments to the inner datalinterserver binary.
+- Translates host paths to corresponding container paths.
+- Support for additional Docker arguments (via --docker-* prefix or -- separator).
+- Comprehensive error handling and validation.
+- Minimal dependencies (Base Julia only).
+- Works on Windows, Linux, macOS.
+
+Usage
+─────
+• Unix-like:
+    ./datalinterserver.jl --http-port 10000 --http-ip 0.0.0.0 \
+      --config-path /host/config/custom.toml \
+      --priming-data-path /host/data.csv \
+      --priming-code-path /host/code.R \
+      [--log-level info] [extra flags...]
+
+• Or with Docker extras:
+    ./datalinterserver.jl --http-port 8080 --docker--memory=4g --docker--env=DEBUG=true ...
+=#
+using Base: abspath, dirname, basename, isdir, Cmd
+
+# ------------------------------------------------------------------
+# Argument Parsing
+# ------------------------------------------------------------------
+function parse_args(args::Vector{String})
+    http_port          = 10000
+    http_ip            = "0.0.0.0"          # overridden for Docker usability
+    config_path        = ""
+    priming_data_path  = ""
+    priming_code_path  = ""
+    log_level          = "error"
+    docker_extra       = String[]
+    inner_extra        = String[]
+    use_separator      = false
+
+    i = 1
+    while i ≤ length(args)
+        arg = args[i]
+
+        if arg == "--"
+            use_separator = true
+            i += 1
+            continue
+        end
+
+        if use_separator
+            push!(inner_extra, arg)
+            i += 1
+            continue
+        end
+
+        # Special server parameters (with short flags where the binary supports them)
+        if (arg == "--http-port" || arg == "-p") && i < length(args)
+            http_port = parse(Int, args[i+1])
+            i += 2
+        elseif (arg == "--http-ip" || arg == "-i") && i < length(args)
+            http_ip = args[i+1]
+            i += 2
+        elseif arg == "--config-path" && i < length(args)
+            config_path = args[i+1]
+            i += 2
+        elseif arg == "--log-level" && i < length(args)
+            log_level = args[i+1]
+            i += 2
+        elseif arg == "--priming-data-path" && i < length(args)
+            priming_data_path = args[i+1]
+            i += 2
+        elseif arg == "--priming-code-path" && i < length(args)
+            priming_code_path = args[i+1]
+            i += 2
+
+        # Docker-specific arguments (strip --docker- prefix)
+        elseif startswith(arg, "--docker-")
+            docker_arg = "--" * arg[9:end]
+            push!(docker_extra, docker_arg)
+            if i < length(args) && !startswith(args[i+1], "-")
+                push!(docker_extra, args[i+1])
+                i += 1
+            end
+            i += 1
+
+        # All other flags/options go to the inner binary
+        elseif startswith(arg, "--") || startswith(arg, "-")
+            push!(inner_extra, arg)
+            if i < length(args) && !startswith(args[i+1], "-")
+                push!(inner_extra, args[i+1])
+                i += 1
+            end
+            i += 1
+        else
+            # Non-flag argument → forward to inner binary (server ignores positionals)
+            push!(inner_extra, arg)
+            i += 1
+        end
+    end
+
+    return (http_port, http_ip, config_path, priming_data_path, priming_code_path, log_level, docker_extra, inner_extra)
+end
+
+# ------------------------------------------------------------------
+# Path utilities
+# ------------------------------------------------------------------
+function safe_dir(path::String)::String
+    if isempty(path)
+        return ""
+    end
+    p = abspath(path)
+    d = isdir(p) ? p : dirname(p)
+    if !isdir(d)
+        println(stderr, "Warning: Directory does not exist for path '$path': $d")
+    end
+    return d
+end
+
+# ------------------------------------------------------------------
+# Main
+# ------------------------------------------------------------------
+function main()
+    http_port, http_ip, config_path, priming_data_path, priming_code_path, log_level, docker_extra, inner_extra =
+        parse_args(ARGS)
+
+    # Resolve host directories
+    config_dir       = isempty(config_path)       ? "" : safe_dir(config_path)
+    priming_data_dir = isempty(priming_data_path) ? "" : safe_dir(priming_data_path)
+    priming_code_dir = isempty(priming_code_path) ? "" : safe_dir(priming_code_path)
+
+    # Build volume mounts (separate volumes)
+    volumes = String[]
+    if !isempty(config_dir)
+        push!(volumes, "--volume=$config_dir:/_config")
+    end
+    if !isempty(priming_data_dir)
+        push!(volumes, "--volume=$priming_data_dir:/_data")
+    end
+    if !isempty(priming_code_dir)
+        push!(volumes, "--volume=$priming_code_dir:/_code")
+    end
+
+    # Translate paths to container
+    container_config      = isempty(config_path) ?
+        "/datalinter/config/default.toml" : joinpath("/_config", basename(config_path))
+    container_priming_data = isempty(priming_data_path) ?
+        "" : joinpath("/_data", basename(priming_data_path))
+    container_priming_code = isempty(priming_code_path) ?
+        "" : joinpath("/_code", basename(priming_code_path))
+
+    # Build inner datalinterserver command
+    inner_cmd = ["/datalinterserver/bin/datalinterserver"]
+
+    push!(inner_cmd, "--http-port", string(http_port))
+    push!(inner_cmd, "--http-ip", http_ip)
+    push!(inner_cmd, "--config-path", container_config)
+    push!(inner_cmd, "--log-level", log_level)
+
+    if !isempty(priming_data_path)
+        push!(inner_cmd, "--priming-data-path", container_priming_data)
+    end
+    if !isempty(priming_code_path)
+        push!(inner_cmd, "--priming-code-path", container_priming_code)
+    end
+
+    # Forward any additional user-provided arguments
+    append!(inner_cmd, inner_extra)
+
+    # Build full Docker command (auto-publish the HTTP port)
+    docker_cmd_parts = vcat([
+        "docker", "run",
+        "-it",
+        "--rm",
+        "--publish=$(http_port):$(http_port)",
+        volumes...,
+        docker_extra...,
+        "ghcr.io/zgornel/datalinter-compiled:latest",
+        inner_cmd...
+    ])
+
+    # Execute with error handling
+    try
+        run(Cmd(docker_cmd_parts))
+    catch e
+        if isa(e, ProcessFailedException)
+            println(stderr, "\nError: Docker command failed\n:$e")
+            exit(1)
+        else
+            println(stderr, "\nUnexpected error running Docker: $e")
+            exit(1)
+        end
+    end
+end
+
+if abspath(PROGRAM_FILE) == @__FILE__
+    main()
+end

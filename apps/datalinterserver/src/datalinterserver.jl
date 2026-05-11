@@ -1,6 +1,5 @@
 module datalinterserver
 
-using Pkg
 project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:(end - 4)]...))
 Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
 
@@ -8,18 +7,13 @@ using Logging
 using Sockets
 using HTTP
 using JSON
-using DelimitedFiles
 using ArgParse
 using DataLinter
 using CSV
 
-# Default forecaster port
+const DEFAULT_LOG_LEVEL = Logging.Info
 const SERVER_HTTP_PORT = 10000
-
-
-# Logging
-const LOG_LEVEL = Logging.Debug
-global_logger(ConsoleLogger(stdout, LOG_LEVEL))
+const ERROR_IN_REQ_HANDLING = -1
 
 # Linting request values
 const DEFAULT_LINTERS = ["all"]
@@ -45,9 +39,20 @@ function get_server_commandline_arguments(args::Vector{String})
         help = "path to knowledge base file"
         arg_type = String
         default = ""
+        "--priming-data-path"
+        help = "priming data file path"
+        default = ""
+        arg_type = String
+        "--priming-code-path"
+        help = "priming code file path"
+        default = ""
+        arg_type = String
         "--log-level"
         help = "logging level"
         default = "error"
+        "--version", "-v"
+        help = "prints version"
+        action = :store_true
     end
     return parse_args(args, s)
 end
@@ -70,7 +75,12 @@ end
 function real_main()
     # Parse command line arguments
     args = get_server_commandline_arguments(ARGS)
-
+    # If version present, print and exit
+    ask_version = args["version"]
+    if ask_version
+        println(DataLinter.printable_version(; commit = "192fce5*", ver = DataLinter.DEFAULT_VERSION))
+        return 0
+    end
     # Logging
     log_levels = Dict(
         "debug" => Logging.Debug,
@@ -78,33 +88,79 @@ function real_main()
         "warning" => Logging.Warn,
         "error" => Logging.Error
     )
-    logger = ConsoleLogger(stdout, get(log_levels, lowercase(args["log-level"]), Logging.Info))
+    logger = ConsoleLogger(stdout, get(log_levels, lowercase(args["log-level"]), DEFAULT_LOG_LEVEL))
     global_logger(logger)
 
     # Get IP, port, directory
     http_ip = args["http-ip"]
     http_port = args["http-port"]
+
+    # Configuration loading
     configpath = args["config-path"]
     if isempty(configpath) || !isfile(configpath)
-        @error "Config file not correctly specified (--config-path), linters disabled by default, will exit."
-        return -1
+        @error "Config file not correctly specified (--config-path), will exit."
+        return 2
     end
-    kbpath = args["kb-path"]
-    if isempty(kbpath) || !isfile(kbpath)
-        @debug "KB file not correctly specified (--kb-path), using native knowledge."
+    config = try
+        _config = DataLinter.Configuration.load_config(configpath)
+        @debug "Config loaded @$configpath"
+        _config
+    catch e
+        @error "Error loading the config @$configpath\n$e"
+        return 2
     end
 
+    # Knowledge base loading
+    kbpath = args["kb-path"]
+    kb = if isempty(kbpath) || !isfile(kbpath)
+        @debug "KB file not correctly specified (--kb-path), using native knowledge."
+        nothing
+    else
+        try
+            DataLinter.kb_load(kbpath)
+            @debug "KB loaded @$kbpath"
+        catch e
+            @debug "Error loading the KB @$kbpath\n$e"
+            nothing
+        end
+    end
+
+    # Priming
+    priming_datapath = args["priming-data-path"]
+    priming_codepath = args["priming-code-path"]
+    if isempty(priming_datapath) || !isfile(priming_datapath)
+        @debug "Priming data file missing or incorrectly specified. Will not perform priming."
+    else
+        # cli_linting_workflow already handles missing/wrong code paths
+        @debug "Priming ...\n\t• data @$priming_datapath\n\t• code @$priming_codepath"
+        DataLinter.cli_linting_workflow(
+            priming_datapath,
+            priming_codepath,
+            kbpath,
+            configpath;
+            linters = DEFAULT_LINTERS,
+            buffer = IOBuffer(),
+            show_stats = DEFAULT_SHOW_STATS,
+            show_passing = DEFAULT_SHOW_PASSING,
+            show_na = DEFAULT_SHOW_NA,
+            progress = false
+        )
+        @debug "Priming done."
+    end
+
+    #######################
     # Start I/O server(s) #
     # ################### #
-    linting_server(http_ip, http_port; configpath = configpath, kbpath = kbpath)
+    linting_server(http_ip, http_port; config, kb)
     return 0
 end
 
 
-function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; configpath = "", kbpath = "")
+function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; config = nothing, kb = nothing)
     #Checks
-    if port <= 0 || port == nothing
+    if port <= 0
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
+        return 2
     end
     # Assign addresses: try IPv4 first, IPv6 second
     addr = try
@@ -120,35 +176,49 @@ function linting_server(addr = "127.0.0.1", port = SERVER_HTTP_PORT; configpath 
 
     # Define REST endpoints to dispatch to "service" functions
     ROUTER = HTTP.Router()
-    HTTP.register!(ROUTER, "GET", "/*", noop_req_handler)
+    HTTP.register!(ROUTER, "GET", "/**", noop_req_handler)
     HTTP.register!(ROUTER, "GET", "/api/kill", kill_req_handler)
-    HTTP.register!(ROUTER, "POST", "/*", noop_req_handler)
-    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(configpath, kbpath))
+    HTTP.register!(ROUTER, "POST", "/**", noop_req_handler)
+    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(config, kb))
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    return HTTP.serve(addr, port, readtimeout = 0) do http_req::HTTP.Request
-        handler_output = try
+    return HTTP.serve(addr, port, readtimeout = 60) do http_req::HTTP.Request
+        output = try
             ROUTER(http_req)
         catch e
             @debug "Error handling HTTP request.\n$e"
-            -1  # will be visible in HTTP headers, "Status"=>"ERROR"
+            ERROR_IN_REQ_HANDLING  # will be visible in HTTP headers, "Status"=>"ERROR"
         end
-        if handler_output === nothing
-            # An unsupported endpoint was called
-            return HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
-        elseif handler_output isa String
-            # All OK, send request to search server and get response
-            return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = handler_output)
-        elseif handler_output isa Int
-            _status = ifelse(handler_output == 0, "OK", "ERROR")
-            return HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => _status], body = "")
-        else
-            return HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")  # failsafe (not used)
-        end
+
+        # Process output
+        response = _process_handler_output(output)
+        return response
     end
 end
 
+
+# An unsupported endpoint was called
+_process_handler_output(::Nothing, args...) = HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
+
+# All OK, send request to search server and get response
+_process_handler_output(output::String, args...) = HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = output)
+
+# Either something went wrong or server was killed
+_process_handler_output(output::Int, args...) = if output == 0
+    # Server was killed
+    HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
+elseif output == ERROR_IN_REQ_HANDLING
+    # Error in request
+    body = JSON.json(Dict("error" => "Bad request", "message" => "Failure in processing request."))
+    HTTP.Response(400, ["Access-Control-Allow-Origin" => "*", "Status" => "ERROR"], body = body)
+else
+    # Failsafe (should not ever arrive here)
+    HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
+end
+
+# Failsafe (should not ever arrive here)
+_process_handler_output(output, args...) = HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
 
 noop_req_handler(req::HTTP.Request) = nothing
 
@@ -163,40 +233,27 @@ kill_req_handler(req::HTTP.Request) = begin
 end
 
 
-linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
+linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     @debug "HTTP request $(req.target) received."
-    config = if !isempty(configpath)
-        try
-            DataLinter.Configuration.load_config(configpath)
-        catch e
-            @warn "Error loading the config @$configpath\n$e"
-            nothing
-        end
-    end
-    config !== nothing && @debug "config loaded @$configpath"
-    kb = if !isempty(kbpath)
-        try
-            DataLinter.kb_load(kbpath)
-        catch e
-            @debug "Error loading the KB @$kbpath\n$e"
-            nothing
-        end
-    end
-    kb !== nothing && @debug "KB loaded @$kbpath"
     _request = try
         JSON.parse(IOBuffer(HTTP.payload(req)))
     catch e
         @debug "Could not parse HTTP request\n$e"
-        return nothing
+        return ERROR_IN_REQ_HANDLING
     end
 
     #JSON validation
-    try
-        @assert haskey(_request, "linter_input") "Missing \"linter_input\" key"
-        @assert haskey(_request["linter_input"], "context") "Missing \"context\" key"
-        @assert haskey(_request["linter_input"], "options") "Missing \"options\" key"
-    catch e
-        @warn "Malformed request:\n$e"
+    if !haskey(_request, "linter_input")
+        @error "Missing \"linter_input\" key"
+        return ERROR_IN_REQ_HANDLING
+    end
+    if !haskey(_request["linter_input"], "context")
+        @error "Missing \"context\" key"
+        return ERROR_IN_REQ_HANDLING
+    end
+    if !haskey(_request["linter_input"], "options")
+        @error "Missing \"options\" key"
+        return ERROR_IN_REQ_HANDLING
     end
     ctx = _request["linter_input"]["context"]
     opts = _request["linter_input"]["options"]
@@ -206,11 +263,12 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         data_source = if ctx["data_type"] == "dataset"
             seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
         elseif ctx["data_type"] == "filepath"
-            _path = abspath(expanduser(ctx["data"]))  # take the absolute pathabspath(expanduser(ctx["data"]))  # take the absolute path
-            @assert ispath(_path) "No valid entity @$_path"
+            _path = abspath(expanduser(ctx["data"]))  # take the absolute path
+            @assert ispath(_path) && isfile(_path) "No valid file @$_path"
             _path
         else
             @error "Data type $(ctx["data_type"]) not supported"
+            return ERROR_IN_REQ_HANDLING
         end
         CSV.read(
             data_source,
@@ -226,7 +284,7 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         @debug "Error loading data\n$e"
         nothing
     end
-    isnothing(data) && return nothing
+    isnothing(data) && return ERROR_IN_REQ_HANDLING
     @debug "CSV data loaded and succesfully processed.\n$data"
 
     # Read code and options from request
@@ -240,12 +298,12 @@ linting_handler_wrapper(configpath, kbpath) = (req::HTTP.Request) -> begin
         data_ctx = DataLinter.DataInterface.build_data_context(data, code)
         lintout = DataLinter.lint(data_ctx, kb; config, linters)
         process_output(lintout; buffer, show_passing, show_stats, show_na)
-        score = DataLinter.OutputInterface.score(lintout; normalize = true)
+        #score = DataLinter.OutputInterface.score(lintout; normalize = true)
         string_buf = read(seekstart(buffer), String)
-        return JSON.json("linting_output" => string_buf)
+        return JSON.json(Dict("linting_output" => string_buf))
     catch e
         @warn "Linting error: $e"
-        return nothing
+        return ERROR_IN_REQ_HANDLING
     end
 end
 
@@ -258,7 +316,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     try
         real_main()
     catch e
-        "Exception $e caught, exiting..."
+        @error "Exception $e caught, exiting..."
         return 1
     end
 end

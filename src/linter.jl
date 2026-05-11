@@ -52,15 +52,15 @@ end
 abstract type AbstractCheck end
 
 @Base.kwdef struct PassedCheck <: AbstractCheck
-    info
+    info = nothing
 end
 
 @Base.kwdef struct FailedCheck <: AbstractCheck
-    info
+    info = nothing
 end
 
 @Base.kwdef struct NotAvailableCheck <: AbstractCheck
-    info
+    info = nothing
 end
 
 

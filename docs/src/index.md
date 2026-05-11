@@ -14,25 +14,51 @@ Its main ideea is that providing additional context leads to the detection of  m
 ## Features
 
 Features at a glance:
- - [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
- - flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
- - [CSV.jl](https://github.com/JuliaData/CSV.jl)-based data support
- - R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
- - CLI tool ([`apps/datalinter`](https://github.com/zgornel/DataLinter/tree/master/apps/datalinter))
- - HTTP server-client tool ([`apps/datalinterserver`](https://github.com/zgornel/DataLinter/tree/master/apps/datalinterserver))
+- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- Zero-config CLI and HTTP server modes
+- Production-ready Docker image and GitHub Actions integration
+- Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
+- First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
+- Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
 
 ## Installation
 
 There are several ways to install DataLinter:
- - cloning the Github repository
- - pulling a Docker image from the [Github container registry](https://ghcr.io).
+ - pulling a Docker image from the [Github container registry](https://ghcr.io) (quick & safe)
+ - downloading binaries (Linux only)
+ - cloning the Github repository (for development of the library)
 
-Unless one wants to develop DataLinter, the Docker installation is recommended:
-```
-$ docker pull ghcr.io/zgornel/datalinter-compiled:latest
+### Docker image
+
+The latest Docker image can be downloaded with
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:latest`
 ```
 
-Available packages i.e. Docker images can be viewed in the ['Packages'](https://github.com/users/zgornel/packages?repo_name=DataLinter) section of the repository's Github page.
+For specific versions, use
+```bash
+docker pull ghcr.io/zgornel/datalinter-compiled:v0.x.y`
+```
+
+Available packages (Docker images) can be viewed in the ['Packages'](https://github.com/users/zgornel/packages?repo_name=DataLinter) section of the repository's Github page.
+
+### Binaries
+
+The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-binary.zip`.
+
+
+### Julia
+
+Installation can be performed also from the Julia REPL with
+```julia
+using Pkg; Pkg.add(url="https://github.com/zgornel/DataLinter")
+```
+
+The repository can also be directly cloned with
+```bash
+git clone https://github.com/zgornel/DataLinter
+```
+
 
 ## Architecture
 

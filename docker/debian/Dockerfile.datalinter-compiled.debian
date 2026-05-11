@@ -10,27 +10,29 @@
 #               --log-level debug`
 
 FROM debian:trixie-slim
-LABEL org.opencontainers.image.source https://github.com/zgornel/DataLinter
+LABEL org.opencontainers.image.source="https://github.com/zgornel/DataLinter"
+LABEL maintainer="zgornel"
+
 RUN apt-get update
-RUN apt-get -y install ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
-#RUN apk add --update --no-cache jq curl tar gzip make libxml2 tree-sitter tree-sitter-cli git npm nodejs gcc g++ build-base
-#RUN apk add --update --no-cache gnu-libiconv # fix fox EzXML2
+RUN apt-get -y install --no-install-recommends ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
 
 # Create directories, copy files
 # ------------------------------
 
 # Directories
-RUN mkdir -p /_config
-RUN mkdir -p /_data
-RUN mkdir -p /output
-RUN mkdir -p /workspace
-RUN mkdir -p /datalinter/knowledge
-RUN mkdir -p /datalinter/config
-RUN mkdir -p /datalinterserver/knowledge
-RUN mkdir -p /datalinterserver/config
-RUN mkdir -p /tmp/test/data
-RUN mkdir -p /tmp/test/code
-
+RUN mkdir -p /_config \
+             /_data \
+             /_code \
+             /output \
+             /workspace \
+             /datalinter/knowledge \
+             /datalinter/config \
+             /datalinterserver/knowledge \
+             /datalinterserver/config \
+             /tmp/test/data \
+             /tmp/test/code \
+             /root/dev/ \
+             /root/src/
 
 # Copy binaries
 WORKDIR /
@@ -55,7 +57,11 @@ RUN /datalinter/bin/datalinter /tmp/test/data/correlated_data.csv --code-path /t
 RUN /datalinter/bin/datalinter /tmp/test/data/correlated_target_data.csv --code-path /tmp/test/code/r_snippet_binomial.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
 
 # datalinterserver (no priming)
-RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 --config-path /tmp/test/test_config.toml --log-level error &
+RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 \
+        --config-path /tmp/test/test_config.toml \
+        --priming-data-path /tmp/test/data/correlated_data.csv \
+        --priming-code-path /tmp/test/code/r_snippet_imbalanced.r \
+        --log-level error &
 
 # Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
 ### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
@@ -63,14 +69,11 @@ RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 --config-path /
 
 # Tree sitter stuff
 # ----------------------------------------
-RUN mkdir -p /root/dev/
-RUN mkdir -p /root/src/
-RUN mkdir -p /workspace
 
 # Install tree-sitter from Debian Sid (unstable), v0.25
 RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
 RUN apt-get update
-RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.25 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990'> /etc/apt/preferences.d/tree-sitter
+RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.25 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990' > /etc/apt/preferences.d/tree-sitter
 RUN apt-get -y install libtree-sitter0.25 tree-sitter-cli
 
 # Other tree-sitter installs (disabled)
@@ -102,77 +105,18 @@ RUN apt-get -y install libtree-sitter0.25 tree-sitter-cli
 WORKDIR /
 RUN tree-sitter init-config
 
-# R parser
-WORKDIR /root/dev
-RUN git clone https://github.com/r-lib/tree-sitter-r
-WORKDIR /root/dev/tree-sitter-r
-RUN tree-sitter generate
+# Install parsers
+RUN for parser in r python julia c c-sharp; do \
+      REPO_NAME=$([ "$parser" = "c-sharp" ] && echo "tree-sitter-csharp" || echo "tree-sitter-$parser"); \
+      git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
+      cd "/root/dev/${REPO_NAME}" && \
+      tree-sitter generate; \
+    done
 
-# Python parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-python
-WORKDIR /root/dev/tree-sitter-python
-RUN tree-sitter generate
+# Cleanup operations
+RUN apt-get -y remove gcc g++ make
+RUN apt-get -y autoclean
+RUN apt-get -y autoremove
 
-# Julia parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-julia
-WORKDIR /root/dev/tree-sitter-julia
-RUN tree-sitter generate
-
-# C parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-c
-WORKDIR /root/dev/tree-sitter-c
-RUN tree-sitter generate
-
-# C-sharp parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-c-sharp
-WORKDIR /root/dev/tree-sitter-c-sharp
-RUN tree-sitter generate
-
-# GO parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-go
-WORKDIR /root/dev/tree-sitter-go
-RUN tree-sitter generate
-
-# Java parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-java
-WORKDIR /root/dev/tree-sitter-java
-RUN tree-sitter generate
-
-# Javascript parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-javascript
-WORKDIR /root/dev/tree-sitter-javascript
-RUN tree-sitter generate
-
-# Typescript parser --> FAILS
-#WORKDIR /root/dev
-#RUN git clone https://github.com/tree-sitter/tree-sitter-typescript
-#WORKDIR /root/dev/tree-sitter-typescript
-#RUN tree-sitter generate
-
-# Angular parser --> FAILS
-#WORKDIR /root/dev
-#RUN git clone https://github.com/dlvandenberg/tree-sitter-angular
-#WORKDIR /root/dev/tree-sitter-angular
-#RUN tree-sitter generate
-
-# HTML parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-html
-WORKDIR /root/dev/tree-sitter-html
-RUN tree-sitter generate
-
-# JSON parser
-WORKDIR /root/dev
-RUN git clone https://github.com/tree-sitter/tree-sitter-json
-WORKDIR /root/dev/tree-sitter-json
-RUN tree-sitter generate
-
+# Set up current directory to root
 WORKDIR /
-
