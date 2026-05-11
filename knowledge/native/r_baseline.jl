@@ -309,6 +309,40 @@ function check_high_cardinality_categoricals(
     end
 end
 
+const DEFAULT_NUMERIC_SCALE_THRESHOLD = 100
+function check_numeric_scale_imbalance(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        numeric_scale_threshold=DEFAULT_NUMERIC_SCALE_THRESHOLD
+    )
+    try
+        tbl = tblref[]
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
+        scales = Dict()
+        for pv in process_column_for_indexing.(predictor_variables)
+            if Tables.columntype(tbl, pv) <: AbstractFloat || Tables.columntype(tbl, pv) <: Real
+                _vals = getindex(tbl, pv)
+                push!(scales, pv => float(abs(maximum(_vals)-minimum(_vals))))
+            end
+        end
+        if isempty(scales)
+            return PassedCheck()
+        end
+
+        min_scale = minimum(values(scales))
+        high_scales = [k for (k,v) in scales if v/min_scale > numeric_scale_threshold]
+        if isempty(high_scales)
+            return PassedCheck()
+        else
+            return FailedCheck(info = join(string.(high_scales), ", "))
+        end
+    catch e
+        @debug "check_numeric_scale_imbalance: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
+    end
+end
 
 
 
@@ -406,7 +440,7 @@ const R_BASELINE_LINTERS = [
         description = """Checks that the formula variables are present in the data""",
         f = check_variables_present_in_data,
         failure_message = (name, result) -> "Found formula variables not present in data: $(result.info)",
-        correct_message = (name, result) -> "All formula variables present in data",
+        correct_message = (name, args...) -> "All formula variables present in data",
         warn_level = "important",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
@@ -420,7 +454,7 @@ const R_BASELINE_LINTERS = [
         description = """Checks for categorical predictors with too many unique levels relative to sample size""",
         f = check_high_cardinality_categoricals,
         failure_message = (name, result) -> "Found categorical predictors with too many unique levels: $(result.info)",
-        correct_message = (name, result) -> "Found no categorical predictors with too many unique levels",
+        correct_message = (name, args...) -> "Found no categorical predictors with too many unique levels",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
@@ -428,4 +462,17 @@ const R_BASELINE_LINTERS = [
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
 
+    # Detects numeric predictors with vastly different magnitudes/scales
+    (
+        name = :R_numeric_scale_imbalance,
+        description = """Detects numeric predictors with vastly different magnitudes/scales""",
+        f = check_numeric_scale_imbalance,
+        failure_message = (name, result) -> "Found numerical predictors with magnitude/scale imbalance: $(result.info)",
+        correct_message = (name, args...) -> "No numerical predictors with magnitude/scale imbalance found",
+        warn_level = "warning",
+        query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
 ]

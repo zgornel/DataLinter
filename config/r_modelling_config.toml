@@ -45,6 +45,7 @@
     R_sample_size_adequacy = true
     R_variables_present_in_data = true
     R_high_cardinality_categoricals = true
+    R_numeric_scale_imbalance = true
 
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
@@ -147,3 +148,8 @@
 
     [parameters.R_high_cardinality_categoricals]
         n_p_level_ratio = 10  # ratio =(number of samples) / (number of levels of a variable)
+
+    [parameters.R_numeric_scale_imbalance]
+        # the threshold represents the maximum allowed ratio between
+        # the dynamic range of a variable and the minimum range among the predictors
+        numeric_scale_threshold = 100
