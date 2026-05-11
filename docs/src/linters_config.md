@@ -1,6 +1,6 @@
 ## Full lint catalog & Configuration guide
 
-DataLinter ships with **23 built-in linters** divided into two families:
+DataLinter ships with **28 built-in linters** divided into two families:
 
 - **Data-only linters** – work on any tabular dataset, regardless of modeling language.
 - **R-language specific linters** – understand R modeling functions (`lm`, `glm`, `glmmTMB`, …) and their statistical assumptions.
@@ -60,3 +60,8 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |`R_data_normally_distributed`|Checks normality of non-binary numeric columns or target in models|Regression methods|`pvalue_threshold`, `algorithms`, `check_target`, `check_predictors`|
 |`R_glm_binomial_modelling`|Checks normality of non-binary numeric columns in binomial glm|Logistic regression|`pvalue_threshold`|
 |`R_colinearity_with_target`|Detects whether any predictor variable is highly colinear with the target|Regression algorithms|`threshold`, `algorithms`|
+|`R_sample_size_adequacy`|Checks that the number of observations and predictors have stable ratios|Regression algorithms|`epv_threshold`, `algorithms`|
+|`R_variables_present_in_data`|Checks that variables present in the formula are also present in the data as columns|Regression algorithms| |
+|`R_high_cardinality_categoricals`|Checks for categorical predictors with too many unique levels relative to sample size|Regression algorithms|`threshold`, `algorithms`|
+|`R_numeric_scale_imbalance`|Detects numeric predictors with vastly different magnitudes/scales|Regression algorithms|`numeric_scale_threshold`|
+|`R_near_zero_variance_predictors`|Flags numeric predictors with near-zero variance values (using relative variance thresholds)|`variance_threshold`, `algorithms`|

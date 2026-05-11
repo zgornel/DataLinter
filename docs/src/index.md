@@ -14,7 +14,7 @@ Its main ideea is that providing additional context leads to the detection of  m
 ## Features
 
 Features at a glance:
-- 23 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Zero-config CLI and HTTP server modes
 - Production-ready Docker image and GitHub Actions integration
 - Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)

@@ -29,7 +29,7 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 **DataLinter** is a library for contextual linting of data and code. Its development started by rewriting Google's [data linter](https://github.com/brain-research/data-linter), in [Julia](https://julialang.org/). The aim of the redesign was to provide a richer and faster experience while also providing the baseline benefits outlined in the original [paper](http://learningsys.org/nips17/assets/papers/paper_19.pdf). **DataLinter** adds on top support for data *contexts*, such as code snippets or information about the type of analysis, which can lead to the detection of more complex, conceptual issues relating to data and code quality.
 
 ### Key Features
-- 23 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Zero-config CLI and HTTP server modes
 - Production-ready Docker image and GitHub Actions integration
 - Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
@@ -93,7 +93,7 @@ Available integrations:
 
 ## Lint Catalog
 
-**DataLinter** ships with **23 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+**DataLinter** ships with **28 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
 
 ## License
 

@@ -466,7 +466,7 @@ const R_BASELINE_LINTERS = [
     # Checks that the number of observations and predictors have stable ratios
     (
         name = :R_sample_size_adequacy,
-        description = """Checks number of observations vs. number of predictors / parameters against common rules""",
+        description = """Checks that the number of observations and predictors have stable ratios""",
         f = check_sample_size_adequacy,
         failure_message = (name, result) -> "Sample size and power check failed: $(result.info)",
         correct_message = (name, result) -> "Sample size and power check OK: $(result.info)",
@@ -519,10 +519,10 @@ const R_BASELINE_LINTERS = [
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
 
-    # Flags numeric predictors with near-zero variance or constant values (using relative variance thresholds)
+    # Flags numeric predictors with near-zero variance values (using relative variance thresholds)
     (
         name = :R_near_zero_variance_predictors,
-        description = """Flags numeric predictors with near-zero variance or constant values (using relative variance thresholds)""",
+        description = """Flags numeric predictors with near-zero variance values (using relative variance thresholds)""",
         f = check_near_zero_variance_predictors,
         failure_message = (name, result) -> "Found numerical predictors with near-zero variance: $(result.info)",
         correct_message = (name, args...) -> "No numerical predictors with near-zero variance found",

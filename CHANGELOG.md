@@ -4,7 +4,7 @@ v0.1.2
 ------
  - 5 new linters
  - improve server, scripts
- - infrastructure optimizations
+ - infrastructure i.e. Docker optimizations
 
 v0.1.1
 ------
