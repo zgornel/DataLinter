@@ -232,9 +232,9 @@ function check_sample_size_adequacy(
                 n_events = min(sum(tc .== 1.0), sum(tc .== 0.0))
                 epv = n_events / n_predictors
                 if epv > epv_threshold
-                    return PassedCheck(info = "EPV=$epv, higher than $epv_threshold")
+                    return PassedCheck(info = "EPV=$(repr(epv, context=:compact => true)), higher than $epv_threshold")
                 else
-                    return FailedCheck(info = "EPV=$epv, lower than $epv_threshold")
+                    return FailedCheck(info = "EPV=$(repr(epv, context=:compact => true)), lower than $epv_threshold")
                 end
             else  # linear case
                 min_n_liberal = 50 + 8 * n_predictors  # Green 1991
