@@ -25,7 +25,7 @@ function extract_capture_value(query_results, capture_symbol)
     try
         return string(getproperty(ParSitter.get_capture(query_results, capture_symbol), :v))
     catch
-        throw(ErrorException("Symbol '$capture_symbol' not found in query results"))
+        throw(ErrorException("'extract_capture_value': Could not find '$capture_symbol' in query results"))
     end
 end
 
