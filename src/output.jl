@@ -76,13 +76,13 @@ function process_output(
         end
     end
     if show_stats
-        printstyled(buffer, "From $n_linters linters applied:")
-        printstyled(buffer, " $(n_linters - n_failures - n_linters_na) PASSED", color = :green)
+        printstyled(buffer, "Total of $n_linters linters:")
+        printstyled(buffer, " $(n_linters - n_failures - n_linters_na) Pass", bold=true, color = :green)
         printstyled(buffer, ",")
         if n_failures > 0
-            printstyled(buffer, " $n_failures FAILED", color = :red)
+            printstyled(buffer, " $n_failures Fail", bold=true, color = :red)
         else
-            printstyled(buffer, " $n_failures FAILED")
+            printstyled(buffer, " $n_failures Fail")
         end
         printstyled(buffer, ", $n_linters_na N/A\n")
     end
