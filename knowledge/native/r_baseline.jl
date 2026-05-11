@@ -330,7 +330,6 @@ function check_numeric_scale_imbalance(
         if isempty(scales)
             return PassedCheck()
         end
-
         min_scale = minimum(values(scales))
         high_scales = [k for (k,v) in scales if v/min_scale > numeric_scale_threshold]
         if isempty(high_scales)
@@ -345,8 +344,45 @@ function check_numeric_scale_imbalance(
 end
 
 
-
-
+const NEAR_ZERO_VARIANCE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
+const DEFAULT_NZ_VARIANCE_THRESHOLD = 100
+function check_near_zero_variance_predictors(
+        tblref::Base.RefValue{<:Tables.Columns},
+        linting_ctx,
+        args...;
+        algorithms=NEAR_ZERO_VARIANCE_ALGORITHMS,
+        variance_threshold=DEFAULT_NZ_VARIANCE_THRESHOLD
+    )
+    try
+        tbl = tblref[]
+        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
+        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
+        if alg ∉ algorithms
+            return NotAvailableCheck(info = "unknown algorithm '$alg'")
+        end
+        nz_variances = Dict()
+        for pv in process_column_for_indexing.(predictor_variables)
+            try
+                _vals = getindex(tbl, pv)
+                nvar = std(_vals)^2 / abs(mean(_vals))
+                if nvar < variance_threshold
+                    push!(nz_variances, pv => float(nvar))
+                end
+            catch
+                # do nothing if fails
+            end
+        end
+        if isempty(nz_variances)
+            return PassedCheck()
+        else
+            return FailedCheck(info = join(string.(keys(nz_variances)), ", "))
+        end
+    catch e
+        @debug "check_near_zero_variance_predictors: Failed\n$e"
+        return NotAvailableCheck(info = string(e))
+    end
+end
 
 
 const R_BASELINE_LINTERS = [
@@ -471,6 +507,20 @@ const R_BASELINE_LINTERS = [
         correct_message = (name, args...) -> "No numerical predictors with magnitude/scale imbalance found",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
+    ),
+
+    # Flags numeric predictors with near-zero variance or constant values (using relative variance thresholds)
+    (
+        name = :R_near_zero_variance_predictors,
+        description = """Flags numeric predictors with near-zero variance or constant values (using relative variance thresholds)""",
+        f = check_near_zero_variance_predictors,
+        failure_message = (name, result) -> "Found numerical predictors with near-zero variance: $(result.info)",
+        correct_message = (name, args...) -> "No numerical predictors with near-zero variance found",
+        warn_level = "warning",
+        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),

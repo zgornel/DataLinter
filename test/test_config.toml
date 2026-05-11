@@ -46,6 +46,7 @@
     R_variables_present_in_data = true
     R_high_cardinality_categoricals = true
     R_numeric_scale_imbalance = true
+    R_near_zero_variance_predictors = true
 
 # Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
 # ```
@@ -152,3 +153,7 @@
         # the threshold represents the maximum allowed ratio between
         # the dynamic range of a variable and the minimum range among the predictors
         numeric_scale_threshold = 100
+
+    [parameters.R_near_zero_variance_predictors]
+        variance_threshold = 0.0001
+        algorithms = ["lm", "glm", "glmmTMB"]
