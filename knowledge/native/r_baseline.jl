@@ -29,6 +29,13 @@ function extract_capture_value(query_results, capture_symbol)
     end
 end
 
+function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
+    output = join(string.(iterable), joinchar)
+    if length(output) > maxlen
+        output = output[1:maxlen] * "..."
+    end
+    return output
+end
 
 function is_glmmTMB_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.Columns},
@@ -267,7 +274,7 @@ function check_variables_present_in_data(
         if isempty(missing_vars)
             return PassedCheck()
         else
-            return FailedCheck(info = join(string.(missing_vars), ", "))
+            return FailedCheck(info = process_for_printing(missing_vars))
         end
     catch e
         @debug "check_variables_present_in_data: Failed\n$e"
@@ -280,7 +287,7 @@ function check_high_cardinality_categoricals(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        n_p_level_ratio=DEFAULT_NP_LEVEL_RATIO
+        n_p_level_ratio = DEFAULT_NP_LEVEL_RATIO
     )
     try
         tbl = tblref[]
@@ -301,7 +308,7 @@ function check_high_cardinality_categoricals(
         if isempty(high_cardinalities)
             return PassedCheck()
         else
-            return FailedCheck(info = join(string.(high_cardinalities), ", "))
+            return FailedCheck(info = process_for_printing(high_cardinalities))
         end
     catch e
         @debug "check_high_cardinality_categoricals: Failed\n$e"
@@ -314,7 +321,7 @@ function check_numeric_scale_imbalance(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        numeric_scale_threshold=DEFAULT_NUMERIC_SCALE_THRESHOLD
+        numeric_scale_threshold = DEFAULT_NUMERIC_SCALE_THRESHOLD
     )
     try
         tbl = tblref[]
@@ -324,18 +331,18 @@ function check_numeric_scale_imbalance(
         for pv in process_column_for_indexing.(predictor_variables)
             if Tables.columntype(tbl, pv) <: AbstractFloat || Tables.columntype(tbl, pv) <: Real
                 _vals = getindex(tbl, pv)
-                push!(scales, pv => float(abs(maximum(_vals)-minimum(_vals))))
+                push!(scales, pv => float(abs(maximum(_vals) - minimum(_vals))))
             end
         end
         if isempty(scales)
             return PassedCheck()
         end
         min_scale = minimum(values(scales))
-        high_scales = [k for (k,v) in scales if v/min_scale > numeric_scale_threshold]
+        high_scales = [k for (k, v) in scales if v / min_scale > numeric_scale_threshold]
         if isempty(high_scales)
             return PassedCheck()
         else
-            return FailedCheck(info = join(string.(high_scales), ", "))
+            return FailedCheck(info = process_for_printing(high_scales))
         end
     catch e
         @debug "check_numeric_scale_imbalance: Failed\n$e"
@@ -350,8 +357,8 @@ function check_near_zero_variance_predictors(
         tblref::Base.RefValue{<:Tables.Columns},
         linting_ctx,
         args...;
-        algorithms=NEAR_ZERO_VARIANCE_ALGORITHMS,
-        variance_threshold=DEFAULT_NZ_VARIANCE_THRESHOLD
+        algorithms = NEAR_ZERO_VARIANCE_ALGORITHMS,
+        variance_threshold = DEFAULT_NZ_VARIANCE_THRESHOLD
     )
     try
         tbl = tblref[]
@@ -376,7 +383,7 @@ function check_near_zero_variance_predictors(
         if isempty(nz_variances)
             return PassedCheck()
         else
-            return FailedCheck(info = join(string.(keys(nz_variances)), ", "))
+            return FailedCheck(info = process_for_printing(nz_variances))
         end
     catch e
         @debug "check_near_zero_variance_predictors: Failed\n$e"
@@ -391,7 +398,7 @@ const R_BASELINE_LINTERS = [
         name = :R_imbalanced_target_variable,
         description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = (name, result) -> "Imbalanced target column in '$name' for value(s): $(join(string.(result.info), ", "))",
+        failure_message = (name, result) -> "Imbalanced target column in '$name' for value(s): $(process_for_printing(result.info))",
         correct_message = (name, args...) -> "Target variable values are balanced",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -447,7 +454,7 @@ const R_BASELINE_LINTERS = [
         name = :R_colinearity_with_target,
         description = """ Checks colinearities between target variable and its target variables""",
         f = check_colinearity_with_target,
-        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(join(string.(result.info.colinears), ", "))",
+        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(process_for_printing(result.info.colinears))",
         correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
         warn_level = "important",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
