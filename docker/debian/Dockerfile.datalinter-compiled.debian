@@ -118,7 +118,6 @@ RUN for parser in python julia c c-sharp javascript; do \
     done
 
 # Cleanup operations
-RUN apt-get -y remove gcc g++ make
 RUN apt-get -y autoclean
 RUN apt-get -y autoremove
 
