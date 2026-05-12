@@ -1,11 +1,17 @@
 # Usage examples
 
-> Note: Results from running the commands below may vary depending on the current state of the configuration files. Take the outputs are representative samples of the expected output only.
+!!! note
 
-There are two tools through which linting can be done, both available in the Docker container:
+    Results from running the commands below may vary depending on the current state of the configuration files. Take the outputs are representative samples of the expected output only.
+
+There are two tools through which linting can be done,
  - `datalinter`, a command-line (CLI) tool, best suited for linting data outside an experimental environment. It builds its linting context through the configuration file and command line arguments.
  - `datalinterserver`, a HTTP server to which one can easily connect with a client. The server builds the context from configuration file and data, code provided in HTTP requests. It is best suited for online and interactive workflows, where code is readily available with the data to be linted.
 
+These can be ran with
+ - Docker commands `docker run ...`
+ - the `datalinter` and `datalinterserver` Julia scripts in the root repository (automatically build and run Docker commands)
+ - compiled binaries (Linux-only) downloadable from the [Releases](https://github.com/zgornel/DataLinter/releases) page.
 
 ## Quick start
 
@@ -30,19 +36,21 @@ $ docker run -it --rm \
 ```
 respectively.
 
-The commands are meant to show the help of the two executables and exit.
+The commands are meant to show the help of the two executables and exit. Before running the linter, make sure that the Docker container has mapped all the relevant directories.
 
-> Note: Before running the linter, make sure that the Docker container has mapped all the relevant directories.
+!!! info
+
+    The `datalinter` and `datalinterserver` scripts automatically map the folders by detecting the
+    directories in which data, code and configs reside.
 
 ### Docker image folders, default configs
 
 Currently, in the root directory of the `datalinter-compiled` Docker image, the following empty directories are available for mapping:
  - `/_data` - for mapping data folders
+ - `/_code` - for mapping code folders
  - `/_config` - for mapping folders with multiple configuration files
  - `/output` - where outputs may be written
  - `/workspace` and `/tmp` generic folder for other mappings
-
-To modify the structure, check out [the Dockerfile](https://github.com/zgornel/DataLinter/blob/master/docker/Dockerfile.datalinter-compiled.alpine) of the image. The directories are which are available inside the container should be easy to see and modify. Currently, these are the ones created with the `mkdir -p` command.
 
 Inside the Docker image, the default configuration files are available in `/datalinter/config`. Running
 ```
@@ -51,12 +59,12 @@ $ docker run -it --rm ghcr.io/zgornel/datalinter-compiled:latest ls -l /datalint
 outputs
 ```
 total 24
--rw-r--r--    1 root     root          4797 Feb 19 11:14 default.toml
--rw-r--r--    1 root     root          4901 Feb 19 11:14 imbalanced_data.toml
--rw-r--r--    1 root     root          4392 Feb 19 11:14 r_modelling_config.toml
+-rw-r--r-- 1 root root 5016 May 12 07:38 default.toml
+-rw-r--r-- 1 root root 5082 May 12 07:38 imbalanced_data.toml
+-rw-r--r-- 1 root root 5760 May 12 07:38 r_modelling_config.toml
 ```
 
-> Note: To use custom i.e. local configuration files, one should map the local configuration directory to one in the Docker image, `_config` for example. Therefore, when running the `docker run` command one should have the mapping as `--volume=<PATH/TO/LOCAL/CONFIG>:/_config`.
+> To use custom i.e. local configuration files, one should map the local configuration directory to one in the Docker image, `_config` for example. Therefore, when running the `docker run` command one should have the mapping as `--volume=<PATH/TO/LOCAL/CONFIG>:/_config`.
 
 ## `datalinter` CLI-based linting
 
@@ -95,19 +103,19 @@ $ docker run -it --rm \
 ```
 The output should look something like:
 ```
-× important     (empty_example)         row: 10              the example at 'row: 10' looks empty
-× important     (empty_example)         row: 11              the example at 'row: 11' looks empty
-! warning       (large_outliers)        column: x1           the values of 'column: x1' contain large outliers
-! warning       (int_as_float)          column: x4           the values of 'column: x4' are floating point but can be integers
-• info          (tokenizable_string)    column: x6           the values of 'column: x6' could be tokenizable i.e. contain spaces
-• info          (tokenizable_string)    column: x8           the values of 'column: x8' could be tokenizable i.e. contain spaces
-• info          (enum_detector)         column: x5           just a few distinct values in 'column: x5', it could be an enum
-• info          (enum_detector)         column: x8           just a few distinct values in 'column: x8', it could be an enum
-• info          (enum_detector)         column: x4           just a few distinct values in 'column: x4', it could be an enum
-• info          (uncommon_signs)        column: x1           uncommon signs (+/-/NaN/0) present in 'column: x1'
-• info          (long_tailed_distrib)   column: x1           the distribution for 'column: x1' has 'long tails'
-• experimental  (negative_values)       column: x1           found values smaller than 0 in 'column: x1'
-12 issues found from 15 linters applied (14 OK, 1 N/A) .
+× important     (empty_example)                 row: 10              the example at 'row: 10' looks empty
+× important     (empty_example)                 row: 11              the example at 'row: 11' looks empty
+! warning       (large_outliers)                column: x1           the values of 'column: x1' contain large outliers
+! warning       (int_as_float)                  column: x4           the values of 'column: x4' are floating point but can be integers
+! warning       (vif_colinearity)               dataset              High multicolinearity detected in dataset using VIF
+• info          (tokenizable_string)            column: x6           the values of 'column: x6' could be tokenizable i.e. contain spaces
+• info          (tokenizable_string)            column: x8           the values of 'column: x8' could be tokenizable i.e. contain spaces
+• info          (enum_detector)                 column: x5           just a few distinct values in 'column: x5', it could be an enum
+• info          (enum_detector)                 column: x8           just a few distinct values in 'column: x8', it could be an enum
+• info          (enum_detector)                 column: x4           just a few distinct values in 'column: x4', it could be an enum
+• info          (uncommon_signs)                column: x1           uncommon signs (+/-/NaN/0) present in 'column: x1'
+• info          (long_tailed_distrib)           column: x1           the distribution for 'column: x1' has 'long tails'
+• info          (negative_values)               column: x1           found negative values in 'column: x1'
 ```
 
 ### Linting with `config.toml` context
@@ -124,13 +132,13 @@ $ time docker run -it --rm \
 ```
 which outputs,
 ```
-! warning       (large_outliers)        column: col4         the values of 'column: col4' contain large outliers
-! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
-• info          (enum_detector)         column: col4         just a few distinct values in 'column: col4', it could be an enum
-• info          (uncommon_signs)        column: col4         uncommon signs (+/-/NaN/0) present in 'column: col4'
-• info          (long_tailed_distrib)   column: col4         the distribution for 'column: col4' has 'long tails'
-• experimental  (imbalanced_target_variable)    dataset              Imbalanced target column in 'dataset'
-6 issues found from 16 linters applied (11 OK, 5 N/A) .
+! warning       (large_outliers)                column: col4         the values of 'column: col4' contain large outliers
+! warning       (int_as_float)                  column: col4         the values of 'column: col4' are floating point but can be integers
+! warning       (imbalanced_target_variable)    dataset              Imbalanced target column in 'dataset' for values=Any[0.0]
+• info          (enum_detector)                 column: col4         just a few distinct values in 'column: col4', it could be an enum
+• info          (uncommon_signs)                column: col4         uncommon signs (+/-/NaN/0) present in 'column: col4'
+• info          (long_tailed_distrib)           column: col4         the distribution for 'column: col4' has 'long tails'
+docker run -it --rm --volume=./test/data:/_data --volume=./config:/_config     0.01s user 0.02s system 0% cpu 3.130 total
 ```
 
 ### Linting with code context
@@ -164,7 +172,6 @@ which outputs:
 ! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
 ! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
 • info          (R_data_normally_distributed)   dataset              Non-normal variables present
-4 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
 
 ## `datalinterserver` HTTP-based linting
@@ -178,8 +185,16 @@ Optional arguments:
  - `-i`, `--http-ip`, HTTP IP address (default: `"127.0.0.1"`)
  - `--config-path`, path for the `.toml` configuration file (default: `""`)
  - `--kb-path`, path for the knowledge base file (default: `""`) (**not used**)
+ - `--priming-code-path`, priming code file path (default: "")
+ - `--priming-data-path`, priming data file path (default: "")
  - `--log-level`, logging level (default: `"error"`)
  - `-h`, `--help`, show help over parameters
+
+!!! note
+
+    For faster first query response time, one can use the code and data priming options.
+    This will lint the data and code at the paths provided through
+    `--priming-data-path` and `--priming-code-path` respectively.
 
 ### Running the server
 
@@ -215,7 +230,6 @@ outputs:
 ! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
 ! warning       (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
 • info          (R_data_normally_distributed)   dataset              Non-normal variables present
-5 issues found from 13 linters applied (9 OK, 4 N/A) .
 ```
 
 ### Send data using `wget` and `jq`
@@ -241,6 +255,11 @@ $ wget -O- 'http://0.0.0.0:10000/api/kill'
 The HTTP server expects the following requests:
  - `GET` at `/api/kill` which stops the server
  - `POST` at `/api/lint` which triggers a linting request. This requires a JSON body with data, code and options specified.
+
+The server will return a the following response status codes:
+ - `200` request was done (either linting or killing the server)
+ - `400` linting encountered an error (i.e. malformed request)
+ - `501` requested endpoint is not used.
 
 For lint requests, a representative example of the `body` of the request is shown below:
 ```json
@@ -282,6 +301,7 @@ The following example represents the basic workflow behind linting:
  - load a configuration file
  - build context out of data and code contents
  - apply the linter and print the output.
+
 ```@example
 const PROJECT_PATH = joinpath(abspath(dirname(@__FILE__)), "..", "..")
 using DataLinter
