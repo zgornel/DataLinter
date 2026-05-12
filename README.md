@@ -41,7 +41,7 @@ Try it in seconds with Docker (no installation required):
 
 ```bash
 # Lint a dataset (from the root directory of the repository)
-datalinter ./test/data/imbalanced_data.csv \
+./datalinter ./test/data/imbalanced_data.csv \
     --code-path ./test/code/r_snippet_imbalanced.r \
     --config-path ./config/r_modelling_config.toml \
     --log-level error

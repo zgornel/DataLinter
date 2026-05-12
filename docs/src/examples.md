@@ -242,7 +242,7 @@ $ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --r
 ```
 Alternatively, the server supports sending only the data file path
 ```bash
-wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"./test/data/imbalanced_data.csv\", \"data_type\" : \"filepath\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" : $(jq -n --rawfile codevar ./test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint' && \
+wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"/tmp/test/data/imbalanced_data.csv\", \"data_type\" : \"filepath\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile codevar ./test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint'
 ```
 
 To stop the server remotely, run
