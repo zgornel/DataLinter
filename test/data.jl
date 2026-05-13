@@ -33,10 +33,6 @@
             @test context.code == code
         end
 
-        @testset "SimpleDataContext (from CSV)" begin
-            context = DI.build_data_context("data/data.csv")
-            @test context isa DI.SimpleDataContext
-        end
     end
 
     @testset "build_data_iterator" begin

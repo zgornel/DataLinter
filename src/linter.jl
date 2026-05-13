@@ -14,10 +14,10 @@ function build_data_iterator end  # returns an iterables over data
 
 function get_context_code end
 
-@Base.kwdef struct DataIterator
+@Base.kwdef struct DataIterator{T}
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
     row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
-    tblref              # reference to the input data
+    tblref::Ref{T}      # reference to the input data
 end
 
 function columnname end # Returns the name of a 'column' element of the `DataIterator`

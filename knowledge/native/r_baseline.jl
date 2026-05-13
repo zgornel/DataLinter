@@ -38,7 +38,7 @@ function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
 end
 
 function is_glmmTMB_data_correctly_modelled(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         acceptable_link_values = ACCEPTABLE_LINK_VALUES
@@ -79,7 +79,7 @@ end
 const NORMALITY_CHECK_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 
 function is_data_normally_distributed(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         pvalue_threshold = PVALUE_THRESHOLD,
@@ -118,7 +118,7 @@ is_data_normally_distributed(::Type{<:ListEltype}, args...; kwargs...) = NotAvai
 
 
 function is_glm_data_correctly_modelled(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         pvalue_threshold = PVALUE_THRESHOLD
@@ -176,7 +176,7 @@ end
 const PAIRWISE_COLINEARITY_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 
 function check_colinearity_with_target(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         threshold = PAIRWISE_COLINEARITY_THRESHOLD,
@@ -213,7 +213,7 @@ const SAMPLE_SIZE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const EPV_THRESHOLD = 10
 
 function check_sample_size_adequacy(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         epv_threshold = EPV_THRESHOLD,
@@ -232,9 +232,9 @@ function check_sample_size_adequacy(
                 n_events = min(sum(tc .== 1.0), sum(tc .== 0.0))
                 epv = n_events / n_predictors
                 if epv > epv_threshold
-                    return PassedCheck(info = "EPV=$(repr(epv, context=:compact => true)), higher than $epv_threshold")
+                    return PassedCheck(info = "EPV=$(repr(epv, context = :compact => true)), higher than $epv_threshold")
                 else
-                    return FailedCheck(info = "EPV=$(repr(epv, context=:compact => true)), lower than $epv_threshold")
+                    return FailedCheck(info = "EPV=$(repr(epv, context = :compact => true)), lower than $epv_threshold")
                 end
             else  # linear case
                 min_n_liberal = 50 + 8 * n_predictors  # Green 1991
@@ -256,7 +256,7 @@ function check_sample_size_adequacy(
 end
 
 function check_variables_present_in_data(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         kwargs...
@@ -284,7 +284,7 @@ end
 
 const DEFAULT_NP_LEVEL_RATIO = 10
 function check_high_cardinality_categoricals(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         n_p_level_ratio = DEFAULT_NP_LEVEL_RATIO
@@ -318,7 +318,7 @@ end
 
 const DEFAULT_NUMERIC_SCALE_THRESHOLD = 100
 function check_numeric_scale_imbalance(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         numeric_scale_threshold = DEFAULT_NUMERIC_SCALE_THRESHOLD
@@ -354,7 +354,7 @@ end
 const NEAR_ZERO_VARIANCE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const DEFAULT_NZ_VARIANCE_THRESHOLD = 100
 function check_near_zero_variance_predictors(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         algorithms = NEAR_ZERO_VARIANCE_ALGORITHMS,

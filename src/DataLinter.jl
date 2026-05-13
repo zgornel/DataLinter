@@ -87,7 +87,9 @@ include("linter.jl")    # linter core
 include("config.jl")    # linter configuration
 
 include("data.jl")      # data interface
-include("plugins/data/csv.jl")  # 'csv data' plugin
+include("plugins/data/csv.jl")  # CSV data plugin (CSV.jl)
+include("plugins/data/arrow.jl")  # Apache Arrow data plugin (Arrow.jl)
+include("plugins/data/parquet.jl")  # Parquet data plugin (Parquet.jl)
 
 include("output.jl")    # output interface
 include("kb.jl")        # kb interface
