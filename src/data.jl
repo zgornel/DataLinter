@@ -117,22 +117,22 @@ algorithm that will be applied on that data.
 # Examples
 ```julia
 julia> using DataLinter
-       ncols, nrows = 3, 10
-       data = [rand(nrows) for _ in 1:ncols]
-       ctx = DataLinter.build_data_context(data)
-SimpleDataContext 0.00040435791015625 MB of data
+       ctx = DataLinter.build_data_context("./test/data/data.arrow")
+SimpleDataContext{Arrow.Table} (0.11153507232666016 MB of data)
 
-julia> kb = DataLinter.kb_load("")
+julia> kb = DataLinter.kb_load("");
        DataLinter.LinterCore.lint(ctx, kb)  # linters disabled
 Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}[]
+Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}[]
 
-julia> config = DataLinter.LinterCore.load_config("./test/test_config.toml")
+
+julia> config = DataLinter.LinterCore.load_config("./test/test_config.toml");
        DataLinter.LinterCore.lint(ctx, kb; config)  # linters enabled
-49-element Vector{Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}}:
-                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x2") => DataLinter.LinterCore.NotAvailableCheck(nothing)
-                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x3") => DataLinter.LinterCore.NotAvailableCheck(nothing)
-                     (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x1") => DataLinter.LinterCore.NotAvailableCheck(nothing)
-                     ...
+120-element Vector{Pair{Tuple{DataLinter.LinterCore.Linter, String}, DataLinter.LinterCore.AbstractCheck}}:
+                         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x2") => DataLinter.LinterCore.NotAvailableCheck(nothing)
+                         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x5") => DataLinter.LinterCore.NotAvailableCheck(nothing)
+                         (Linter (name=datetime_as_string, f=is_datetime_as_string), "column: x6") => DataLinter.LinterCore.PassedCheck(nothing)
+                         ...
 ```
 """
 function build_data_context(; data = nothing, code = nothing, kwargs...)
