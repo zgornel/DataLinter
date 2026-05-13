@@ -47,13 +47,13 @@ jobs:
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
           docker build --no-cache -f ./docker/debian/Dockerfile.datalinter-compiled.debian -t ghcr.io/zgornel/datalinter-compiled:debian .
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:latest
-          docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.1.2
+          docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.1.3
 
       - id: push_datalinter-compiled_image
         name:  Push to ghcr.io datalinter-compiled image
         run: |
           docker push ghcr.io/zgornel/datalinter-compiled:latest
-          docker push ghcr.io/zgornel/datalinter-compiled:v0.1.2
+          docker push ghcr.io/zgornel/datalinter-compiled:v0.1.3
 
       - name: Upload Artifact GitHub Action
         uses: actions/upload-artifact@v6

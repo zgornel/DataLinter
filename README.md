@@ -32,6 +32,7 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 ### Key Features
 - 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Zero-config CLI and HTTP server modes
+- [CSV](https://github.com/JuliaData/CSV.jl) / Apache [Parquet](https://parquet.apache.org/) / Apache [Arrow](https://arrow.apache.org/) data support
 - Production-ready Docker image and GitHub Actions integration
 - Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
 - First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing

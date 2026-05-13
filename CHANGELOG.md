@@ -1,5 +1,9 @@
 # Changelog
 
+v0.1.3
+------
+ - support for Apache Parquet, Arrow
+
 v0.1.2
 ------
  - 5 new linters
