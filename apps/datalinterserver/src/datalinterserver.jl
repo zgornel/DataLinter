@@ -259,44 +259,23 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     ctx = _request["linter_input"]["context"]
     opts = _request["linter_input"]["options"]
 
-    # Read data from request
-    data = try
-        data_source = if ctx["data_type"] == "dataset"
-            seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
-        elseif ctx["data_type"] == "filepath"
-            _path = abspath(expanduser(ctx["data"]))  # take the absolute path
-            @assert ispath(_path) && isfile(_path) "No valid file @$_path"
-            _path
-        else
-            @error "Data type $(ctx["data_type"]) not supported"
-            return ERROR_IN_REQ_HANDLING
-        end
-        CSV.read(
-            data_source,
-            CSV.Tables.Columns,
-            delim = first(ctx["data_delim"]),
-            header = ctx["data_header"],
-            pool = true,
-            missingstring = ["", "NA", "NaN", "N/A", "NAN"],
-            ignoreemptyrows = true,
-            ntasks = Threads.nthreads()
-        )
-    catch e
-        @debug "Error loading data\n$e"
-        nothing
-    end
-    isnothing(data) && return ERROR_IN_REQ_HANDLING
-    @debug "CSV data loaded and succesfully processed.\n$data"
+    # Build data context directly from request data information
+    data_ctx = DataLinter.DataInterface.build_data_context(
+        get(ctx, "data", nothing),
+        get(ctx, "code", nothing);
+        delim = first(ctx["data_delim"]),
+        header = ctx["data_header"]
+    )
+
+    @debug "Data context loaded and succesfully:\n$data_ctx\n$(data_ctx.data)"
 
     # Read code and options from request
-    code = get(ctx, "code", nothing)
     linters = get(ctx, "linters", DEFAULT_LINTERS)
     show_passing = get(opts, "show_passing", DEFAULT_SHOW_PASSING)
     show_stats = get(opts, "show_stats", DEFAULT_SHOW_STATS)
     show_na = get(opts, "show_na", DEFAULT_SHOW_NA)
     try
         buffer = IOBuffer()
-        data_ctx = DataLinter.DataInterface.build_data_context(data, code)
         lintout = DataLinter.lint(data_ctx, kb; config, linters)
         process_output(lintout; buffer, show_passing, show_stats, show_na)
         #score = DataLinter.OutputInterface.score(lintout; normalize = true)

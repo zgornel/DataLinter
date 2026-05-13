@@ -77,18 +77,26 @@ struct ArrowTypeTable <: AbstractTypeTable end
 
 struct ParquetTypeTable <: AbstractTypeTable end
 
-# Generic methods (need to be overloaded in plugins)
+struct IOTypeTable <: AbstractTypeTable end
+
+# Infers from an input string what data type we are dealing with
 infer_datatype(::Nothing) = nothing
+
 infer_datatype(data) = nothing
 
-infer_datatype(filepath::AbstractString) = begin
+infer_datatype(data::AbstractString) = begin
     try
-        if endswith(filepath, ".arrow")
+        if endswith(data, ".arrow")
             return ArrowTypeTable
-        elseif endswith(filepath, ".csv") || endswith(filepath, "tsv")
+        elseif endswith(data, ".csv") || endswith(data, "tsv")
             return CSVTypeTable
-        elseif endswith(filepath, ".parquet")
+        elseif endswith(data, ".parquet")
             return ParquetTypeTable
+        else
+            # We assume data is a String that containts tabular data
+            # This is useful for `datalinterserver` to be able to read
+            # data from HTTP payloads
+            return IOTypeTable
         end
         return nothing
     catch e
@@ -127,22 +135,22 @@ julia> config = DataLinter.LinterCore.load_config("./test/test_config.toml")
                      ...
 ```
 """
-function build_data_context(; data = nothing, code = nothing)
+function build_data_context(; data = nothing, code = nothing, kwargs...)
     datatype = infer_datatype(data)
     if isnothing(datatype)
-        throw(ErrorException("Could not infer data type. Make sure data type is supported."))
+        throw(ErrorException("'DataInterface.build_data_context': Make sure data source is correctly specified and supported."))
     end
     if isnothing(code)
-        build_data_context(data, datatype)
+        build_data_context(data, datatype; kwargs...)
     else
-        build_data_context(data, code, datatype)
+        build_data_context(data, code, datatype; kwargs...)
     end
 end
 
 
 # Generic methods (need to be overloaded in plugins)
-build_data_context(data::AbstractString) = build_data_context(; data)
-build_data_context(data::AbstractString, code) = build_data_context(; data, code)
+build_data_context(data::AbstractString; kwargs...) = build_data_context(; data, kwargs...)
+build_data_context(data::AbstractString, code; kwargs...) = build_data_context(; data, code, kwargs...)
 
 # Specific methods, get called by plugin-implemented methods
 build_data_context(data::T) where {T <: Tables.AbstractColumns} = SimpleDataContext(; data)
