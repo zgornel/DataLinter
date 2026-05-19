@@ -1,4 +1,5 @@
 @reexport module LinterCore
+using Base.Threads: @threads, ReentrantLock
 using Dates
 using Tables
 using REPL
@@ -228,7 +229,6 @@ reconcile_contexts(code_ctx, ::Nothing) = code_ctx
 reconcile_contexts(::Nothing, config_ctx) = config_ctx
 reconcile_contexts(::Nothing, ::Nothing) = nothing
 
-
 """
     lint(data_ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false, linters=["all"])
 
@@ -252,7 +252,8 @@ function lint(
 
     _progress = ProgressUnknown(desc = "Linting...", spinner = true, color = :white, showspeed = true)
     _terminal = REPL.Terminals.TTYTerminal("", stdin, stdout, stderr)
-    for linter in build_linters(kb, data_ctx; linters)
+    lintout_lock = ReentrantLock()
+    @threads :greedy for linter in build_linters(kb, data_ctx; linters)
         if linter_is_enabled(config, linter)
             linter_kwargs = get_linter_kwargs(config, linter)  # this injects configuration parameters into linter functions
             # Build linting context:
@@ -275,8 +276,10 @@ function lint(
                         _name = columnname(datait, i)
                         _type = columntype(datait, i)
                         result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
-                        push!(lintout, (linter, "column='$_name'") => result)
-                        progress && next!(_progress, spinner = SPINNER)
+                        @lock lintout_lock begin
+                            push!(lintout, (linter, "column='$_name'") => result)
+                            progress && next!(_progress, spinner = SPINNER)
+                        end
                     end
                 end
                 # 2. Apply over rows
@@ -286,20 +289,28 @@ function lint(
                     for row in datait.row_iterator
                         result = linter.f(row, linting_ctx; linter_kwargs...)
                         if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
-                            push!(lintout, (linter, "row=$irow") => result)
                             no_empty_rows = false
-                            progress && next!(_progress, spinner = SPINNER)
+                            @lock lintout_lock begin
+                                push!(lintout, (linter, "row=$irow") => result)
+                                progress && next!(_progress, spinner = SPINNER)
+                            end
                         end
                         irow += 1
                     end
                     # if there are no empty rows add a single entry for all, mark the linter as passed (true)
-                    no_empty_rows && push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
+                    if no_empty_rows
+                        @lock lintout_lock begin
+                            push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
+                        end
+                    end
                 end
                 # 3. Apply over whole dataset
                 if applicable(linter, linting_ctx, :dataset)
                     result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
-                    push!(lintout, (linter, "dataset") => result)
-                    progress && next!(_progress, spinner = SPINNER)
+                    @lock lintout_lock begin
+                        push!(lintout, (linter, "dataset") => result)
+                        progress && next!(_progress, spinner = SPINNER)
+                    end
                 end
             end
             _, _time, _bytes, _gctime, _ = _t
