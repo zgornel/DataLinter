@@ -79,6 +79,7 @@ struct ParquetTypeTable <: AbstractTypeTable end
 
 struct IOTypeTable <: AbstractTypeTable end
 
+
 # Infers from an input string what data type we are dealing with
 infer_datatype(::Nothing) = nothing
 

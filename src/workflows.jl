@@ -8,9 +8,11 @@ function cli_linting_workflow(
         kbpath,
         configpath;
         buffer = stdout,
+        output_type = :text,
         show_stats = true,
         show_passing = false,
         show_na = false,
+        pretty_print = false,
         progress = false,
         linters = ["all"]
     )
@@ -28,5 +30,14 @@ function cli_linting_workflow(
     ctx = DataLinter.DataInterface.build_data_context(filepath, code)
     config = DataLinter.Configuration.load_config(configpath)
     lintout = lint(ctx, kb; config, progress, linters)
-    return process_output(lintout; buffer, show_passing, show_stats, show_na), lintout
+    return process_output(
+            lintout;
+            output_type,
+            buffer,
+            show_passing,
+            show_stats,
+            show_na,
+            pretty_print
+        ),
+        lintout
 end

@@ -276,7 +276,7 @@ function lint(
                         _name = columnname(datait, i)
                         _type = columntype(datait, i)
                         result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
-                        push!(lintout, (linter, "column: $_name") => result)
+                        push!(lintout, (linter, "column='$_name'") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end
                 end
@@ -287,14 +287,14 @@ function lint(
                     for row in datait.row_iterator
                         result = linter.f(row, linting_ctx; linter_kwargs...)
                         if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
-                            push!(lintout, (linter, "row: $irow") => result)
+                            push!(lintout, (linter, "row=$irow") => result)
                             no_empty_rows = false
                             progress && next!(_progress, spinner = SPINNER)
                         end
                         irow += 1
                     end
                     # if there are no empty rows add a single entry for all, mark the linter as passed (true)
-                    no_empty_rows && push!(lintout, (linter, "row: **all**") => PassedCheck(nothing))
+                    no_empty_rows && push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
                 end
                 # 3. Apply over whole dataset
                 if applicable(linter, linting_ctx, :dataset)
