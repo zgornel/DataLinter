@@ -48,7 +48,6 @@ Base.show(io::IO, linter::Linter) = begin
     print(io, "Linter (name=$(linter.name), f=$func)")
 end
 
-
 abstract type AbstractCheck end
 
 @Base.kwdef struct PassedCheck <: AbstractCheck

@@ -26,8 +26,7 @@ function process_output(
     n_linters_failed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], FailedCheck), lintout)) |> length ∘ unique
     n_linters_passed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], PassedCheck), lintout)) |> length ∘ unique
     sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
-    give_reason_for_na(result) = result.info === nothing ? "*not applicable*" : "*FAILED*"
-    ddfailed_linters = Symbol[]
+    give_reason_for_na(result) = result.info === nothing ? "N/A" : "N/A (Errored)"
     for ((linter, loc_name), result) in sorted_out
         msg, color, bold = get_text_formatting(result, linter)
         if !(result isa NotAvailableCheck)
@@ -65,7 +64,7 @@ _print(linter::Linter, result::FailedCheck, buffer, loc_name, pretty_print; msg 
         printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
         printstyled(buffer, "$(linter.failure_message(loc_name, result))\n"; color, bold)
     else
-        printstyled(buffer, "$loc_name:$(linter.warn_level):$(linter.name):$(linter.failure_message(loc_name, result))\n")
+        printstyled(buffer, "$(linter.name):$(linter.warn_level):$loc_name:$(linter.failure_message(loc_name, result))\n")
     end
 end
 

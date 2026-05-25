@@ -20,7 +20,7 @@ const ERROR_IN_REQ_HANDLING = -1
 const DEFAULT_LINTERS = ["all"]
 const DEFAULT_OUTPUT_TYPE = :text
 const DEFAULT_SHOW_NA = false
-const DEFAULT_SHOW_STATS = false
+const DEFAULT_SHOW_STATS = true
 const DEFAULT_SHOW_PASSING = false
 const DEFAULT_PRETTY_PRINT = true
 
@@ -275,20 +275,29 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
 
     # Read code and options from request
     linters = get(ctx, "linters", DEFAULT_LINTERS)
-    output_type = get(opts, "output_type", DEFAULT_OUTPUT_TYPE)
+    output_type = Symbol(get(opts, "output_type", DEFAULT_OUTPUT_TYPE))
     show_passing = get(opts, "show_passing", DEFAULT_SHOW_PASSING)
     show_stats = get(opts, "show_stats", DEFAULT_SHOW_STATS)
     show_na = get(opts, "show_na", DEFAULT_SHOW_NA)
-    pretty_print = Symbol(get(opts, "pretty_print", DEFAULT_PRETTY_PRINT))
+    pretty_print = get(opts, "pretty_print", DEFAULT_PRETTY_PRINT)
     try
         buffer = IOBuffer()
         lintout = DataLinter.lint(data_ctx, kb; config, linters)
-        process_output(lintout; buffer, output_type, show_passing, show_stats, show_na, pretty_print)
+        process_output(lintout; output_type, buffer, show_passing, show_stats, show_na, pretty_print)
         #score = DataLinter.OutputInterface.score(lintout; normalize = true)
         string_buf = read(seekstart(buffer), String)
-        return JSON.json(Dict("linting_output" => string_buf))
+        if output_type == :text
+            return JSON.json(Dict("linting_output" => string_buf))
+        elseif output_type == :json
+            return string_buf
+        else
+            # If HTML output type support is to be added,
+            # it should be done here with another elseif branch
+            @error "Unsupported output type '$output_type'"
+            return ERROR_IN_REQ_HANDLING
+        end
     catch e
-        @warn "Linting error: $e"
+        @error "Linting error: $e"
         return ERROR_IN_REQ_HANDLING
     end
 end
