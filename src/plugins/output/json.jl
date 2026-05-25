@@ -2,7 +2,7 @@ module OutputJSON
 
 using JSON
 
-import ..OutputInterface: JSONOutputType, WARN_LEVEL_TO_NUM
+import ..OutputInterface: JSONOutputType, WARN_LEVEL_TO_NUM, get_status_string
 import ..LinterCore: Linter, process_output,
     AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
@@ -19,13 +19,13 @@ function process_output(
     for ((linter, loc_name), result) in sorted_out
         if !(result isa NotAvailableCheck)
             if result isa FailedCheck
-                push!(result_dicts, make_result_dict(linter, result, loc_name))
+                push!(result_dicts, _make_result_dict(linter, result, loc_name))
             elseif show_passing
-                push!(result_dicts, make_result_dict(linter, result, loc_name))
+                push!(result_dicts, _make_result_dict(linter, result, loc_name))
             end
         else
             if show_na
-                push!(result_dicts, make_result_dict(linter, result, loc_name))
+                push!(result_dicts, _make_result_dict(linter, result, loc_name))
             end
         end
     end
@@ -34,21 +34,15 @@ function process_output(
     return nothing
 end
 
-make_result_dict(linter, result, loc_name) = begin
+_make_result_dict(linter, result, loc_name) = begin
     return Dict{String, String}(
         "name" => string(linter.name),
         "warn_level" => linter.warn_level,
         "location" => loc_name,
         "description" => linter.description,
-        "failure_message =>" => linter.failure_message(loc_name, result),
+        "failure_message" => linter.failure_message(loc_name, result),
         "status" => get_status_string(result),
     )
-end
-
-get_status_string(::FailedCheck) = "FAIL"
-get_status_string(::PassedCheck, linter::Linter) = "PASS"
-get_status_string(result::NotAvailableCheck, linter::Linter) = begin
-    result.info === nothing ? "N/A" : "N/A (Errored)"
 end
 
 end  # module

@@ -1,6 +1,6 @@
 module OutputText
 
-import ..OutputInterface: TextOutputType, WARN_LEVEL_TO_NUM
+import ..OutputInterface: TextOutputType, WARN_LEVEL_TO_NUM, get_status_string
 import ..LinterCore: Linter, process_output,
     AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
@@ -26,7 +26,6 @@ function process_output(
     n_linters_failed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], FailedCheck), lintout)) |> length ∘ unique
     n_linters_passed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], PassedCheck), lintout)) |> length ∘ unique
     sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
-    give_reason_for_na(result) = result.info === nothing ? "N/A" : "N/A (Errored)"
     for ((linter, loc_name), result) in sorted_out
         msg, color, bold = get_text_formatting(result, linter)
         if !(result isa NotAvailableCheck)
@@ -82,7 +81,7 @@ _print(linter::Linter, result::NotAvailableCheck, buffer, loc_name, pretty_print
     if pretty_print
         printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
         printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
-        printstyled(buffer, "linter $(give_reason_for_na(result)) for '$(loc_name)'\n"; color, bold)
+        printstyled(buffer, "linter $(get_status_string(result)) for '$(loc_name)'\n"; color, bold)
     else
         printstyled(buffer, "$loc_name:$(linter.warn_level):$(linter.name):$(linter.failure_message(loc_name, result))\n")
     end

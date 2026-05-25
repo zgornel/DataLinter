@@ -55,6 +55,7 @@ function infer_outputtype(output_type::Symbol)
     end
 end
 
+# Most generic `process_output` method. Calls specialized versions from plugins.
 function process_output(
         lintout;
         output_type = :text,
@@ -80,5 +81,12 @@ function process_output(
     )
 end
 
+# Utility function that prints a status string depending on
+# the type of the linting result
+get_status_string(::FailedCheck) = "FAIL"
+get_status_string(::PassedCheck) = "PASS"
+get_status_string(result::NotAvailableCheck) = begin
+    result.info === nothing ? "N/A" : "N/A (Errored)"
+end
 
 end  # module
