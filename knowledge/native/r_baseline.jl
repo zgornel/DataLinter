@@ -201,7 +201,7 @@ function check_colinearity_with_target(
                 !_corr && push!(colinears, pv)
             end
         end
-        return check ? PassedCheck(info = alg) : FailedCheck(info = (colinears = colinears, alg = alg))
+        return check ? PassedCheck(info = (colinears = colinears, alg = alg)) : FailedCheck(info = (colinears = colinears, alg = alg))
     catch e
         @debug "check_colinearity_with_target: Failed\n$e"
         return NotAvailableCheck(info = string(e))

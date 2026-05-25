@@ -2,7 +2,8 @@ module OutputJSON
 
 using JSON
 
-import ..OutputInterface: JSONOutputType, WARN_LEVEL_TO_NUM, get_status_string
+import ..OutputInterface: JSONOutputType, WARN_LEVEL_TO_NUM,
+    get_status_string, get_linter_message
 import ..LinterCore: Linter, process_output,
     AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
@@ -15,7 +16,7 @@ function process_output(
         kwargs...
     )
     sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
-    result_dicts = Dict{String,String}[]
+    result_dicts = Dict{String, String}[]
     for ((linter, loc_name), result) in sorted_out
         if !(result isa NotAvailableCheck)
             if result isa FailedCheck
@@ -40,7 +41,7 @@ _make_result_dict(linter, result, loc_name) = begin
         "warn_level" => linter.warn_level,
         "location" => loc_name,
         "description" => linter.description,
-        "failure_message" => linter.failure_message(loc_name, result),
+        "message" => get_linter_message(linter, result, loc_name),
         "status" => get_status_string(result),
     )
 end

@@ -1,6 +1,7 @@
 module OutputText
 
-import ..OutputInterface: TextOutputType, WARN_LEVEL_TO_NUM, get_status_string
+import ..OutputInterface: TextOutputType, WARN_LEVEL_TO_NUM,
+    get_status_string, get_linter_message
 import ..LinterCore: Linter, process_output,
     AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
@@ -61,9 +62,9 @@ _print(linter::Linter, result::FailedCheck, buffer, loc_name, pretty_print; msg 
     if pretty_print
         printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
         printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
-        printstyled(buffer, "$(linter.failure_message(loc_name, result))\n"; color, bold)
+        printstyled(buffer, "$(get_linter_message(linter, result, loc_name))\n"; color, bold)
     else
-        printstyled(buffer, "$(linter.name):$(linter.warn_level):$loc_name:$(linter.failure_message(loc_name, result))\n")
+        printstyled(buffer, "$(get_status_string(result)):$(linter.name):$(linter.warn_level):$loc_name:$(get_linter_message(linter, result, loc_name))\n")
     end
 end
 
@@ -71,9 +72,9 @@ _print(linter::Linter, result::PassedCheck, buffer, loc_name, pretty_print; msg 
     if pretty_print
         printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
         printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold)
-        printstyled(buffer, "$(linter.correct_message(loc_name, result))\n"; color, bold)
+        printstyled(buffer, "$(get_linter_message(linter, result, loc_name))\n"; color, bold)
     else
-        printstyled(buffer, "$loc_name:$(linter.warn_level):$(linter.name):$(linter.failure_message(loc_name, result))\n")
+        printstyled(buffer, "$(get_status_string(result)):$(linter.name):$(linter.warn_level):$loc_name:$(get_linter_message(linter, result, loc_name))\n")
     end
 end
 
@@ -83,7 +84,7 @@ _print(linter::Linter, result::NotAvailableCheck, buffer, loc_name, pretty_print
         printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
         printstyled(buffer, "linter $(get_status_string(result)) for '$(loc_name)'\n"; color, bold)
     else
-        printstyled(buffer, "$loc_name:$(linter.warn_level):$(linter.name):$(linter.failure_message(loc_name, result))\n")
+        printstyled(buffer, "$(get_status_string(result)):$(linter.name):$(linter.warn_level):$loc_name:$(get_linter_message(linter, result, loc_name))\n")
     end
 end
 
@@ -92,8 +93,8 @@ get_text_formatting(::FailedCheck, linter::Linter) = begin
     (linter.warn_level == "warning") && (return (msg = "! warning", color = :light_yellow, bold = false))
     (linter.warn_level == "info") && (return (msg = "• info", color = :light_cyan, bold = false))
     (linter.warn_level == "important") && (return (msg = "× important", color = :light_magenta, bold = false))
-    (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = false))
-    (linter.warn_level ∉ keys(WARN_LEVEL_TO_NUM)) && (return (msg = "• unknown", color = :default, bold = false))
+    (linter.warn_level == "experimental") && (return (msg = "⋅ experimental", color = :blue, bold = false))
+    (linter.warn_level ∉ keys(WARN_LEVEL_TO_NUM)) && (return (msg = "? unknown", color = :default, bold = false))
 end
 
 get_text_formatting(::PassedCheck, linter::Linter) = begin

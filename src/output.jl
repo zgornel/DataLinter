@@ -89,4 +89,10 @@ get_status_string(result::NotAvailableCheck) = begin
     result.info === nothing ? "N/A" : "N/A (Errored)"
 end
 
+# Utility function to print the message corresponding to the result of the linter
+get_linter_message(linter::Linter, result::PassedCheck, location) = linter.correct_message(location, result)
+get_linter_message(linter::Linter, result::FailedCheck, location) = linter.failure_message(location, result)
+get_linter_message(linter::Linter, result::NotAvailableCheck, location) = "**linter not available**"
+
+
 end  # module

@@ -2,7 +2,8 @@ module OutputHTML
 
 using Tables, SummaryTables
 
-import ..OutputInterface: HTMLOutputType, WARN_LEVEL_TO_NUM, get_status_string
+import ..OutputInterface: HTMLOutputType, WARN_LEVEL_TO_NUM,
+    get_status_string, get_linter_message
 import ..LinterCore: Linter, process_output,
     AbstractCheck, PassedCheck, FailedCheck, NotAvailableCheck
 
@@ -32,12 +33,14 @@ function process_output(
     end
     tbl = simple_table(
         Tables.columntable(data),
-        [:name => "Linter name",
-         :warn_level => "Warning Level",
-         :location => "Location",
-         :description => "Description",
-         :failure_message => "Message",
-         :status => "Status"],
+        [
+            :name => "Linter name",
+            :warn_level => "Warning Level",
+            :location => "Location",
+            :description => "Description",
+            :message => "Message",
+            :status => "Status",
+        ],
     )
     seekstart(buffer)
     show(buffer, MIME"text/html"(), tbl)
@@ -50,8 +53,8 @@ _make_result_nt(linter, result, loc_name) = begin
         warn_level = linter.warn_level,
         location = loc_name,
         description = linter.description,
-        failure_message = linter.failure_message(loc_name, result),
-        status = get_status_string(result)
+        message = get_linter_message(linter, result, loc_name),
+        status = get_status_string(result),
     )
 end
 

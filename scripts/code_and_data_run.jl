@@ -11,8 +11,8 @@ using DataLinter
 using ParSitter
 
 kb = DataLinter.kb_load(joinpath(PROJECT_PATH, "knowledge", "linting.toml"))
-filepath = joinpath(PROJECT_PATH, "data", "imbalanced_data.csv")
-code_path = joinpath(PROJECT_PATH, "data", "r_snippet.r")
+filepath = joinpath(PROJECT_PATH, "test", "data", "imbalanced_data.csv")
+code_path = joinpath(PROJECT_PATH, "test", "code", "r_snippet_imbalanced.r")
 
 config_path = joinpath(PROJECT_PATH, "config", "r_modelling_config.toml")
 config = DataLinter.LinterCore.load_config(config_path)
@@ -20,7 +20,7 @@ config = DataLinter.LinterCore.load_config(config_path)
 ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, String))
 
 @time out = DataLinter.lint(ctx, kb; config = config);
-DataLinter.process_output(out; show_stats = true)
+DataLinter.process_output(out; show_stats = true, show_na=true, show_passing=true)
 @info "Score: $(DataLinter.OutputInterface.score(out; normalize = true))"
 
 # For debugging linting contexts
