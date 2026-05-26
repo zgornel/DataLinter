@@ -2,7 +2,9 @@
 
 v0.1.3
 ------
- - support for Apache Parquet, Arrow
+ - new input plugins: Apache Parquet, Arrow
+ - improved output system
+ - new output plugins: Text, HTML, JSON
 
 v0.1.2
 ------

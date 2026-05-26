@@ -58,5 +58,4 @@ _make_result_nt(linter, result, loc_name) = begin
     )
 end
 
-
 end  # module

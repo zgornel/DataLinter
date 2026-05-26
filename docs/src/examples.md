@@ -16,12 +16,13 @@ These can be ran with
 ## Quick start
 
 All the examples below use code and data available in the repository. These are located in
- - [`test/data`](https://github.com/zgornel/DataLinter/tree/master/test/data) for datasets; these are `.csv` files
+ - [`test/data`](https://github.com/zgornel/DataLinter/tree/master/test/data) for datasets; these are `.csv`, `.parquet` and `.arrow` files
  - [`test/code`](https://github.com/zgornel/DataLinter/tree/master/test/code) for code snippets
  - [`config/`](https://github.com/zgornel/DataLinter/tree/master/config) for configuration files
 
 
 ### Testing the Docker image
+
 The Docker image contains compiled versions of the CLI utility and server. To test that everything works, run:
 ```bash
 $ docker run -it --rm \
@@ -40,8 +41,9 @@ The commands are meant to show the help of the two executables and exit. Before 
 
 !!! info
 
-    The `datalinter` and `datalinterserver` scripts automatically map the folders by detecting the
-    directories in which data, code and configs reside.
+    The `datalinter` and `datalinterserver` scripts automatically map folders
+    in the container using the `--volume=<LOCAL DIR>:<CONTAINER DIR>` by
+    extracting the directories in of the specified data, code and configs.
 
 ### Docker image folders, default configs
 
@@ -79,14 +81,18 @@ Optional arguments:
  - `--code-path`, path to code file (default: `""`)
  - `--kb-path`, path for the knowledge base file (default: `""`) (**not used**)
  - `--config-path`, path for the `.toml` configuration file (default: `""`)
- - `--output-type`, output type `"text"` or `"json"` (default: `"text"`)
+ - `--output-type`, output type `"text"`, `"json"` or `"html"` (default: `"text"`)
  - `--log-level`, logging level (default: `"error"`)
  - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"all"` (default: `"all"`)
- - `-v`, `--version`, print version
- - `--progress`, show progress
- - `-t`, `--timed`, print timings
- - `--print-exceptions`, print encountered exceptions while linting
- - `-h`, `--help`, show help message and exit
+ - `--show-stats`, shows statistics
+ - `--show-passing` shows linters that passed
+ - `--show-na`, shows linters that were not applicable
+ - `--progress`, shows progress
+ - `-t, `--timed`, prints timings
+ - `--print-exceptions`, pprint encountered exceptions while linting
+ - `--pretty-print`, print pretty
+ - `-v, `--version`, prints version
+ - `-h`, `--help`, show this help message and exit
 
 ### Linting with no context
 The example below lints a dataset with no context. The command can be run in the root of the repository:
@@ -99,6 +105,7 @@ $ docker run -it --rm \
             /_data/data.csv \
             --config-path /_config/default.toml \
             --print-exceptions \
+            --pretty-print \
             --log-level error
 ```
 The output should look something like:
@@ -128,6 +135,7 @@ $ time docker run -it --rm \
         ghcr.io/zgornel/datalinter-compiled:latest \
             /datalinter/bin/datalinter /_data/imbalanced_data.csv \
             --config-path /_config/imbalanced_data.toml \
+            --pretty-print \
             --log-level error
 ```
 which outputs,
@@ -164,6 +172,7 @@ $ time docker run -it --rm \
             --code-path /tmp/r_snippet_imbalanced.r \
             --config-path /_config/r_modelling_config.toml \
             --print-exceptions \
+            --pretty-print \
             --log-level error
 ```
 which outputs:
@@ -188,6 +197,7 @@ Optional arguments:
  - `--priming-code-path`, priming code file path (default: "")
  - `--priming-data-path`, priming data file path (default: "")
  - `--log-level`, logging level (default: `"error"`)
+ - `-v`, `--version`, prints version
  - `-h`, `--help`, show help over parameters
 
 !!! note
@@ -279,10 +289,13 @@ For lint requests, a representative example of the `body` of the request is show
     }
 }
 ```
-The available fields are:
+The available fields for `options` are:
  - `show_na`, a boolean that enables to show linters that were not available. Default is `false`
  - `show_passing` boolean that enables to show linters that raised no issues. Default is `false`
- - `show_passing` boolean that enables to show statistics. Default is `false`
+ - `show_stats` boolean that enables to show statistics. Default is `true`
+ - `pretty_print` print pretty. Default is `true`
+ - `output_type` the output type. Available `"text"` and `"json"`. Default is `"text"`
+The available fields for `context` are:
  - `data_header` boolean that indicates whether the data has a header
  - `data_delim` string that sets the data delimiter
  - `data_type` string that indicates data source: if `"dataset"`, the `"data"` field contains the data; if `"filepath"`, the `"data"` field is a path to the data file

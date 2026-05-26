@@ -264,11 +264,6 @@ function lint(
                 build_linting_context(config)
             )
             _t = @timed begin
-                # Apply linter:
-                #  - run linter function
-                #  - compare result with the one stored in closure for correctness
-                #  - if the result is false i.e. mismatch in values, linter fails (warning displayed)
-                #  - if the result is true i.e. expexted value returned, linter passes
                 # 1. Apply over column
                 if applicable(linter, linting_ctx, :column)
                     for (i, col) in enumerate(datait.column_iterator)

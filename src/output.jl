@@ -94,5 +94,4 @@ get_linter_message(linter::Linter, result::PassedCheck, location) = linter.corre
 get_linter_message(linter::Linter, result::FailedCheck, location) = linter.failure_message(location, result)
 get_linter_message(linter::Linter, result::NotAvailableCheck, location) = "**linter not available**"
 
-
 end  # module

@@ -31,12 +31,21 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ### Key Features
 - 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
-- Zero-config CLI and HTTP server modes
-- [CSV](https://github.com/JuliaData/CSV.jl) / Apache [Parquet](https://parquet.apache.org/) / Apache [Arrow](https://arrow.apache.org/) data support
-- Production-ready Docker image and GitHub Actions integration
+- Docker image with compiled binaries, production ready
+- CLI and HTTP server modes with zero-config
+- [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
+- Text / JSON / HTML output support
 - Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
 - First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
 - Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
+
+### Integrations
+ - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+ - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
+ - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
+ - Gitlab CI *(upcoming)*
+ - VS Code *(upcoming)*
+
 
 ## Quick Start
 Try it in seconds with Docker (no installation required):
@@ -83,15 +92,6 @@ using Pkg; Pkg.add(url="https://github.com/zgornel/DataLinter")
 ## Configuration
 
 Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters.
-
-## Integrations
-
-Available integrations:
- - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
- - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
- - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
- - Gitlab CI *(upcoming)*
- - VS Code *(upcoming)*
 
 ## Lint Catalog
 
