@@ -20,7 +20,7 @@ config = DataLinter.LinterCore.load_config(config_path)
 ctx = DataLinter.DataInterface.build_data_context(filepath, read(code_path, String))
 
 @time out = DataLinter.lint(ctx, kb; config = config);
-DataLinter.process_output(out; show_stats = true, show_na=true, show_passing=true)
+DataLinter.process_output(out; show_stats = true, show_na = true, show_passing = true)
 @info "Score: $(DataLinter.OutputInterface.score(out; normalize = true))"
 
 # For debugging linting contexts
