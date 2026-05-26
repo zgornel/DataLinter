@@ -35,7 +35,12 @@ config = DataLinter.LinterCore.load_config(config_path)
 
 # First case, print to stdout linting on data
 buf = stdout
-ctx_no_code = DataLinter.build_data_context(data)
+header = [Symbol("x_$i") for i in 1:length(data)]
+m_data = Matrix(undef, length(data[1]), length(data))
+for (i,c) in enumerate(data)
+    m_data[:, i] .= c
+end
+ctx_no_code = DataLinter.build_data_context(Tables.table(m_data; header=header))
 lintout = DataLinter.lint(ctx_no_code, kb; config);
-DataLinter.LinterCore.process_output(lintout; buffer = buf, show_stats = true, show_passing = false)
+DataLinter.LinterCore.process_output(lintout; buffer = buf, pretty_print =true, show_stats = true, show_passing = false)
 buf isa IOBuffer && DataLinter.OutputInterface.print_buffer(buf);
