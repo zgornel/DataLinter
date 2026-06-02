@@ -456,7 +456,7 @@ const R_BASELINE_LINTERS = [
         f = check_colinearity_with_target,
         failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(process_for_printing(result.info.colinears))",
         correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
-        warn_level = "important",
+        warn_level = "warning",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
         programming_language = "r",
