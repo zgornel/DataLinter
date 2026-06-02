@@ -4,15 +4,15 @@
     @testset "build_data_context" begin
         code = "x=1; foo = x=> x+ 1; foo(x) |> print"
 
-        @testset "SimpleDataContext (from Arrow)" begin
+        @testset "DataContext (from Arrow)" begin
             context = DI.build_data_context("data/data.arrow")
-            @test context isa DI.SimpleDataContext
+            @test context isa DI.DataContext
             @test DI.build_data_iterator(context) isa DataLinter.LinterCore.DataIterator{<:Arrow.Table}
         end
 
-        @testset "SimpleDataContext (from Arrow)" begin
+        @testset "DataContext (from Arrow)" begin
             context = DI.build_data_context("data/data.arrow", code)
-            @test context isa DI.SimpleCodeAndDataContext
+            @test context isa DI.CodeAndDataContext
             @test DI.build_data_iterator(context) isa DataLinter.LinterCore.DataIterator{<:Arrow.Table}
         end
     end

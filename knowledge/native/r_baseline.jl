@@ -532,4 +532,18 @@ const R_BASELINE_LINTERS = [
         programming_language = "r",
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
+
+    # Code-only dummy linter
+    (
+        name = :R_code_only_dummy_linter,
+        description = """Dummy linter""",
+        f = (args...; kwargs...)-> PassedCheck(),
+        failure_message = (name, result) -> "This never fails",
+        correct_message = (name, args...) -> "Dummy check passed",
+        warn_level = "experimental",
+        query = "{{::IDENTIFIER}}",
+        query_match_type = :speculative,
+        programming_language = "r",
+        requirements = Dict("iterable_type" => :code_only, "linting_ctx" => true),
+    ),
 ]

@@ -1,0 +1,29 @@
+# Section `experiment` describes the type of experiment and
+# related information such as target variables, data variables, etc.
+[experiment]
+    name = "Test for dummy code-only linter"
+
+# Section `linters` enables or disables linters. The format is:
+# ```
+#   [linters]
+#     [linter_name_1] = value_1
+#     [linter_name_2] = value_2
+#     ...
+# ```
+# Linters are specified through their name and allowed values are those which can be converted to booleans i.e. `true`/`false` or `0`/`1`.
+[linters]
+    # Dummy linter for **TESTING PURPOSES ONLY**
+    R_code_only_dummy_linter = true
+
+# Section `parameters` gives values to the keyword arguments of the function associated to a specific linter. The format is:
+# ```
+#   [parameters]
+#       [parameters.linter_name]
+#           kwarg_1 = value_1
+#           kwarg_2 = value_2
+#           ...
+# ```
+# where `kwarg_1`, `kwarg_2` and so on are keyword arguments of the function of the linter named `linter_name`.
+[parameters]
+    [parameters.R_code_only_dummy_linter]
+        # dummy linter has no parameters

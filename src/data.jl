@@ -2,8 +2,8 @@
 using Reexport
 using Tables
 
-import ..LinterCore: AbstractDataContext, DataIterator, build_data_iterator,
-    get_context_code, columnname, columntype
+import ..LinterCore: AbstractContext, DataIterator, build_data_iterator,
+    get_context_code, get_context_data, columnname, columntype
 
 # Main data interface function that abstracts over data contexts
 export build_data_context
@@ -28,7 +28,13 @@ build_data_iterator(data::AbstractVector) = begin
     build_data_iterator(Dict(Symbol("x$i") => v for (i, v) in enumerate(data)))
 end
 
-build_data_iterator(ctx::AbstractDataContext) = build_data_iterator(ctx.data)
+build_data_iterator(::Nothing) = DataIterator{Nothing}(
+    column_iterator = [],
+    row_iterator = [],
+    tblref = Ref(nothing)
+)
+
+build_data_iterator(ctx::AbstractContext) = build_data_iterator(get_context_data(ctx))
 
 Base.show(io::IO, datait::DataIterator{T}) where {T} = begin
     m, n = length(datait.row_iterator), length(datait.column_iterator)
@@ -45,28 +51,36 @@ function columntype(it::DataIterator, i::Int)
     return Tables.columntype(it.column_iterator, name)
 end
 
-
-# Simple data structure and its methods
-Base.@kwdef struct SimpleDataContext{T} <: AbstractDataContext
-    data::T = nothing
-end
-
-Base.show(io::IO, ctx::SimpleDataContext{T}) where {T} = begin
-    mb_size = Base.summarysize(ctx.data) / (1024^2)
-    print(io, "SimpleDataContext{$T} ($mb_size MB of data)")
-end
-
-# Simple data+code structure and its methods
-Base.@kwdef struct SimpleCodeAndDataContext{T, S} <: AbstractDataContext
+# Data+code context
+Base.@kwdef struct CodeAndDataContext{T, S} <: AbstractContext
     data::T = nothing
     code::S = nothing
 end
 
-Base.show(io::IO, ctx::SimpleCodeAndDataContext{T}) where {T} = begin
+Base.show(io::IO, ctx::CodeAndDataContext{T}) where {T} = begin
     mb_size = (Base.summarysize(ctx.data) + Base.summarysize(ctx.code)) / (1024^2)
-    print(io, "SimpleCodeAndDataContext{$T} ($mb_size MB of code+data)")
+    print(io, "CodeAndDataContext{$T} ($mb_size MB of code+data)")
 end
 
+# Data-only context
+Base.@kwdef struct DataContext{T} <: AbstractContext
+    data::T = nothing
+end
+
+Base.show(io::IO, ctx::DataContext{T}) where {T} = begin
+    mb_size = Base.summarysize(ctx.data) / (1024^2)
+    print(io, "DataContext{$T} ($mb_size MB of data)")
+end
+
+# Code-only context
+Base.@kwdef struct CodeContext{T} <: AbstractContext
+    code::T = nothing
+end
+
+Base.show(io::IO, ctx::CodeContext{T}) where {T} = begin
+    mb_size = Base.summarysize(ctx.code) / (1024)
+    print(io, "CodeContext{$T} ($mb_size KB of code)")
+end
 
 # Local Table Types for plugin support
 abstract type AbstractTypeTable end
@@ -119,7 +133,7 @@ algorithm that will be applied on that data.
 ```julia
 julia> using DataLinter
        ctx = DataLinter.build_data_context("./test/data/data.arrow")
-SimpleDataContext{Arrow.Table} (0.11153507232666016 MB of data)
+DataContext{Arrow.Table} (0.11153507232666016 MB of data)
 
 julia> kb = DataLinter.kb_load("");
        DataLinter.LinterCore.lint(ctx, kb)  # linters disabled
@@ -138,26 +152,34 @@ julia> config = DataLinter.LinterCore.load_config("./test/test_config.toml");
 """
 function build_data_context(; data = nothing, code = nothing, kwargs...)
     datatype = infer_datatype(data)
-    if isnothing(datatype)
-        throw(ErrorException("'DataInterface.build_data_context': Make sure data source is correctly specified and supported."))
-    end
-    if isnothing(code)
-        build_data_context(data, datatype; kwargs...)
+    if isnothing(data)
+        build_data_context(data, code; kwargs...)  # calls code-only method
+    elseif isnothing(code)
+        build_data_context(data, datatype; kwargs...)  # implemented in plugins
     else
-        build_data_context(data, code, datatype; kwargs...)
+        build_data_context(data, code, datatype; kwargs...)  # implemented in plugins
     end
 end
 
+# Code-only method
+build_data_context(::Nothing, code; kwargs...) = CodeContext(; code)
 
-# Generic methods (need to be overloaded in plugins)
+# Generic methods, call kwarg-only `build_data_context`
 build_data_context(data::AbstractString; kwargs...) = build_data_context(; data, kwargs...)
 build_data_context(data::AbstractString, code; kwargs...) = build_data_context(; data, code, kwargs...)
 
 # Specific methods, get called by plugin-implemented methods
-build_data_context(data::T) where {T <: Tables.AbstractColumns} = SimpleDataContext(; data)
-build_data_context(data::T, code) where {T <: Tables.AbstractColumns} = SimpleCodeAndDataContext(; data, code)
+build_data_context(data::T, code) where {T <: Tables.AbstractColumns} = CodeAndDataContext(; data, code)
+build_data_context(data::T) where {T <: Tables.AbstractColumns} = DataContext(; data)
 
-get_context_code(ctx::SimpleCodeAndDataContext) = ctx.code
-get_context_code(ctx::SimpleDataContext) = nothing
+# Access context data
+get_context_data(ctx::CodeAndDataContext) = ctx.data
+get_context_data(ctx::DataContext) = ctx.data
+get_context_data(ctx::CodeContext) = nothing
+
+# Access context code
+get_context_code(ctx::CodeAndDataContext) = ctx.code
+get_context_code(ctx::DataContext) = nothing
+get_context_code(ctx::CodeContext) = ctx.code
 
 end  # module

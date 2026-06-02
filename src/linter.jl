@@ -4,15 +4,16 @@ using Tables
 using REPL
 using ProgressMeter
 using ParSitter
-export AbstractDataContext, lint, version, process_output
+export AbstractContext, lint, process_output
 
 
 # Data Interface
-abstract type AbstractDataContext end
+abstract type AbstractContext end
 
 function build_data_iterator end  # returns an iterables over data
 
 function get_context_code end
+function get_context_data end
 
 @Base.kwdef struct DataIterator{T}
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
@@ -230,7 +231,7 @@ reconcile_contexts(::Nothing, ::Nothing) = nothing
 
 
 """
-    lint(data_ctx::AbstractDataContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false, linters=["all"])
+    lint(data_ctx::AbstractContext, kb::Union{Nothing, AbstractKnowledgeBase}; config=nothing, debug=false, linters=["all"])
 
 Main linting function. Lints the data provided by `data_ctx` using
 knowledge from `kb`. A configuration for the available linters
@@ -238,7 +239,7 @@ can be provided in `config`. If `debug=true`, performance information
 for each linter are shown. By default, all available linters will be used.
 """
 function lint(
-        data_ctx::AbstractDataContext,
+        data_ctx::AbstractContext,
         kb::Union{Nothing, AbstractKnowledgeBase};
         config = nothing,
         debug = false,
@@ -263,38 +264,49 @@ function lint(
                 build_linting_context(code, linter),
                 build_linting_context(config)
             )
+            data = get_context_data(data_ctx)
             _t = @timed begin
-                # 1. Apply over column
-                if applicable(linter, linting_ctx, :column)
-                    for (i, col) in enumerate(datait.column_iterator)
-                        _name = columnname(datait, i)
-                        _type = columntype(datait, i)
-                        result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
-                        push!(lintout, (linter, "column='$_name'") => result)
+                if isnothing(data)
+                    # Code-only linting
+                    if applicable(linter, linting_ctx, :code_only)
+                        result = linter.f(code, linting_ctx; linter_kwargs...)
+                        #TODO: process result to extract code issue location
+                        push!(lintout, (linter, "code") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end
-                end
-                # 2. Apply over rows
-                if applicable(linter, linting_ctx, :row)
-                    irow = 1
-                    no_empty_rows = true
-                    for row in datait.row_iterator
-                        result = linter.f(row, linting_ctx; linter_kwargs...)
-                        if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
-                            push!(lintout, (linter, "row=$irow") => result)
-                            no_empty_rows = false
+                else
+                    # 1. Apply over column
+                    if applicable(linter, linting_ctx, :column)
+                        for (i, col) in enumerate(datait.column_iterator)
+                            _name = columnname(datait, i)
+                            _type = columntype(datait, i)
+                            result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
+                            push!(lintout, (linter, "column='$_name'") => result)
                             progress && next!(_progress, spinner = SPINNER)
                         end
-                        irow += 1
                     end
-                    # if there are no empty rows add a single entry for all, mark the linter as passed (true)
-                    no_empty_rows && push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
-                end
-                # 3. Apply over whole dataset
-                if applicable(linter, linting_ctx, :dataset)
-                    result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
-                    push!(lintout, (linter, "dataset") => result)
-                    progress && next!(_progress, spinner = SPINNER)
+                    # 2. Apply over rows
+                    if applicable(linter, linting_ctx, :row)
+                        irow = 1
+                        no_empty_rows = true
+                        for row in datait.row_iterator
+                            result = linter.f(row, linting_ctx; linter_kwargs...)
+                            if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
+                                push!(lintout, (linter, "row=$irow") => result)
+                                no_empty_rows = false
+                                progress && next!(_progress, spinner = SPINNER)
+                            end
+                            irow += 1
+                        end
+                        # if there are no empty rows add a single entry for all, mark the linter as passed (true)
+                        no_empty_rows && push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
+                    end
+                    # 3. Apply over whole dataset
+                    if applicable(linter, linting_ctx, :dataset)
+                        result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
+                        push!(lintout, (linter, "dataset") => result)
+                        progress && next!(_progress, spinner = SPINNER)
+                    end
                 end
             end
             _, _time, _bytes, _gctime, _ = _t
@@ -310,23 +322,24 @@ end
 Function that checks whether a linter is applicable or not. The logic is that
 the iterable type must match and if `linter.linting_ctx==true` then a linting
 context must exist, either specified in the config, through the presence of code
-or both.
+or both. For code-only linters, the linting context is ignored as code queries
+are allowed to fail or be missing.
 """
 function applicable(linter, linting_ctx, iterable_type)
-    if get(linter.requirements, "iterable_type", nothing) == iterable_type &&
+    # Code-only linter applicability
+    if  get(linter.requirements, "iterable_type", nothing) == :code_only
+        return true
+    # Data / Data+code linter applicability
+    elseif get(linter.requirements, "iterable_type", nothing) == iterable_type &&
             (
             (get(linter.requirements, "linting_ctx", nothing) == true && linting_ctx != nothing) ||
                 (get(linter.requirements, "linting_ctx", nothing) == nothing)
         )
+
         return true
     else
         return false
     end
-end
-
-
-function version()
-    ver = v"0.1.0"
 end
 
 end  # module

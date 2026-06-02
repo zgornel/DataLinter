@@ -65,7 +65,7 @@
     [parameters.tokenizable_string]
         min_tokens = 3    # minimum number of tokens in a string for lint to trigger
         #regexes = ["r\"\\s+\""]  # regexes that split the string into tokens (each regex match is applied separately)
-        unused_slot = "a"  # for testing purposes only, will not be used by the data linter
+        unused_slot = "a"  # for **TESTING PURPOSES ONLY**, will not be used by the data linter
 
     [parameters.number_as_string]
         match_perc = 0.5  # fraction of strings in column that can be converted to number for lint to trigger

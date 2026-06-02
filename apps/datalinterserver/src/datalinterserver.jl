@@ -271,7 +271,7 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
         header = ctx["data_header"]
     )
 
-    @debug "Data context loaded and succesfully:\n$data_ctx\n$(data_ctx.data)"
+    @debug "Data context loaded and succesfully:\n$data_ctx"
 
     # Read code and options from request
     linters = get(ctx, "linters", DEFAULT_LINTERS)
@@ -280,11 +280,10 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     show_stats = get(opts, "show_stats", DEFAULT_SHOW_STATS)
     show_na = get(opts, "show_na", DEFAULT_SHOW_NA)
     pretty_print = get(opts, "pretty_print", DEFAULT_PRETTY_PRINT)
+    buffer = IOBuffer()
     try
-        buffer = IOBuffer()
         lintout = DataLinter.lint(data_ctx, kb; config, linters)
         process_output(lintout; output_type, buffer, show_passing, show_stats, show_na, pretty_print)
-        #score = DataLinter.OutputInterface.score(lintout; normalize = true)
         string_buf = read(seekstart(buffer), String)
         if output_type == :text
             return JSON.json(Dict("linting_output" => string_buf))

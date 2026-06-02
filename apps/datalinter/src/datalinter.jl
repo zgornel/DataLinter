@@ -15,7 +15,7 @@ function get_arguments(args::Vector{String})
     @add_arg_table! s begin
         "input(s)"
         help = "input(s): file(s) to be linted; Note: only delimited files supported ATM"
-        nargs = '+'  # at least one value required
+        nargs = '*'  # any number of data inputs
         arg_type = String
         action = :store_arg
         "--code-path"
@@ -128,18 +128,24 @@ function real_main()
     show_na = args["show-na"]
     pretty_print = args["pretty-print"]
 
-    if isempty(filepaths)
-        @error "Provide at least one data file."
-        return 2
+    filepaths = if isempty(filepaths)
+        @debug "No data files provide, code-only linting assumed."
+        # filepaths is nothing, provided to build_data_context to create a CodeContext
+        [nothing]
     end
-    buffer = ifelse(output_type == :text, stdout, IOBuffer())
-    for filepath in abspath.(filepaths)
+    buffer = ifelse(output_type == :text, stdout, IOBuffer())  # for nice styling with pretty printing
+    for filepath in filepaths
         try
             _t = @timed begin
                 # lintout is raw output, not used
                 # can be potantially used as 'raw' output
+                _filepath = if !isnothing(filepath)
+                    abspath(filepath)
+                else
+                    filepath
+                end
                 _, lintout = DataLinter.cli_linting_workflow(
-                    filepath,
+                    _filepath,
                     codepath,
                     kbpath,
                     configpath;

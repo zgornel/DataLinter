@@ -50,7 +50,7 @@ function infer_outputtype(output_type::Symbol)
     elseif output_type == :html
         return HTMLOutputType
     else
-        @debug "Could not infer output type, this will cause and exit...\n$e"
+        @debug "Could not infer output type, this will an exit...\n"
         return nothing
     end
 end
