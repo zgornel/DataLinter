@@ -4,8 +4,13 @@ using HTTP
 using JSON
 using DataLinter
 
-# Use <PROJECT_ROOT>/test/data/data.csv
-datapath = joinpath(dirname(@__FILE__), "..", "..", "test", "data", "imbalanced_data.csv")
+TEST_PATH = abspath(joinpath(dirname(@__FILE__), "..", "..", "test"))
+configpath = joinpath(TEST_PATH, "test_config.toml")
+DATA_PATHS = [
+    joinpath(TEST_PATH, "data", "correlated_data.arrow"),
+    joinpath(TEST_PATH, "data", "correlated_data.parquet"),
+]
+csvdatapath = joinpath(TEST_PATH, "data", "correlated_data.csv")
 codepath = joinpath(dirname(@__FILE__), "..", "..", "test", "code", "r_snippet_imbalanced.r")
 configpath = joinpath(dirname(@__FILE__), "..", "..", "test", "test_config.toml")
 
@@ -19,7 +24,7 @@ config = DataLinter.Configuration.load_config(configpath)
 LINTER_INPUTS = [
     Dict(
         "context" => Dict(
-            "data" => read(datapath, String),
+            "data" => read(csvdatapath, String),
             "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
@@ -27,27 +32,47 @@ LINTER_INPUTS = [
             "code" => read(codepath, String)
         ),
         "options" => Dict(
+            "output_type" => "text",
             "show_stats" => true,
             "show_passing" => false,
             "show_na" => false
         )
     ),
-
     Dict(
         "context" => Dict(
-            "data" => datapath,
-            "data_type" => "filepath",
+            "data" => read(csvdatapath, String),
+            "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
             "data_header" => true,
             "code" => read(codepath, String)
         ),
         "options" => Dict(
+            "output_type" => "json",
             "show_stats" => true,
-            "show_passing" => false,
-            "show_na" => false
+            "show_passing" => true,
+            "show_na" => true
         )
     ),
+    [
+        Dict(
+            "context" => Dict(
+                "data" => datapath,
+                "data_type" => "filepath",
+                "linters" => ["all"],
+                "data_delim" => ",",
+                "data_header" => true,
+                "code" => read(codepath, String)
+            ),
+            "options" => Dict(
+                "output_type" => output_type,
+                "show_stats" => true,
+                "show_passing" => true,
+                "show_na" => true
+            )
+        )
+        for datapath in DATA_PATHS for output_type in ["text","json"]
+    ]...
 ]
 
 for linter_input in LINTER_INPUTS
@@ -60,10 +85,9 @@ for linter_input in LINTER_INPUTS
         @warn "Something went wrong with request processing $e"
         nothing
     end
-    @show reply
     if reply !== nothing
         output = JSON.parse(IOBuffer(reply.body))
-        @info output["linting_output"]
+        @info "Reply received ok, size of $(Base.summarysize(output))"
     end
 end
 
