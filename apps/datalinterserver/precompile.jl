@@ -56,23 +56,23 @@ LINTER_INPUTS = [
     ),
     [
         Dict(
-            "context" => Dict(
-                "data" => datapath,
-                "data_type" => "filepath",
-                "linters" => ["all"],
-                "data_delim" => ",",
-                "data_header" => true,
-                "code" => read(codepath, String)
-            ),
-            "options" => Dict(
-                "output_type" => output_type,
-                "show_stats" => true,
-                "show_passing" => true,
-                "show_na" => true
+                "context" => Dict(
+                    "data" => datapath,
+                    "data_type" => "filepath",
+                    "linters" => ["all"],
+                    "data_delim" => ",",
+                    "data_header" => true,
+                    "code" => read(codepath, String)
+                ),
+                "options" => Dict(
+                    "output_type" => output_type,
+                    "show_stats" => true,
+                    "show_passing" => true,
+                    "show_na" => true
+                )
             )
-        )
-        for datapath in DATA_PATHS for output_type in ["text","json"]
-    ]...
+            for datapath in DATA_PATHS for output_type in ["text", "json"]
+    ]...,
 ]
 
 for linter_input in LINTER_INPUTS

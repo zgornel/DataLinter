@@ -132,6 +132,8 @@ function real_main()
         @debug "No data files provide, code-only linting assumed."
         # filepaths is nothing, provided to build_data_context to create a CodeContext
         [nothing]
+    else
+        filepaths
     end
     buffer = ifelse(output_type == :text, stdout, IOBuffer())  # for nice styling with pretty printing
     for filepath in filepaths

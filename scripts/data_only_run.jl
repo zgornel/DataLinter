@@ -30,7 +30,7 @@ function _generate_workload_data(n = 100)
 end
 
 
-data = _generate_workload_data(1000) 
+data = _generate_workload_data(1000)
 kbpath = joinpath(dirname(@__FILE__), "..", "knowledge", "linting.toml")
 kb = DataLinter.kb_load(kbpath)
 

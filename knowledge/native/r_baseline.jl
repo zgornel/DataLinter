@@ -537,7 +537,7 @@ const R_BASELINE_LINTERS = [
     (
         name = :R_code_only_dummy_linter,
         description = """Dummy linter""",
-        f = (args...; kwargs...)-> PassedCheck(),
+        f = (args...; kwargs...) -> PassedCheck(),
         failure_message = (name, result) -> "This never fails",
         correct_message = (name, args...) -> "Dummy check passed",
         warn_level = "experimental",

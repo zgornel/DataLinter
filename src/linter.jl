@@ -327,9 +327,9 @@ are allowed to fail or be missing.
 """
 function applicable(linter, linting_ctx, iterable_type)
     # Code-only linter applicability
-    if  get(linter.requirements, "iterable_type", nothing) == :code_only
+    if get(linter.requirements, "iterable_type", nothing) == :code_only
         return true
-    # Data / Data+code linter applicability
+        # Data / Data+code linter applicability
     elseif get(linter.requirements, "iterable_type", nothing) == iterable_type &&
             (
             (get(linter.requirements, "linting_ctx", nothing) == true && linting_ctx != nothing) ||
