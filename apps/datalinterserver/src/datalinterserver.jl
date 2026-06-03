@@ -18,9 +18,11 @@ const ERROR_IN_REQ_HANDLING = -1
 
 # Linting request values
 const DEFAULT_LINTERS = ["all"]
+const DEFAULT_OUTPUT_TYPE = :text
 const DEFAULT_SHOW_NA = false
-const DEFAULT_SHOW_STATS = false
+const DEFAULT_SHOW_STATS = true
 const DEFAULT_SHOW_PASSING = false
+const DEFAULT_PRETTY_PRINT = true
 
 function get_server_commandline_arguments(args::Vector{String})
     s = ArgParseSettings()
@@ -141,9 +143,11 @@ function real_main()
             configpath;
             linters = DEFAULT_LINTERS,
             buffer = IOBuffer(),
+            output_type = DEFAULT_OUTPUT_TYPE,
             show_stats = DEFAULT_SHOW_STATS,
             show_passing = DEFAULT_SHOW_PASSING,
             show_na = DEFAULT_SHOW_NA,
+            pretty_print = false,
             progress = false
         )
         @debug "Priming done."
@@ -259,51 +263,40 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     ctx = _request["linter_input"]["context"]
     opts = _request["linter_input"]["options"]
 
-    # Read data from request
-    data = try
-        data_source = if ctx["data_type"] == "dataset"
-            seekstart(IOBuffer(ctx["data"]))  # read data from HTTP request
-        elseif ctx["data_type"] == "filepath"
-            _path = abspath(expanduser(ctx["data"]))  # take the absolute path
-            @assert ispath(_path) && isfile(_path) "No valid file @$_path"
-            _path
-        else
-            @error "Data type $(ctx["data_type"]) not supported"
-            return ERROR_IN_REQ_HANDLING
-        end
-        CSV.read(
-            data_source,
-            CSV.Tables.Columns,
-            delim = first(ctx["data_delim"]),
-            header = ctx["data_header"],
-            pool = true,
-            missingstring = ["", "NA", "NaN", "N/A", "NAN"],
-            ignoreemptyrows = true,
-            ntasks = Threads.nthreads()
-        )
-    catch e
-        @debug "Error loading data\n$e"
-        nothing
-    end
-    isnothing(data) && return ERROR_IN_REQ_HANDLING
-    @debug "CSV data loaded and succesfully processed.\n$data"
+    # Build data context directly from request data information
+    data_ctx = DataLinter.DataInterface.build_data_context(
+        get(ctx, "data", nothing),
+        get(ctx, "code", nothing);
+        delim = first(ctx["data_delim"]),
+        header = ctx["data_header"]
+    )
+
+    @debug "Data context loaded and succesfully:\n$data_ctx"
 
     # Read code and options from request
-    code = get(ctx, "code", nothing)
     linters = get(ctx, "linters", DEFAULT_LINTERS)
+    output_type = Symbol(get(opts, "output_type", DEFAULT_OUTPUT_TYPE))
     show_passing = get(opts, "show_passing", DEFAULT_SHOW_PASSING)
     show_stats = get(opts, "show_stats", DEFAULT_SHOW_STATS)
     show_na = get(opts, "show_na", DEFAULT_SHOW_NA)
+    pretty_print = get(opts, "pretty_print", DEFAULT_PRETTY_PRINT)
+    buffer = IOBuffer()
     try
-        buffer = IOBuffer()
-        data_ctx = DataLinter.DataInterface.build_data_context(data, code)
         lintout = DataLinter.lint(data_ctx, kb; config, linters)
-        process_output(lintout; buffer, show_passing, show_stats, show_na)
-        #score = DataLinter.OutputInterface.score(lintout; normalize = true)
+        process_output(lintout; output_type, buffer, show_passing, show_stats, show_na, pretty_print)
         string_buf = read(seekstart(buffer), String)
-        return JSON.json(Dict("linting_output" => string_buf))
+        if output_type == :text
+            return JSON.json(Dict("linting_output" => string_buf))
+        elseif output_type == :json
+            return string_buf
+        else
+            # If HTML output type support is to be added,
+            # it should be done here with another elseif branch
+            @error "Unsupported output type '$output_type'"
+            return ERROR_IN_REQ_HANDLING
+        end
     catch e
-        @warn "Linting error: $e"
+        @error "Linting error: $e"
         return ERROR_IN_REQ_HANDLING
     end
 end

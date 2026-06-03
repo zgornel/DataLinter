@@ -33,83 +33,65 @@ function score(lintout; normalize = true)
 end
 
 
-"""
-    process_output(lintout; buffer=stdout, show_stats=false, show_passing=false, show_na=false)
+# Types for different outputs
+abstract type AbstractOutputType end
 
-Process linting output for display. The function takes the linter output `lintout` and prints
-lints to `buffer`. If `show_stats`, `show_passing` and `show_na` are set to `true`, the function
-will print statistics over the checks, the checks that passes and the ones that could not be applied
-respectively.
-"""
+struct TextOutputType <: AbstractOutputType end
+
+struct JSONOutputType <: AbstractOutputType end
+
+struct HTMLOutputType <: AbstractOutputType end
+
+function infer_outputtype(output_type::Symbol)
+    if output_type == :text
+        return TextOutputType
+    elseif output_type == :json
+        return JSONOutputType
+    elseif output_type == :html
+        return HTMLOutputType
+    else
+        @debug "Could not infer output type, this will an exit...\n"
+        return nothing
+    end
+end
+
+# Most generic `process_output` method. Calls specialized versions from plugins.
 function process_output(
         lintout;
+        output_type = :text,
         buffer = stdout,
         show_stats = false,
         show_passing = false,
-        show_na = false
+        show_na = false,
+        pretty_print = false
     )
-    n_linters = map(lo -> lo[1][1].name, lintout) |> length ∘ unique
-    n_linters_applied = map(lo -> lo[1][1].name, filter(lo -> !isa(lo[2], NotAvailableCheck), lintout)) |> length ∘ unique
-    n_linters_na = n_linters - n_linters_applied
-    sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
-    give_reason_for_na(result) = result.info === nothing ? "*not applicable*" : "*FAILED*"
-    failed_linters = Symbol[]
-    for ((linter, loc_name), result) in sorted_out
-        msg, color, bold = _print_options(result, linter)
-        if !(result isa NotAvailableCheck)
-            if result isa FailedCheck  # linter failed
-                if linter.name ∉ failed_linters
-                    push!(failed_linters, linter.name)
-                end
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
-                printstyled(buffer, "$(linter.failure_message(loc_name, result))\n"; color, bold)
-            elseif show_passing
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color = color, bold)
-                printstyled(buffer, "$(linter.correct_message(loc_name, result))\n"; color, bold)
-            end
-        else
-            if show_na
-                printstyled(buffer, "$(rpad("$msg", 15))\t$(rpad("($(linter.name))", 30))\t"; color, bold)
-                printstyled(buffer, "$(rpad(loc_name, 20)) "; color, bold)
-                printstyled(buffer, "linter $(give_reason_for_na(result)) for '$(loc_name)'\n"; color, bold)
-            end
-        end
+    outputtype = infer_outputtype(output_type)
+    if isnothing(outputtype)
+        throw(ErrorException("'OutputInterface.process_output': Make sure output type is correctly specified and supported."))
     end
-    if show_stats
-        n_failures = length(failed_linters)
-        printstyled(buffer, "Total of $n_linters linters:")
-        printstyled(buffer, " $(n_linters - n_failures - n_linters_na) Pass", bold=true, color = :green)
-        printstyled(buffer, ",")
-        if n_failures > 0
-            printstyled(buffer, " $n_failures Fail", bold=true, color = :red)
-        else
-            printstyled(buffer, " $n_failures Fail")
-        end
-        printstyled(buffer, ", $n_linters_na N/A\n")
-    end
-    return nothing
+    # Call specialized i.e. plugin methods
+    return process_output(
+        lintout,
+        outputtype;
+        buffer,
+        show_stats,
+        show_passing,
+        show_na,
+        pretty_print
+    )
 end
 
-
-print_buffer(buf::IOBuffer) = print(stdout, read(seekstart(buf), String))
-
-
-_print_options(::FailedCheck, linter::Linter) = begin
-    (linter.warn_level == "warning") && (return (msg = "! warning", color = :light_yellow, bold = false))
-    (linter.warn_level == "info") && (return (msg = "• info", color = :light_cyan, bold = false))
-    (linter.warn_level == "important") && (return (msg = "× important", color = :light_magenta, bold = false))
-    (linter.warn_level == "experimental") && (return (msg = "• experimental", color = :blue, bold = false))
-    (linter.warn_level ∉ keys(WARN_LEVEL_TO_NUM)) && (return (msg = "• unknown", color = :default, bold = false))
+# Utility function that prints a status string depending on
+# the type of the linting result
+get_status_string(::FailedCheck) = "FAIL"
+get_status_string(::PassedCheck) = "PASS"
+get_status_string(result::NotAvailableCheck) = begin
+    result.info === nothing ? "N/A" : "N/A (Errored)"
 end
 
-_print_options(::PassedCheck, linter::Linter) = begin
-    return (msg = "✓ pass", color = :default, bold = false)
-end
-
-_print_options(::NotAvailableCheck, linter::Linter) = begin
-    return (msg = "• n/a", color = :gray, bold = false)
-end
+# Utility function to print the message corresponding to the result of the linter
+get_linter_message(linter::Linter, result::PassedCheck, location) = linter.correct_message(location, result)
+get_linter_message(linter::Linter, result::FailedCheck, location) = linter.failure_message(location, result)
+get_linter_message(linter::Linter, result::NotAvailableCheck, location) = "**linter not available**"
 
 end  # module

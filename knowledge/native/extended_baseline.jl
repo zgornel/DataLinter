@@ -28,7 +28,7 @@ process_column_for_indexing(col::Symbol) = col
 process_column_for_indexing(::Nothing) = nothing
 
 function is_imbalanced_target_variable(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         threshold = PERC_MINORITY_CLASS
@@ -64,7 +64,7 @@ VIF measures how much the variance of a regression coefficient increases due to 
 Returns true if any VIF exceeds threshold, false otherwise.
 """
 function high_vif(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         vif_threshold = DEFAULT_VIF_THRESHOLD
@@ -99,7 +99,7 @@ Condition number is the ratio of the largest to smallest eigenvalue.
 High condition number indicates numerical instability due to colinearity.
 """
 function condition_number_check(
-        tblref::Base.RefValue{<:Tables.Columns},
+        tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         cnc_threshold = DEFAULT_CNC_THRESHOLD

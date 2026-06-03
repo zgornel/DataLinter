@@ -133,7 +133,7 @@ function is_zipcode(
 end
 
 
-function has_duplicates(tblref::Base.RefValue{<:Tables.Columns}, args...; kwargs...)
+function has_duplicates(tblref::Base.RefValue{<:Tables.AbstractColumns}, args...; kwargs...)
     _rows = Tables.rows(tblref[])
     if length(unique(hash(r) for r in _rows)) != length(_rows)
         return FailedCheck(nothing)
@@ -313,7 +313,7 @@ const GOOGLE_BASELINE_LINTERS = [
         f = is_number_as_string,
         failure_message = (name, args...) -> "most of the string values of '$name' can be converted to numbers",
         correct_message = (name, args...) -> "the string values of '$name' generally cannot be converted to numbers",
-        warn_level = "important",
+        warn_level = "warning",
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -352,7 +352,7 @@ const GOOGLE_BASELINE_LINTERS = [
         f = is_int_as_float,
         failure_message = (name, args...) -> "the values of '$name' are floating point but can be integers",
         correct_message = (name, args...) -> "no int-as-float in '$name'",
-        warn_level = "warning",
+        warn_level = "info",
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :column),
@@ -391,7 +391,7 @@ const GOOGLE_BASELINE_LINTERS = [
         f = has_duplicates,
         failure_message = (name, args...) -> "dataset contains duplicates",
         correct_message = (name, args...) -> "the dataset does not contain duplicates",
-        warn_level = "important",
+        warn_level = "warning",
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :dataset),
@@ -404,7 +404,7 @@ const GOOGLE_BASELINE_LINTERS = [
         f = is_empty_example,
         failure_message = (index, args...) -> "the example at '$index' looks empty",
         correct_message = (index, args...) -> "the example at '$index' is not empty",
-        warn_level = "important",
+        warn_level = "warning",
         query = nothing,
         programming_language = nothing,
         requirements = Dict("iterable_type" => :row),

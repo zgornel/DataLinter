@@ -9,14 +9,13 @@ Base.set_active_project(abspath(joinpath(project_root_path, "Project.toml")))
 using Logging
 using ArgParse
 using DataLinter
-using JSON
 
 function get_arguments(args::Vector{String})
     s = ArgParseSettings()
     @add_arg_table! s begin
         "input(s)"
         help = "input(s): file(s) to be linted; Note: only delimited files supported ATM"
-        nargs = '+'  # at least one value required
+        nargs = '*'  # any number of data inputs
         arg_type = String
         action = :store_arg
         "--code-path"
@@ -32,7 +31,7 @@ function get_arguments(args::Vector{String})
         default = ""
         arg_type = String
         "--output-type"
-        help = "output type \"text\" or \"json\""
+        help = "output type \"text\", \"json\" or \"html\""
         default = "text"
         arg_type = String
         "--log-level"
@@ -61,6 +60,9 @@ function get_arguments(args::Vector{String})
         action = :store_true
         "--print-exceptions"
         help = "print encountered exceptions while linting"
+        action = :store_true
+        "--pretty-print"
+        help = "print pretty"
         action = :store_true
         "--version", "-v"
         help = "prints version"
@@ -118,38 +120,47 @@ function real_main()
     if isempty(kbpath) || !isfile(kbpath)
         @debug "KB file not correctly specified (--kb-path), using native knowledge."
     end
-    output_type = args["output-type"]
+    output_type = Symbol(args["output-type"])
     filepaths = unique!(args["input(s)"])
     linters = unique!(args["linters"])
     show_stats = args["show-stats"]
     show_passing = args["show-passing"]
     show_na = args["show-na"]
-    if isempty(filepaths)
-        @error "Provide at least one data file."
-        return 2
+    pretty_print = args["pretty-print"]
+
+    filepaths = if isempty(filepaths)
+        @debug "No data files provide, code-only linting assumed."
+        # filepaths is nothing, provided to build_data_context to create a CodeContext
+        [nothing]
     end
-    buffer = ifelse(output_type == "json", IOBuffer(), stdout)
-    for filepath in abspath.(filepaths)
+    buffer = ifelse(output_type == :text, stdout, IOBuffer())  # for nice styling with pretty printing
+    for filepath in filepaths
         try
             _t = @timed begin
                 # lintout is raw output, not used
                 # can be potantially used as 'raw' output
+                _filepath = if !isnothing(filepath)
+                    abspath(filepath)
+                else
+                    filepath
+                end
                 _, lintout = DataLinter.cli_linting_workflow(
-                    filepath,
+                    _filepath,
                     codepath,
                     kbpath,
                     configpath;
                     linters,
                     buffer,
+                    output_type,
                     show_stats,
                     show_passing,
                     show_na,
+                    pretty_print,
                     progress
                 )
             end
-            if output_type == "json"
-                string_buf = read(seekstart(buffer), String)
-                print(stdout, JSON.json("linting_output" => string_buf))
+            if output_type !== :text
+                print(stdout, read(seekstart(buffer), String))
             end
             if _timed
                 _, _time, _bytes, _gctime, _ = _t

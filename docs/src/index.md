@@ -10,13 +10,14 @@ Its main ideea is that providing additional context leads to the detection of  m
 
 *Context* here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Context in this case could be the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language which uses the data. This provides a much higher degree of flexibility in the types of checks that can be implemented.
 
-
 ## Features
 
 Features at a glance:
 - 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
-- Zero-config CLI and HTTP server modes
-- Production-ready Docker image and GitHub Actions integration
+- Docker image with compiled binaries, production ready
+- CLI and HTTP server modes with zero-config
+- [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
+- Text / JSON / HTML output support
 - Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
 - First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
 - Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
@@ -64,30 +65,42 @@ git clone https://github.com/zgornel/DataLinter
 
 The diagram below shows the current architecture, found also on the [the wiki](https://github.com/zgornel/DataLinter/wiki/DataLinter-architecture).
 
-> Note:  arrows indicate dependencies and the arrow labels indicate intermediary modules
- 
- - The full system follows a [micro-kernel](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) pattern (core system + plugins)
- ```mermaid
- graph TD
-    A[data plugin module i.e. **DataCSV**] -- DataInterface --> C[Core System]
-    K[knowledge plugin module i.e. **KnowledgeBaseNative**] -- KnowledgeBaseInterface --> C
-    O[output plugin module] --OutputInterface --> C
+ - The full system follows a [micro-kernel](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) pattern: core system + plugins (arrows indicate **dependencies**):
+```mermaid
+graph LR
+   A1[<b>CSV</b> plugin] --> DI[DataInterface]
+   DI --> C[Core System]
+   A2[<b>Parquet</b> plugin] --> DI
+   A3[<b>Arrow</b> plugin] --> DI
+   KN[<b>KnowledgeBaseNative</b> plugin] --> KI[KnowledgeBaseInterface]
+   KN --> J[Julia code]
+   KI --> C
+   O1[<b>Text</b> plugin] --> OI[OutputInterface]
+   OI --> C
+   O2[<b>JSON</b> plugin] --> OI
+   O3[<b>HTML</b> plugin] --> OI
 ```
 
- - The `Core` system follows a [pipes & filters](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) architecture
+ - The `Core` system follows a [pipes & filters](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) architecture (arrows indicate **data flow**
 ```mermaid
- graph LR
-    D[DataInterface] --> L[LinterCore]
-    C[Configuration] --> L
-    K[KnowledgeBaseInterface] --> L
-    O[OutputInterface]-->L
+graph LR
+   D[DataInterface] --> L[LinterCore]
+   C[Configuration] --> L
+   K[KnowledgeBaseInterface] <--> L
+   L --> O[OutputInterface]
 ```
 
 The modules and corresponding implementations are shown below:
 - [`LinterCore`](https://github.com/zgornel/DataLinter/blob/master/src/linter.jl)
 - [`Configuration`](https://github.com/zgornel/DataLinter/blob/master/src/config.jl)
 - [`DataInterface`](https://github.com/zgornel/DataLinter/blob/master/src/data.jl)
-- [`DataCSV` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/csv.jl)
+- [`CSV` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/csv.jl)
+- [`Parquet` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/parquet.jl)
+- [`Arrow` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/arrow.jl)
 - [`KnowledgeBaseInterface`](https://github.com/zgornel/DataLinter/blob/master/src/kb.jl)
-- [`KnowledgeBaseNative` (plugin)](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb/native.jl)
+- [`KnowledgeBaseNative` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb/native.jl)
 - [`OutputInterface`](https://github.com/zgornel/DataLinter/blob/master/src/output.jl)
+- [`Text` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/text.jl)
+- [`JSON` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/json.jl)
+- [`HTML` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/html.jl)
+- [`Julia code`](https://github.com/zgornel/DataLinter/blob/master/knowledge/native)

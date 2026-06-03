@@ -37,12 +37,8 @@ const NATIVE_KB_DIR = joinpath(
 for (root, _, files) in walkdir(NATIVE_KB_DIR)
     for file in files
         full_file = joinpath(NATIVE_KB_DIR, file)
-        try
-            include(full_file)
-            @debug "Included KB Native file @$full_file"
-        catch e
-            @warn "Could not include KB Native file @$full_file\n$e"
-        end
+        include(full_file)
+        @debug "Included KB Native file @$full_file"
     end
 end
 

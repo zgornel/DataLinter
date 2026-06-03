@@ -1,10 +1,11 @@
-@testset "KB native linters" begin
+@testset "KB native linters (.csv + R)" begin
     @testset "test_config.toml linters" begin
         import DataLinter.LinterCore: Linter
         TEST_PATH = abspath(dirname(@__FILE__))
         kb = nothing
 
         DATA_PATHS = [
+            # .csv
             joinpath(TEST_PATH, "data", "correlated_data.csv"),
             joinpath(TEST_PATH, "data", "correlated_target_data.csv"),
             joinpath(TEST_PATH, "data", "imbalanced_data.csv"),

@@ -1,5 +1,11 @@
 # Changelog
 
+v0.1.3
+------
+ - new input plugins: Apache Parquet, Arrow
+ - improved output system
+ - new output plugins: Text, HTML, JSON
+
 v0.1.2
 ------
  - 5 new linters
