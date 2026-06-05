@@ -50,6 +50,15 @@ _LINTERS = Dict(
 )
 
 
+# Print large iterables up to a certain length of characters
+function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
+    output = join(string.(iterable), joinchar)
+    if length(output) > maxlen
+        output = output[1:maxlen] * "..."
+    end
+    return output
+end
+
 struct KnowledgeBase <: AbstractKnowledgeBase
     data::Dict
 end

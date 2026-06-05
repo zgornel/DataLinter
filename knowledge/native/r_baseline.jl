@@ -29,14 +29,6 @@ function extract_capture_value(query_results, capture_symbol)
     end
 end
 
-function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
-    output = join(string.(iterable), joinchar)
-    if length(output) > maxlen
-        output = output[1:maxlen] * "..."
-    end
-    return output
-end
-
 function is_glmmTMB_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
