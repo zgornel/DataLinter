@@ -61,7 +61,8 @@ is_glmmTMB_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = n
 
 const PVALUE_THRESHOLD = 0.2
 
-function is_normally_distributed(ux::AbstractVector, pvalue_threshold = PVALUE_THRESHOLD)
+function is_normally_distributed(u::AbstractVector, pvalue_threshold = PVALUE_THRESHOLD)
+    ux = collect(skipmissing(u))
     x = (ux .- mean(ux)) ./ std(ux)
     p1 = pvalue(ExactOneSampleKSTest(x, Distributions.Normal(0, 1.0)), tail = :both)
     p2 = pvalue(ShapiroWilkTest(x))
