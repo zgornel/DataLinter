@@ -154,7 +154,7 @@ const EXTENDED_BASELINE_LINTERS = [
         name = :imbalanced_target_variable,
         description = """ Tests that data labels are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = (name, result) -> "Imbalanced target column in '$name' for values=$(result.info)",
+        failure_message = (name, result) -> "Imbalanced target column in '$name' for values=$(process_for_printing(result.info))",
         correct_message = (name, args...) -> "Data is balanced in target column '$name'",
         warn_level = "warning",
         query = nothing,
