@@ -23,9 +23,18 @@ function process_output(
         pretty_print = false
     )
     n_linters = map(lo -> lo[1][1].name, lintout) |> length ∘ unique
-    n_linters_na = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], NotAvailableCheck), lintout)) |> length ∘ unique
-    n_linters_failed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], FailedCheck), lintout)) |> length ∘ unique
-    n_linters_passed = map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], PassedCheck), lintout)) |> length ∘ unique
+    _linters_failed = unique(map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], FailedCheck), lintout)))
+    n_linters_failed = length(_linters_failed)
+    _linters_passed = setdiff(
+        unique(map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], PassedCheck), lintout))),
+        _linters_failed
+    )
+    n_linters_passed = length(_linters_passed)
+    _linters_na = setdiff(
+        unique(map(lo -> lo[1][1].name, filter(lo -> isa(lo[2], NotAvailableCheck), lintout))),
+        union(_linters_passed, _linters_failed)
+    )
+    n_linters_na = length(_linters_na)
     sorted_out = sort(lintout, by = l -> get(WARN_LEVEL_TO_NUM, (l[1][1]).warn_level, 0), rev = true)
     for ((linter, loc_name), result) in sorted_out
         msg, color, bold = get_text_formatting(result, linter)
