@@ -41,10 +41,10 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ### Integrations
  - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+ - [VSCode](https://marketplace.visualstudio.com/items?itemName=OxoaResearch.vscode-extension-datalinter-r)
  - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
  - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
  - Gitlab CI *(upcoming)*
- - VS Code *(upcoming)*
 
 
 ## Quick Start
