@@ -246,8 +246,6 @@ function lint(
         progress = false,
         linters = ["all"]
     )
-    # TODO: Improve the `lintout` structure to something more workable
-    #       that includes timings, outputs, easy referencing i.e. Dict
     lintout = Vector{Pair{Tuple{Linter, String}, AbstractCheck}}()
     datait = build_data_iterator(data_ctx)
 
@@ -270,7 +268,7 @@ function lint(
                     # Code-only linting
                     if applicable(linter, linting_ctx, :code_only)
                         result = linter.f(code, linting_ctx; linter_kwargs...)
-                        #TODO: process result to extract code issue location
+                        #Note: location of issue in code has to be added here
                         push!(lintout, (linter, "code") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end

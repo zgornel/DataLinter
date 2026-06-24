@@ -94,7 +94,6 @@ end
 
 
 function is_empty_example(row, args...; kwargs...)
-    #TODO: improve performance
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)
@@ -194,7 +193,6 @@ has_uncommon_signs(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck
 has_uncommon_signs(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 has_uncommon_signs(::T, args...; kwargs...) where {T} = NotAvailableCheck(nothing)
 
-#TODO: See if it makes sense to make this configurable through kwargs
 function has_uncommon_signs(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...)
     sgns = sign.(vm)
     zs = sum(sgns .== 0)

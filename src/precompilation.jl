@@ -3,7 +3,7 @@ using Random
 using CSV
 using Tables
 
-#TODO: Improve performance when using scripts:
+# For more info on performance and precompilation, check:
 # https://timholy.github.io/SnoopCompile.jl/stable/tutorials/invalidations/
 
 using PrecompileTools: @setup_workload, @compile_workload

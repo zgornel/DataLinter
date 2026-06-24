@@ -80,7 +80,7 @@ function __load(filepath)
     return data
 end
 
-# TODO: Implement functionality for query/retrieval of knowledge
+# Functionality for query/retrieval of knowledgea would go here
 function __query(::KnowledgeBase, query)
     return @error "KB query is not implemented"
 end
@@ -118,10 +118,6 @@ function kb_query(kb::KnowledgeBase, query::String)
 end
 
 function build_linters(kb, ctx; linters = ["all"])
-    #TODO: Implement query of the knowledge base
-    #      based on the context provided i.e.
-    #      use `kb_query` to get data, wrap it etc.
-    #      and return it (to `LinterCore`)
     nts = []
     lnts = intersect(unique(linters), keys(_LINTERS))
     if "all" in lnts

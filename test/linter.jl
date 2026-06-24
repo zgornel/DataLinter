@@ -1,5 +1,4 @@
 @testset "Linter" begin
-    #TODO: build tests for `build_linting_context`, `lint`
 
     import DataLinter.LinterCore as LC
 
