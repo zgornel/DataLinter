@@ -1,5 +1,9 @@
 # Changelog
 
+v0.1.4
+------
+ - bugfixes
+
 v0.1.3
 ------
  - new input plugins: Apache Parquet, Arrow
