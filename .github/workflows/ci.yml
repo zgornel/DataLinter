@@ -58,7 +58,7 @@ jobs:
       - name: Upload Artifact GitHub Action
         uses: actions/upload-artifact@v6
         with:
-          name: datalinter-compiled-binary
+          name: datalinter-compiled-latest-linux-x86-64.zip
           path: ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}/build
           compression-level: 9 # high compression (max 9)
           retention-days: 15
