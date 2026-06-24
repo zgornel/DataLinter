@@ -30,7 +30,7 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 **DataLinter** is a library for contextual linting of data and code. Its development started by rewriting Google's [data linter](https://github.com/brain-research/data-linter), in [Julia](https://julialang.org/). The aim of the redesign was to provide a richer and faster experience while also providing the baseline benefits outlined in the original [paper](http://learningsys.org/nips17/assets/papers/paper_19.pdf). **DataLinter** adds on top support for data *contexts*, such as code snippets or information about the type of analysis, which can lead to the detection of more complex, conceptual issues relating to data and code quality.
 
 ### Key Features
-- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- 27 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Docker image with compiled binaries, production ready
 - CLI and HTTP server modes with zero-config
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
@@ -41,10 +41,10 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ### Integrations
  - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+ - [VSCode](https://marketplace.visualstudio.com/items?itemName=OxoaResearch.vscode-extension-datalinter-r)
  - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
  - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
- - Gitlab CI *(upcoming)*
- - VS Code *(upcoming)*
+ - [Gitlab CI](https://github.com/OxoaResearch/datalinter-gitlab-ci)
 
 
 ## Quick Start
@@ -72,13 +72,13 @@ The latest Docker image can be downloaded with
 ```bash
 docker pull ghcr.io/zgornel/datalinter-compiled:latest
 ```
-Specific versions are also tagged and **accessible** with (example for `v0.1.2`)
+Specific versions are also tagged and **accessible** with (example for `v0.1.4`)
 ```bash
-docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.2
+docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.4
 ```
 
 ### Pre-compiled binaries (Linux x86-64)
-Download the latest `datalinter-compiled-binary.zip` from the [Releases](https://github.com/zgornel/DataLinter/releases) page. Contains both CLI and server binaries.
+Download the latest `datalinter-compiled-latest-linux-x86-64.zip` from the [Releases](https://github.com/zgornel/DataLinter/releases) page. Contains both CLI and server binaries.
 
 > Note: Windows and macOS users should use Docker or install via Julia.
 
@@ -95,7 +95,7 @@ Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for info
 
 ## Lint Catalog
 
-**DataLinter** ships with **28 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+**DataLinter** ships with **27 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
 
 ## License
 

@@ -14,18 +14,27 @@ Linters are **disabled by default**. You enable them in a `config.toml` configur
 
 ```toml
 [experiment]
-    name = "My R linear model"
+    name = "My glm model"
     target_variable = 2  # column index of target variable in the dataset
 [linters]
     # Enable only what you need
-    # - code has to be R; checks for normality of columns
     large_outliers = true
-    R_data_normally_distributed = true
+    many_missing_values = true
+    imbalanced_target_variable = true
+    vif_colinearity = true
+    R_glm_modelling = true
+
 [parameters]
-    [parameters.R_data_normally_distributed]
-        # threshold for normality tests; higher values correspond
-        # to more strict normal distribution assumptions
-        pvalue_threshold = 0.1
+    [parameters.large_outliers]
+        tukey_fences_k=10  # larger values consider fewer elements to be anomalous
+    [parameters.many_missing_values]
+        threshold = 0.9  # % of values in the columns that have to be mising for the linter to trigger
+    [parameters.imbalanced_target_variable]
+        threshold = 0.1
+    [parameters.vif_colinearity]
+        vif_threshold = 20.0
+    [parameters.R_glm_modelling]
+        # no parameters
 ```
 Full example configs are in the [config](https://github.com/zgornel/DataLinter/tree/master/config) folder.
 
@@ -57,8 +66,7 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |------|-----------|-------------|----------------------------|
 |`R_imbalanced_target_variable`|Checks target variable imbalance in any regression function with a formula|Regression algorithms|`threshold`|
 |`R_glmmTMB_binomial_modelling`|Validates link parameter for binomial family in `glmmTMB`|glmmTMB binomial|`acceptable_link_values`|
-|`R_data_normally_distributed`|Checks normality of non-binary numeric columns or target in models|Regression methods|`pvalue_threshold`, `algorithms`, `check_target`, `check_predictors`|
-|`R_glm_binomial_modelling`|Checks normality of non-binary numeric columns in binomial glm|Logistic regression|`pvalue_threshold`|
+|`R_glm_modelling`|Ensures correct target variable values and family agrement in `glm`|Logistic regression|-|
 |`R_colinearity_with_target`|Detects whether any predictor variable is highly colinear with the target|Regression algorithms|`threshold`, `algorithms`|
 |`R_sample_size_adequacy`|Checks that the number of observations and predictors have stable ratios|Regression algorithms|`epv_threshold`, `algorithms`|
 |`R_variables_present_in_data`|Checks that variables present in the formula are also present in the data as columns|Regression algorithms| |

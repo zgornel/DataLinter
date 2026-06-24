@@ -50,6 +50,15 @@ _LINTERS = Dict(
 )
 
 
+# Print large iterables up to a certain length of characters
+function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
+    output = join(string.(iterable), joinchar)
+    if length(output) > maxlen
+        output = output[1:maxlen] * "..."
+    end
+    return output
+end
+
 struct KnowledgeBase <: AbstractKnowledgeBase
     data::Dict
 end
@@ -71,7 +80,7 @@ function __load(filepath)
     return data
 end
 
-# TODO: Implement functionality for query/retrieval of knowledge
+# Functionality for query/retrieval of knowledgea would go here
 function __query(::KnowledgeBase, query)
     return @error "KB query is not implemented"
 end
@@ -109,10 +118,6 @@ function kb_query(kb::KnowledgeBase, query::String)
 end
 
 function build_linters(kb, ctx; linters = ["all"])
-    #TODO: Implement query of the knowledge base
-    #      based on the context provided i.e.
-    #      use `kb_query` to get data, wrap it etc.
-    #      and return it (to `LinterCore`)
     nts = []
     lnts = intersect(unique(linters), keys(_LINTERS))
     if "all" in lnts

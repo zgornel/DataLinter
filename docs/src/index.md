@@ -13,7 +13,7 @@ Its main ideea is that providing additional context leads to the detection of  m
 ## Features
 
 Features at a glance:
-- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- 27 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Docker image with compiled binaries, production ready
 - CLI and HTTP server modes with zero-config
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
@@ -45,7 +45,7 @@ Available packages (Docker images) can be viewed in the ['Packages'](https://git
 
 ### Binaries
 
-The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-binary.zip`.
+The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-latest-linux-x86-64.zip`.
 
 
 ### Julia
