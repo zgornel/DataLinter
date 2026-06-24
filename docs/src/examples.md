@@ -180,7 +180,6 @@ which outputs:
 ! warning       (int_as_float)          column: col4         the values of 'column: col4' are floating point but can be integers
 ! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
 ! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
-• info          (R_data_normally_distributed)   dataset              Non-normal variables present
 ```
 
 ## `datalinterserver` HTTP-based linting
@@ -239,7 +238,6 @@ outputs:
 ! warning       (vif_colinearity)       dataset              High multicolinearity detected in dataset using VIF
 ! warning       (R_imbalanced_target_variable)  dataset              Imbalanced distribution of target variable values
 ! warning       (R_glmmTMB_binomial_modelling)  dataset              Incorrect binomial data modelling (glmmTMB)
-• info          (R_data_normally_distributed)   dataset              Non-normal variables present
 ```
 
 ### Send data using `wget` and `jq`

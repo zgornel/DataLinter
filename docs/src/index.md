@@ -13,7 +13,7 @@ Its main ideea is that providing additional context leads to the detection of  m
 ## Features
 
 Features at a glance:
-- 28 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
+- 27 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
 - Docker image with compiled binaries, production ready
 - CLI and HTTP server modes with zero-config
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support

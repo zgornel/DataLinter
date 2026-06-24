@@ -69,69 +69,40 @@ function is_normally_distributed(u::AbstractVector, pvalue_threshold = PVALUE_TH
     return p1 >= pvalue_threshold || p2 >= pvalue_threshold
 end
 
-const NORMALITY_CHECK_ALGORITHMS = ["lm", "glm", "glmmTMB"]
-
-function is_data_normally_distributed(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
-        linting_ctx,
-        args...;
-        pvalue_threshold = PVALUE_THRESHOLD,
-        algorithms = NORMALITY_CHECK_ALGORITHMS,
-        check_target = false,
-        check_predictors = true
-    )
-    try
-        rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
-        alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
-        if alg ∉ algorithms
-            return NotAvailableCheck(info = "unknown algorithm '$alg'")
-        end
-        check = true
-        if check_predictors
-            for pv in predictor_variables
-                _vals = getindex(tblref[], process_column_for_indexing(pv))
-                if !has_only_these_values([0.0, 1.0])(_vals)
-                    check &= is_normally_distributed(_vals, pvalue_threshold)
-                end
-            end
-        end
-        if check_target
-            tc = getindex(tblref[], target_variable)
-            check &= is_normally_distributed(tc, pvalue_threshold)
-        end
-        return check ? PassedCheck(info = alg) : FailedCheck(info = alg)
-    catch e
-        @debug "is_data_normally_distributed: Failed\n$e"
-        return NotAvailableCheck(info = string(e))
-    end
-end
-
-is_data_normally_distributed(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
-
 
 function is_glm_data_correctly_modelled(
         tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
-        pvalue_threshold = PVALUE_THRESHOLD
+        kwargs...
     )
     try
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        target_variable, _ = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
         family = extract_capture_value(linting_ctx.parsing_data, "family")
+        tc = filter(!ismissing, getindex(tblref[], target_variable))
+        tc_vals = unique(tc)
         check = true
-        for pv in predictor_variables
-            _vals = getindex(tblref[], process_column_for_indexing(pv))
-            if !has_only_these_values([0.0, 1.0])(_vals)
-                check &= is_normally_distributed(_vals, pvalue_threshold)
-            end
-        end
+        fail_msg = ""
         if family == "\"binomial\"" || family == "binomial"
-            tc = getindex(tblref[], target_variable)
-            check &= length(unique(tc)) == 2
+            check &= has_only_these_values([0.0, 1.0])(tc_vals)
+            if !check
+                fail_msg = "\'$family\' family with $(length(tc_vals)) unique target values"
+            end
+        elseif family == "\"poisson\"" || family == "poisson"
+            check &= all(>=(0), tc_vals) && all(isinteger, tc_vals)
+            if !check
+                fail_msg = "\'$family\' family with negative/non-integer target values"
+            end
+        elseif family == "\"Gamma\"" || family == "Gamma"
+            check &= all(>(0), tc_vals)
+            if !check
+                fail_msg = "\'$family\' family with non-positive target values"
+            end
+        else
+            # No checks for other families
         end
-        return check ? PassedCheck() : FailedCheck()
+        return check ? PassedCheck() : FailedCheck(info = fail_msg)
     catch e
         @debug "is_glm_data_correctly_modelled: Failed\n$e"
         return NotAvailableCheck(info = string(e))
@@ -414,27 +385,13 @@ const R_BASELINE_LINTERS = [
         requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
     ),
 
-    # Corectness test for linear modelling
-    (
-        name = :R_data_normally_distributed,
-        description = """ Tests that variables are normally distributed""",
-        f = is_data_normally_distributed,
-        failure_message = (name, result) -> "Non-normal variables present ($(result.info))",
-        correct_message = (name, result) -> "Variables are normally distributed ($(result.info))",
-        warn_level = "info",
-        query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
-        query_match_type = :speculative,
-        programming_language = "r",
-        requirements = Dict("iterable_type" => :dataset, "linting_ctx" => true),
-    ),
-
     # Binary target data modelled by binomial family modelling
     (
-        name = :R_glm_binomial_modelling,
-        description = """ Ensures that binary variables are modelled by 'glm' with correct data values""",
+        name = :R_glm_modelling,
+        description = """ Ensures that in 'glm' modelling the target values agree with the family parameter""",
         f = is_glm_data_correctly_modelled,
-        failure_message = (name, args...) -> "Incorrect binomial data modelling (glm): non-normal predictors or target with more than 2 values",
-        correct_message = (name, args...) -> "Correct binomial data modelling (glm)",
+        failure_message = (name, result) -> "Incorrect modelling for (glm): $(result.info)",
+        correct_message = (name, result) -> "Correct modelling for (glm)",
         warn_level = "warning",
         query = "glm({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family={{family::IDENTIFIER}})",
         query_match_type = :speculative,
