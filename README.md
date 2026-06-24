@@ -78,7 +78,7 @@ docker pull ghcr.io/zgornel/datalinter-compiled:v0.1.2
 ```
 
 ### Pre-compiled binaries (Linux x86-64)
-Download the latest `datalinter-compiled-binary.zip` from the [Releases](https://github.com/zgornel/DataLinter/releases) page. Contains both CLI and server binaries.
+Download the latest `datalinter-compiled-latest-linux-x86-64.zip` from the [Releases](https://github.com/zgornel/DataLinter/releases) page. Contains both CLI and server binaries.
 
 > Note: Windows and macOS users should use Docker or install via Julia.
 

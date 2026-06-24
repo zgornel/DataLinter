@@ -45,7 +45,7 @@ Available packages (Docker images) can be viewed in the ['Packages'](https://git
 
 ### Binaries
 
-The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-binary.zip`.
+The cli and server binaries (linux-x86-64) can be downloaded from the [releases](https://github.com/zgornel/DataLinter/releases) page. Each release contains an  *Assets* section with the binaries as `datalinter-compiled-latest-linux-x86-64.zip`.
 
 
 ### Julia
