@@ -1,4 +1,4 @@
-const DEFAULT_VERSION = "0.1.4"
+const DEFAULT_VERSION = "0.1.5"
 """
 	version()
 
