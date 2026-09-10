@@ -1,5 +1,10 @@
 # Changelog
 
+v0.1.5
+------
+ - update to HTTP.jl v2.x
+ - minor fixes
+
 v0.1.4
 ------
  - bugfixes

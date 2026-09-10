@@ -167,50 +167,28 @@ function linting_server(addr = LOCALHOST_IP, port = SERVER_HTTP_PORT; config = n
         @error "HTTP port $(repr(port)) is not valid. Exiting..."
         return 2
     end
-    # Assign addresses: try IPv4 first, IPv6 second
-    addr = try
-        IPv4(addr)
-    catch
-        try
-            IPv6(addr)
-        catch
-            @warn "HTTP IP $addr is not valid, using `localhost`..."
-            IPv4(LOCALHOST_IP)
-        end
-    end
 
     # Define REST endpoints to dispatch to "service" functions
     ROUTER = HTTP.Router()
-    HTTP.register!(ROUTER, "GET", "/**", noop_req_handler)
-    HTTP.register!(ROUTER, "GET", "/api/kill", kill_req_handler)
-    HTTP.register!(ROUTER, "POST", "/**", noop_req_handler)
-    HTTP.register!(ROUTER, "POST", "/api/lint", linting_handler_wrapper(config, kb))
+    HTTP.register!(ROUTER, "GET", "/**", make_http_response ∘ noop_req_handler)
+    HTTP.register!(ROUTER, "GET", "/api/kill", make_http_response ∘ kill_req_handler)
+    HTTP.register!(ROUTER, "POST", "/**", make_http_response ∘ noop_req_handler)
+    HTTP.register!(ROUTER, "POST", "/api/lint", make_http_response ∘ linting_handler_wrapper(config, kb))
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    return HTTP.serve(addr, port, readtimeout = 60) do http_req::HTTP.Request
-        output = try
-            ROUTER(http_req)
-        catch e
-            @debug "Error handling HTTP request.\n$e"
-            ERROR_IN_REQ_HANDLING  # will be visible in HTTP headers, "Status"=>"ERROR"
-        end
-
-        # Process output
-        response = _process_handler_output(output)
-        return response
-    end
+    HTTP.serve(ROUTER, addr, port; read_timeout = 60)
 end
 
 
 # An unsupported endpoint was called
-_process_handler_output(::Nothing, args...) = HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
+make_http_response(::Nothing, args...) = HTTP.Response(501, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
 
 # All OK, send request to search server and get response
-_process_handler_output(output::String, args...) = HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = output)
+make_http_response(output::String, args...) = HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = output)
 
 # Either something went wrong or server was killed
-_process_handler_output(output::Int, args...) = if output == 0
+make_http_response(output::Int, args...) = if output == 0
     # Server was killed
     HTTP.Response(200, ["Access-Control-Allow-Origin" => "*", "Status" => "OK"], body = "")
 elseif output == ERROR_IN_REQ_HANDLING
@@ -222,11 +200,11 @@ else
     HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
 end
 
-# Failsafe (should not ever arrive here)
-_process_handler_output(output, args...) = HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "")
+make_http_response(output, args...) = HTTP.Response(400, ["Access-Control-Allow-Origin" => "*"], body = "") # Failsafe (should not ever arrive here)
 
+
+# Actual request handlers
 noop_req_handler(req::HTTP.Request) = nothing
-
 
 kill_req_handler(req::HTTP.Request) = begin
     @info "Kill request received. Exiting in 1s..."
@@ -237,11 +215,10 @@ kill_req_handler(req::HTTP.Request) = begin
     return 0
 end
 
-
 linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     @debug "HTTP request $(req.target) received."
     _request = try
-        JSON.parse(IOBuffer(HTTP.payload(req)))
+        JSON.parse(String(req.body))
     catch e
         @debug "Could not parse HTTP request\n$e"
         return ERROR_IN_REQ_HANDLING
