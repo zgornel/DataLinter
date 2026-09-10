@@ -15,6 +15,7 @@ function version(; commit = "", date = "", ver = "")
         _commit, _date, ver
     catch e
         # do nothing
+        "", "", ""
     end
     return _ver, _commit, _date
 end
