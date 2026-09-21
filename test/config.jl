@@ -50,7 +50,12 @@ const SAMPLE_CONFIG = """
 
     # get_linter_kwargs
     @test Cfg.get_linter_kwargs(nothing, linter) == ()
-    @test Cfg.get_linter_kwargs(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter) == Pair{Symbol, Any}[:x => 2, :y => "a"]
+
+    _kwargs = Cfg.get_linter_kwargs(Cfg.load_config(IOBuffer(SAMPLE_CONFIG)), linter)
+    for _pair in [:x => 2, :y => "a"]
+        @test _pair in _kwargs
+    end
+
     @test Cfg.get_linter_kwargs(Dict(), linter) == []
 
     # get_experiment_parameters

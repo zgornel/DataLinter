@@ -57,7 +57,7 @@ Full example configs are in the [config](https://github.com/zgornel/DataLinter/t
 |`circular_domain`|Identifies circular data (hours, degrees, etc.)|Angular / periodic data|-|
 |`many_missing_values`|Warns about columns with high missingness|Any dataset|`threshold`|
 |`negative_values`|Checks for negative values in a column|Count / amount columns|-|
-|`imbalanced_target_variable`|Detects imbalanced target classes|Classification targets|`threshold`|
+|`imbalanced_target_variable`|Detects imbalanced target classes|Classification targets|`threshold`, `unique_val_threshold`|
 |`vif_colinearity`|Detects high multicolinearity using VIF |Numerical data|`vif_threshold`|
 |`cnc_colinearity`|Detects high multicolinearity using condition number analysis |Numerical data|`cnc_threshold`|
 

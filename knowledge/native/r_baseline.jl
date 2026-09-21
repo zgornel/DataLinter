@@ -46,7 +46,7 @@ function is_glmmTMB_data_correctly_modelled(
             if link_type ∈ acceptable_link_values || link_type in acceptable_link_values_strings
                 return PassedCheck()
             else
-                return FailedCheck(info = "link type is: link_type")
+                return FailedCheck(info = "link type is \'$link_type\'")
             end
         else  # nvars != 2
             return FailedCheck(info = "target has $nvars values")
@@ -362,7 +362,7 @@ const R_BASELINE_LINTERS = [
         name = :R_imbalanced_target_variable,
         description = """Tests that target variable values are balanced (no class less than θ%)""",
         f = is_imbalanced_target_variable,
-        failure_message = (name, result) -> "Imbalanced target column in '$name' for value(s): $(process_for_printing(result.info))",
+        failure_message = (name, result) -> "Imbalanced target column in '$name' for value(s) $(process_for_printing(result.info))",
         correct_message = (name, args...) -> "Target variable values are balanced",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -390,7 +390,7 @@ const R_BASELINE_LINTERS = [
         name = :R_glm_modelling,
         description = """ Ensures that in 'glm' modelling the target values agree with the family parameter""",
         f = is_glm_data_correctly_modelled,
-        failure_message = (name, result) -> "Incorrect modelling for (glm): $(result.info)",
+        failure_message = (name, result) -> "Incorrect modelling for (glm), $(result.info)",
         correct_message = (name, result) -> "Correct modelling for (glm)",
         warn_level = "warning",
         query = "glm({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, family={{family::IDENTIFIER}})",
@@ -404,7 +404,7 @@ const R_BASELINE_LINTERS = [
         name = :R_colinearity_with_target,
         description = """ Checks colinearities between target variable and its target variables""",
         f = check_colinearity_with_target,
-        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)): $(process_for_printing(result.info.colinears))",
+        failure_message = (name, result) -> "Found highly colinear variables with target ($(result.info.alg)), colinears $(process_for_printing(result.info.colinears))",
         correct_message = (name, result) -> "No colinearities between target and predictor variables ($(result.info.alg))",
         warn_level = "warning",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -418,8 +418,8 @@ const R_BASELINE_LINTERS = [
         name = :R_sample_size_adequacy,
         description = """Checks that the number of observations and predictors have stable ratios""",
         f = check_sample_size_adequacy,
-        failure_message = (name, result) -> "Sample size and power check failed: $(result.info)",
-        correct_message = (name, result) -> "Sample size and power check OK: $(result.info)",
+        failure_message = (name, result) -> "Sample size and power check failed, $(result.info)",
+        correct_message = (name, result) -> "Sample size and power check OK, $(result.info)",
         warn_level = "warning",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
         query_match_type = :speculative,
@@ -432,7 +432,7 @@ const R_BASELINE_LINTERS = [
         name = :R_variables_present_in_data,
         description = """Checks that the formula variables are present in the data""",
         f = check_variables_present_in_data,
-        failure_message = (name, result) -> "Found formula variables not present in data: $(result.info)",
+        failure_message = (name, result) -> "Found formula variables $(result.info) not present in data",
         correct_message = (name, args...) -> "All formula variables present in data",
         warn_level = "important",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -446,7 +446,7 @@ const R_BASELINE_LINTERS = [
         name = :R_high_cardinality_categoricals,
         description = """Checks for categorical predictors with too many unique levels relative to sample size""",
         f = check_high_cardinality_categoricals,
-        failure_message = (name, result) -> "Found categorical predictors with too many unique levels: $(result.info)",
+        failure_message = (name, result) -> "Found too many unique levels for categorical predictors $(result.info)",
         correct_message = (name, args...) -> "Found no categorical predictors with too many unique levels",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -460,7 +460,7 @@ const R_BASELINE_LINTERS = [
         name = :R_numeric_scale_imbalance,
         description = """Detects numeric predictors with vastly different magnitudes/scales""",
         f = check_numeric_scale_imbalance,
-        failure_message = (name, result) -> "Found numerical predictors with magnitude/scale imbalance: $(result.info)",
+        failure_message = (name, result) -> "Found numerical predictors $(result.info) with magnitude/scale imbalance" ,
         correct_message = (name, args...) -> "No numerical predictors with magnitude/scale imbalance found",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
@@ -474,7 +474,7 @@ const R_BASELINE_LINTERS = [
         name = :R_near_zero_variance_predictors,
         description = """Flags numeric predictors with near-zero variance values (using relative variance thresholds)""",
         f = check_near_zero_variance_predictors,
-        failure_message = (name, result) -> "Found numerical predictors with near-zero variance: $(result.info)",
+        failure_message = (name, result) -> "Found numerical predictors $(result.info) with near-zero variance",
         correct_message = (name, args...) -> "No numerical predictors with near-zero variance found",
         warn_level = "warning",
         query = "{{algorithm::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",
