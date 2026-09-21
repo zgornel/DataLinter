@@ -31,7 +31,8 @@ function is_imbalanced_target_variable(
         tblref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
-        threshold = PERC_MINORITY_CLASS
+        threshold = PERC_MINORITY_CLASS,
+        unique_val_threshold = 0.85
     )
     try
         col = linting_ctx.target_variable
@@ -39,6 +40,10 @@ function is_imbalanced_target_variable(
         n = length(tc)
         cm = countmap(tc)
         vals = []
+        if length(cm)/n >= unique_val_threshold
+            # we have many unique values (more than the unique_val_threhsold)
+            return PassedCheck("Unique values represent $(unique_val_threshold*100)% of the values.")
+        end
         for (val, cnt) in cm
             cnt / n < threshold && push!(vals, val)
         end
