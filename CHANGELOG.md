@@ -2,8 +2,9 @@
 
 v0.1.5
 ------
- - update to HTTP.jl v2.x
- - minor fixes
+ - update to HTTP.jl v2.x, CSV.jl v1.x
+ - update to ParSitter.jl v0.2.2 with improved Python support
+ - minor bugfixes
 
 v0.1.4
 ------
