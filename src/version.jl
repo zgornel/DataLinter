@@ -1,4 +1,5 @@
-const DEFAULT_VERSION = "0.1.5"
+const DEFAULT_VERSION_SV = "0.1.5"
+const DEFAULT_VERSION_DATE = "2026"
 """
 	version()
 
@@ -15,7 +16,7 @@ function version(; commit = "", date = "", ver = "")
         _commit, _date, ver
     catch e
         # do nothing
-        "", "", ""
+        "", DEFAULT_VERSION_DATE, DEFAULT_VERSION_SV
     end
     return _ver, _commit, _date
 end
