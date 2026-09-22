@@ -83,7 +83,7 @@ Optional arguments:
  - `--config-path`, path for the `.toml` configuration file (default: `""`)
  - `--output-type`, output type `"text"`, `"json"` or `"html"` (default: `"text"`)
  - `--log-level`, logging level (default: `"error"`)
- - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"all"` (default: `"all"`)
+ - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"python"`, `"all"` (default: `"all"`)
  - `--show-stats`, shows statistics
  - `--show-passing` shows linters that passed
  - `--show-na`, shows linters that were not applicable
