@@ -93,7 +93,7 @@ end
 
 const QUERY_HELPER_FUNCTIONS = Dict(
     ("r", ParSitter.TreeQueryExpr{String}) => (
-        target_tree_nodevalue = n -> strip(replace(n.content, r"[\s]" => "")),
+        target_tree_nodevalue = n -> string.(strip(replace(n.content, r"[\s]" => ""))),
         query_tree_nodevalue = n -> ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head, "@")[1]), n.head),
         capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
         node_comparison_yields_true = (tn, qn) -> ParSitter.is_capture_node(qn; capture_sym = "@").is_match || qn.head == "*",
@@ -118,16 +118,16 @@ const QUERY_HELPER_FUNCTIONS = Dict(
     ("python", ParSitter.TreeQueryExpr{ParSitter.TreeQueryNode}) => (
         target_tree_nodevalue = n -> (string.(strip(replace(n.content, r"[\s]" => ""))), n.name),
         query_tree_nodevalue = n -> (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
-        capture_function = n -> (v = strip(replace(n.content, r"[\s]" => "")), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
+        capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
         node_comparison_yields_true = (tn, qn) -> begin
             _target_nodevalue(n) = (string.(strip(replace(n.content, r"[\s]" => ""))), n.name)
-            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
-                return (
-                    (
-                        ParSitter.is_capture_node(qn; capture_sym = "@").is_match &&
+            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type)
+            return (
+                (
+                    ParSitter.is_capture_node(qn; capture_sym = "@").is_match &&
                         isempty(first(_query_nodevalue(qn)))
-                    ) || first(_query_nodevalue(qn)) == "*"
-                ) && _target_nodevalue(tn)[2] == _query_nodevalue(qn)[2]
+                ) || first(_query_nodevalue(qn)) == "*"
+            ) && _target_nodevalue(tn)[2] == _query_nodevalue(qn)[2]
         end,
         node_equality_function = (tv, qv) -> tv[2] == qv[2] && tv[1] == qv[1],
     )
