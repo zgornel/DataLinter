@@ -16,6 +16,7 @@ include("version.jl")
 # csv and r
 include("data_csv.jl")
 include("kb_native_linters_csv_r.jl")
+include("kb_native_linters_csv_python.jl")
 
 # arrow and r
 include("data_arrow.jl")
