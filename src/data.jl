@@ -42,6 +42,11 @@ build_data_iterator(::Nothing) = DataIterator{Nothing}(
     dataref = Ref(nothing)
 )
 
+"""
+Builds a data iterator i.e. `DataIterator` from an `AbstractContext`. It is used
+in the linting function only and call more specialized methods that are applied on
+the `data` member of the context.
+"""
 build_data_iterator(ctx::AbstractContext) = build_data_iterator(get_context_data(ctx))
 
 Base.show(io::IO, datait::DataIterator{T}) where {T} = begin
@@ -179,6 +184,10 @@ build_data_context(data::AbstractString, code; kwargs...) = build_data_context(;
 # Specific methods, get called by plugin-implemented methods
 build_data_context(data::T, code) where {T <: Tables.AbstractColumns} = CodeAndDataContext(; data, code)
 build_data_context(data::T) where {T <: Tables.AbstractColumns} = DataContext(; data)
+
+# Specific methods, get called by plugin-implemented methods
+build_data_context(data::T, code) where {T <: AbstractDict{<:AbstractString}} = CodeAndDataContext(; data, code)
+build_data_context(data::T) where {T <: Tables.AbstractDict{<:AbstractString}} = DataContext(; data)
 
 # Access context data
 get_context_data(ctx::CodeAndDataContext) = ctx.data
