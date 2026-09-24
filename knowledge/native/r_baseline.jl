@@ -30,16 +30,16 @@ function extract_capture_value(query_results, capture_symbol)
 end
 
 function is_glmmTMB_data_correctly_modelled(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         acceptable_link_values = ACCEPTABLE_LINK_VALUES
     )
     try
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, dataref[])
         link_type = extract_capture_value(linting_ctx.parsing_data, "link_type")
-        tc = getindex(tblref[], target_variable)
+        tc = getindex(dataref[], target_variable)
         nvars = length(unique(tc))
         if nvars == 2
             acceptable_link_values_strings = ["\"$v\"" for v in acceptable_link_values]
@@ -71,16 +71,16 @@ end
 
 
 function is_glm_data_correctly_modelled(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         kwargs...
     )
     try
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, _ = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        target_variable, _ = process_formula_variables(linting_ctx.target_variable, rhs, dataref[])
         family = extract_capture_value(linting_ctx.parsing_data, "family")
-        tc = filter(!ismissing, getindex(tblref[], target_variable))
+        tc = filter(!ismissing, getindex(dataref[], target_variable))
         tc_vals = unique(tc)
         check = true
         fail_msg = ""
@@ -140,7 +140,7 @@ end
 const PAIRWISE_COLINEARITY_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 
 function check_colinearity_with_target(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         threshold = PAIRWISE_COLINEARITY_THRESHOLD,
@@ -149,8 +149,8 @@ function check_colinearity_with_target(
     try
 
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
-        tc = getindex(tblref[], target_variable)
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, dataref[])
+        tc = getindex(dataref[], target_variable)
         alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
         if alg ∉ algorithms
             return NotAvailableCheck(info = "unknown algorithm '$alg'")
@@ -158,7 +158,7 @@ function check_colinearity_with_target(
         check = true
         colinears = Symbol[]
         for pv in predictor_variables
-            _vals = getindex(tblref[], process_column_for_indexing(pv))
+            _vals = getindex(dataref[], process_column_for_indexing(pv))
             _corr = check_pairwise_colinearity(tc, _vals; threshold)
             if !isnothing(_corr)
                 check &= _corr
@@ -177,7 +177,7 @@ const SAMPLE_SIZE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const EPV_THRESHOLD = 10
 
 function check_sample_size_adequacy(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         epv_threshold = EPV_THRESHOLD,
@@ -185,10 +185,10 @@ function check_sample_size_adequacy(
     )
     try
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
-        tc = getindex(tblref[], target_variable)
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, dataref[])
+        tc = getindex(dataref[], target_variable)
         alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
-        n_rows = Tables.rowcount(tblref[])
+        n_rows = Tables.rowcount(dataref[])
         n_predictors = length(predictor_variables)
         n_per_predictor = n_rows / n_predictors
         if alg ∈ algorithms
@@ -220,16 +220,16 @@ function check_sample_size_adequacy(
 end
 
 function check_variables_present_in_data(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         kwargs...
     )
     try
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
-        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tblref[])
+        target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, dataref[])
         missing_vars = []
-        data_columns = Tables.columnnames(tblref[])
+        data_columns = Tables.columnnames(dataref[])
         for v in process_column_for_indexing.([target_variable, predictor_variables...])
             if v ∉ data_columns
                 push!(missing_vars, v)
@@ -248,13 +248,13 @@ end
 
 const DEFAULT_NP_LEVEL_RATIO = 10
 function check_high_cardinality_categoricals(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         n_p_level_ratio = DEFAULT_NP_LEVEL_RATIO
     )
     try
-        tbl = tblref[]
+        tbl = dataref[]
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
         target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
         n_rows = Tables.rowcount(tbl)
@@ -282,13 +282,13 @@ end
 
 const DEFAULT_NUMERIC_SCALE_THRESHOLD = 100
 function check_numeric_scale_imbalance(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         numeric_scale_threshold = DEFAULT_NUMERIC_SCALE_THRESHOLD
     )
     try
-        tbl = tblref[]
+        tbl = dataref[]
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
         target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
         scales = Dict()
@@ -318,14 +318,14 @@ end
 const NEAR_ZERO_VARIANCE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const DEFAULT_NZ_VARIANCE_THRESHOLD = 100
 function check_near_zero_variance_predictors(
-        tblref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
         args...;
         algorithms = NEAR_ZERO_VARIANCE_ALGORITHMS,
         variance_threshold = DEFAULT_NZ_VARIANCE_THRESHOLD
     )
     try
-        tbl = tblref[]
+        tbl = dataref[]
         rhs = extract_capture_value(linting_ctx.parsing_data, "predictor_variables")
         target_variable, predictor_variables = process_formula_variables(linting_ctx.target_variable, rhs, tbl)
         alg = extract_capture_value(linting_ctx.parsing_data, "algorithm")
