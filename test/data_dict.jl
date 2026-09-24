@@ -1,4 +1,4 @@
-@testset "Data: Generic plugin" begin
+@testset "Data: Dict plugin" begin
     using Tables
 
     @testset "build_data_context" begin

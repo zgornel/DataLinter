@@ -29,9 +29,14 @@ build_data_context(
 ) = begin
     data_dict = JSON.parse(input)
     object_dict = Dict(
-        k => csv_parse_function(table_type, v; kwargs...)
-            for (k, v) in data_dict
+        try
+            k => csv_parse_function(table_type, v; kwargs...)
+        catch
+            @debug "Dict data plugin: could not parse key=\"k\" as csv."
+        end
+        for (k, v) in data_dict
     )
+    filter!(p->!isnothing(p.second), object_dict)  # filter out keysd not parsed as CSV
     return build_data_context(object_dict)
 end
 
@@ -43,9 +48,14 @@ build_data_context(
 ) = begin
     data_dict = JSON.parse(input)
     object_dict = Dict(
-        k => csv_parse_function(table_type, v; kwargs...)
-            for (k, v) in data_dict
+        try
+            k => csv_parse_function(table_type, v; kwargs...)
+        catch
+            @debug "Dict data plugin: could not parse key=\"k\" as csv."
+        end
+        for (k, v) in data_dict
     )
+    filter!(p->!isnothing(p.second), object_dict)  # filter out keys not parsed as CSV
     return build_data_context(object_dict, code)
 end
 
