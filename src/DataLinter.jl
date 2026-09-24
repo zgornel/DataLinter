@@ -87,6 +87,7 @@ include("linter.jl")    # linter core
 include("config.jl")    # linter configuration
 
 include("data.jl")      # data interface
+include("plugins/data/dict.jl")  # data has a key-value structure (i.e. AbstractDict)
 include("plugins/data/csv.jl")  # CSV data plugin (CSV.jl)
 include("plugins/data/arrow.jl")  # Apache Arrow data plugin (Arrow.jl)
 include("plugins/data/parquet.jl")  # Parquet data plugin (Parquet.jl)
