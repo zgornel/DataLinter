@@ -20,6 +20,14 @@ build_data_iterator(tbl::T) where {T <: Tables.AbstractColumns} = begin
     )
 end
 
+build_data_iterator(generic_data::T) where {T <: AbstractDict{<:String}} = begin
+    DataIterator{T}(
+        column_iterator = [],
+        row_iterator = [],
+        dataref = Ref(generic_data)
+    )
+end
+
 build_data_iterator(data::Dict{Symbol, <:AbstractVector}) = begin
     build_data_iterator(Tables.Columns(data))
 end
