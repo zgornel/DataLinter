@@ -132,8 +132,8 @@ function is_zipcode(
 end
 
 
-function has_duplicates(tblref::Base.RefValue{<:Tables.AbstractColumns}, args...; kwargs...)
-    _rows = Tables.rows(tblref[])
+function has_duplicates(dataref::Base.RefValue{<:Tables.AbstractColumns}, args...; kwargs...)
+    _rows = Tables.rows(dataref[])
     if length(unique(hash(r) for r in _rows)) != length(_rows)
         return FailedCheck(nothing)
     else

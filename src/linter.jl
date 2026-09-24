@@ -18,7 +18,7 @@ function get_context_data end
 @Base.kwdef struct DataIterator{T}
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
     row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
-    tblref::Ref{T}      # reference to the input data
+    dataref::Ref{T}      # reference to the input data
 end
 
 function columnname end # Returns the name of a 'column' element of the `DataIterator`
@@ -248,7 +248,6 @@ function lint(
     )
     lintout = Vector{Pair{Tuple{Linter, String}, AbstractCheck}}()
     datait = build_data_iterator(data_ctx)
-
     _progress = ProgressUnknown(desc = "Linting...", spinner = true, color = :white, showspeed = true)
     _terminal = REPL.Terminals.TTYTerminal("", stdin, stdout, stderr)
     for linter in build_linters(kb, data_ctx; linters)
@@ -301,7 +300,7 @@ function lint(
                     end
                     # 3. Apply over whole dataset
                     if applicable(linter, linting_ctx, :dataset)
-                        result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
+                        result = linter.f(datait.dataref, linting_ctx; linter_kwargs...)
                         push!(lintout, (linter, "dataset") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end

@@ -16,7 +16,15 @@ build_data_iterator(tbl::T) where {T <: Tables.AbstractColumns} = begin
     DataIterator{T}(
         column_iterator = Tables.columns(tbl),
         row_iterator = Tables.rows(tbl),
-        tblref = Ref(tbl)
+        dataref = Ref(tbl)
+    )
+end
+
+build_data_iterator(generic_data::T) where {T <: AbstractDict{<:String}} = begin
+    DataIterator{T}(
+        column_iterator = [],
+        row_iterator = [],
+        dataref = Ref(generic_data)
     )
 end
 
@@ -31,14 +39,19 @@ end
 build_data_iterator(::Nothing) = DataIterator{Nothing}(
     column_iterator = [],
     row_iterator = [],
-    tblref = Ref(nothing)
+    dataref = Ref(nothing)
 )
 
+"""
+Builds a data iterator i.e. `DataIterator` from an `AbstractContext`. It is used
+in the linting function only and call more specialized methods that are applied on
+the `data` member of the context.
+"""
 build_data_iterator(ctx::AbstractContext) = build_data_iterator(get_context_data(ctx))
 
 Base.show(io::IO, datait::DataIterator{T}) where {T} = begin
     m, n = length(datait.row_iterator), length(datait.column_iterator)
-    mb_size = Base.summarysize(datait.tblref) / (1024^2)
+    mb_size = Base.summarysize(datait.dataref) / (1024^2)
     print(io, "DataIterator{$T} ($m samples, $n variables, $mb_size MB of data)")
 end
 
@@ -93,6 +106,8 @@ struct ParquetTypeTable <: AbstractTypeTable end
 
 struct IOTypeTable <: AbstractTypeTable end
 
+struct IOTypeDict <: AbstractTypeTable end
+
 
 # Infers from an input string what data type we are dealing with
 infer_datatype(::Nothing) = nothing
@@ -107,8 +122,10 @@ infer_datatype(data::AbstractString) = begin
             return CSVTypeTable
         elseif endswith(data, ".parquet")
             return ParquetTypeTable
+        elseif startswith(data, r"[\s|\n]*{") && endswith(data, r"}[\s|\n]*$")
+            return IOTypeDict
         else
-            # We assume data is a String that containts tabular data
+            # We assume data is a String that containts tabular or dict data
             # This is useful for `datalinterserver` to be able to read
             # data from HTTP payloads
             return IOTypeTable
@@ -171,6 +188,10 @@ build_data_context(data::AbstractString, code; kwargs...) = build_data_context(;
 # Specific methods, get called by plugin-implemented methods
 build_data_context(data::T, code) where {T <: Tables.AbstractColumns} = CodeAndDataContext(; data, code)
 build_data_context(data::T) where {T <: Tables.AbstractColumns} = DataContext(; data)
+
+# Specific methods, get called by plugin-implemented methods
+build_data_context(data::T, code) where {T <: AbstractDict{<:AbstractString}} = CodeAndDataContext(; data, code)
+build_data_context(data::T) where {T <: Tables.AbstractDict{<:AbstractString}} = DataContext(; data)
 
 # Access context data
 get_context_data(ctx::CodeAndDataContext) = ctx.data

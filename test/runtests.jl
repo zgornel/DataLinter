@@ -24,3 +24,6 @@ include("kb_native_linters_arrow_r.jl")
 # parquet and r
 include("data_parquet.jl")
 include("kb_native_linters_parquet_r.jl")
+
+# Dict (multiple objects)
+include("data_dict.jl")
