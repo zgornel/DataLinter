@@ -248,7 +248,6 @@ function lint(
     )
     lintout = Vector{Pair{Tuple{Linter, String}, AbstractCheck}}()
     datait = build_data_iterator(data_ctx)
-
     _progress = ProgressUnknown(desc = "Linting...", spinner = true, color = :white, showspeed = true)
     _terminal = REPL.Terminals.TTYTerminal("", stdin, stdout, stderr)
     for linter in build_linters(kb, data_ctx; linters)
