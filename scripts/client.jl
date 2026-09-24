@@ -42,9 +42,11 @@ function client_main(args)
 
     # Send to server
     reply = try
-        HTTP.post("http://0.0.0.0:10000/api/lint",
-                    headers = ["Content-Type" => "application/json"],
-                    body=JSON.json(request))
+        HTTP.post(
+            "http://0.0.0.0:10000/api/lint",
+            headers = ["Content-Type" => "application/json"],
+            body = JSON.json(request)
+        )
     catch e
         @warn "Something went wrong with request processing $e"
         nothing

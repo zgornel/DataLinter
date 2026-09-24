@@ -106,6 +106,8 @@ struct ParquetTypeTable <: AbstractTypeTable end
 
 struct IOTypeTable <: AbstractTypeTable end
 
+struct IOTypeDict <: AbstractTypeTable end
+
 
 # Infers from an input string what data type we are dealing with
 infer_datatype(::Nothing) = nothing
@@ -120,8 +122,10 @@ infer_datatype(data::AbstractString) = begin
             return CSVTypeTable
         elseif endswith(data, ".parquet")
             return ParquetTypeTable
+        elseif startswith(data, r"[\s|\n]*{") && endswith(data, r"}[\s|\n]*$")
+            return IOTypeDict
         else
-            # We assume data is a String that containts tabular data
+            # We assume data is a String that containts tabular or dict data
             # This is useful for `datalinterserver` to be able to read
             # data from HTTP payloads
             return IOTypeTable

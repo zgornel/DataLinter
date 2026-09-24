@@ -25,7 +25,7 @@
 
     @testset "build_data_context" begin
         data = Tables.Columns((a = [1, 2, 3], b = [3, 2, 1]))
-        data_dict = Dict("vector"=>[1,2,3], "matrix"=>rand(2,2))
+        data_dict = Dict("vector" => [1, 2, 3], "matrix" => rand(2, 2))
         code = nothing  # todo: change to value representative of real use
         code2 = "code"
 
@@ -41,10 +41,10 @@
         @testset "CodeAndDataContext (dict)" begin
             context = DI.build_data_context(data_dict, code)
             @test context isa DI.CodeAndDataContext
-            @test context.data == data
+            @test context.data == data_dict
             @test context.code == code
             @test DI.get_context_code(context) == code
-            @test DI.get_context_data(context) == data
+            @test DI.get_context_data(context) == data_dict
         end
 
         @testset "CodeAndDataContext" begin
@@ -67,9 +67,9 @@
         @testset "DataContext (dict)" begin
             context = DI.build_data_context(data_dict)
             @test context isa DI.DataContext
-            @test context.data == data
+            @test context.data == data_dict
             @test DI.get_context_code(context) == nothing
-            @test DI.get_context_data(context) == data
+            @test DI.get_context_data(context) == data_dict
         end
 
         @testset "CodeContext" begin
@@ -89,16 +89,16 @@ end
         tbl = Tables.Columns((a = [1, 2, 3], b = [3, 2, 1]))
         tbl_it = DI.build_data_iterator(tbl)
         @test tbl_it isa DataLinter.LinterCore.DataIterator
-        @test dict_it.column_iterator <: Tables.Columns
-        @test dict_it.row_iterator <: Tables.Rows
-        @test dict_it.dataref <: Ref{<:Tables.Columns}
+        @test typeof(tbl_it.column_iterator) <: Tables.Columns
+        @test typeof(tbl_it.row_iterator) <: Tables.RowIterator
+        @test typeof(tbl_it.dataref) <: Ref{<:Tables.Columns}
 
         dict_tbl = Dict(:a => [1, 2, 3], :b => [3, 2, 1])
         dict_tbl_it = DI.build_data_iterator(dict_tbl)
         @test dict_tbl_it isa DataLinter.LinterCore.DataIterator
-        @test dict_it.column_iterator <: Tables.Columns
-        @test dict_it.row_iterator <: Tables.Rows
-        @test dict_it.dataref <: Ref{<:Tables.Columns}
+        @test typeof(dict_tbl_it.column_iterator) <: Tables.Columns
+        @test typeof(dict_tbl_it.row_iterator) <: Tables.RowIterator
+        @test typeof(dict_tbl_it.dataref) <: Ref{<:Tables.Columns}
 
     end
 
@@ -108,7 +108,7 @@ end
         @test dict_it isa DataLinter.LinterCore.DataIterator
         @test dict_it.column_iterator == []
         @test dict_it.row_iterator == []
-        @test dict_it.dataref <: Ref{<:AbstractDict{<:String}}
+        @test typeof(dict_it.dataref) <: Ref{<:AbstractDict{<:String}}
     end
 
     @testset "build_data_iterator (nothing)" begin
