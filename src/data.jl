@@ -16,7 +16,7 @@ build_data_iterator(tbl::T) where {T <: Tables.AbstractColumns} = begin
     DataIterator{T}(
         column_iterator = Tables.columns(tbl),
         row_iterator = Tables.rows(tbl),
-        tblref = Ref(tbl)
+        dataref = Ref(tbl)
     )
 end
 
@@ -31,14 +31,14 @@ end
 build_data_iterator(::Nothing) = DataIterator{Nothing}(
     column_iterator = [],
     row_iterator = [],
-    tblref = Ref(nothing)
+    dataref = Ref(nothing)
 )
 
 build_data_iterator(ctx::AbstractContext) = build_data_iterator(get_context_data(ctx))
 
 Base.show(io::IO, datait::DataIterator{T}) where {T} = begin
     m, n = length(datait.row_iterator), length(datait.column_iterator)
-    mb_size = Base.summarysize(datait.tblref) / (1024^2)
+    mb_size = Base.summarysize(datait.dataref) / (1024^2)
     print(io, "DataIterator{$T} ($m samples, $n variables, $mb_size MB of data)")
 end
 
