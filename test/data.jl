@@ -67,5 +67,5 @@ end
     @test nothing_it isa DataLinter.LinterCore.DataIterator
     @test nothing_it.column_iterator == []
     @test nothing_it.row_iterator == []
-    @test nothing_it.tblref isa Ref{Nothing}
+    @test nothing_it.dataref isa Ref{Nothing}
 end
