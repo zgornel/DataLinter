@@ -25,7 +25,6 @@ LINTER_INPUTS = [
     Dict(
         "context" => Dict(
             "data" => read(csvdatapath, String),
-            "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
             "data_header" => true,
@@ -41,7 +40,6 @@ LINTER_INPUTS = [
     Dict(
         "context" => Dict(
             "data" => read(csvdatapath, String),
-            "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
             "data_header" => true,
@@ -58,7 +56,6 @@ LINTER_INPUTS = [
         Dict(
                 "context" => Dict(
                     "data" => datapath,
-                    "data_type" => "filepath",
                     "linters" => ["all"],
                     "data_delim" => ",",
                     "data_header" => true,
