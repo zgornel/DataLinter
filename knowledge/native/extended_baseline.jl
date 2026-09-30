@@ -16,8 +16,8 @@ function has_many_missing_values(::T, v, vm, name, args...; threshold = MISSING_
 end
 
 
-has_negative_values(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
-has_negative_values(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+has_negative_values(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
+has_negative_values(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck()
 has_negative_values(::Type{<:NumericEltype}, v, vm, name, args...; kwargs...) = any(<(0), vm) ? FailedCheck(nothing) : PassedCheck(nothing)
 
 const PERC_MINORITY_CLASS = 0.01
@@ -27,8 +27,18 @@ process_column_for_indexing(col::AbstractString) = Symbol(col)
 process_column_for_indexing(col::Symbol) = col
 process_column_for_indexing(::Nothing) = nothing
 
+
+function select_dataref_column(dataref::Base.RefValue{<:Tables.AbstractColumns}, col)
+    return getindex(dataref[], process_column_for_indexing(col))
+end
+
+# This is the case for multiple variables passed as JSON through HTTP, target column col is always a String
+function select_dataref_column(dataref::Base.RefValue{<:AbstractDict}, col::String)
+    return dataref[][col]
+end
+
 function is_imbalanced_target_variable(
-        dataref::Base.RefValue{<:Tables.AbstractColumns},
+        dataref::Base.RefValue,  # of Dict or Tables.AbstractColumns,
         linting_ctx,
         args...;
         threshold = PERC_MINORITY_CLASS,
@@ -36,7 +46,7 @@ function is_imbalanced_target_variable(
     )
     try
         col = linting_ctx.target_variable
-        tc = getindex(dataref[], process_column_for_indexing(col))
+        tc = select_dataref_column(dataref, col)
         n = length(tc)
         cm = countmap(tc)
         vals = []
@@ -58,7 +68,7 @@ function is_imbalanced_target_variable(
     end
 end
 
-is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
+is_imbalanced_target_variable(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
 
 
 const DEFAULT_VIF_THRESHOLD = 10.0
@@ -96,6 +106,8 @@ function high_vif(
     end
 end
 
+high_vif(dataref, linting_ctx, args...; kwargs...) = NotAvailableCheck()
+
 const DEFAULT_CNC_THRESHOLD = 100.0
 
 """
@@ -126,6 +138,8 @@ function condition_number_check(
         return NotAvailableCheck(info = string(e))
     end
 end
+
+condition_number_check(dataref, linting_ctx, args...; kwargs...) = NotAvailableCheck()
 
 const EXTENDED_BASELINE_LINTERS = [
     # No missing values in the column

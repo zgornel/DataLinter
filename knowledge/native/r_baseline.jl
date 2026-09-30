@@ -57,7 +57,7 @@ function is_glmmTMB_data_correctly_modelled(
     end
 end
 
-is_glmmTMB_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = nothing
+is_glmmTMB_data_correctly_modelled(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const PVALUE_THRESHOLD = 0.2
 
@@ -109,7 +109,7 @@ function is_glm_data_correctly_modelled(
     end
 end
 
-is_glm_data_correctly_modelled(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck()
+is_glm_data_correctly_modelled(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const PAIRWISE_COLINEARITY_THRESHOLD = 0.9
 
@@ -172,6 +172,7 @@ function check_colinearity_with_target(
     end
 end
 
+check_colinearity_with_target(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const SAMPLE_SIZE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const EPV_THRESHOLD = 10
@@ -219,6 +220,8 @@ function check_sample_size_adequacy(
     end
 end
 
+check_sample_size_adequacy(dataref, args...; kwargs...) = NotAvailableCheck()
+
 function check_variables_present_in_data(
         dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
@@ -245,6 +248,8 @@ function check_variables_present_in_data(
         return NotAvailableCheck(info = string(e))
     end
 end
+
+check_variables_present_in_data(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const DEFAULT_NP_LEVEL_RATIO = 10
 function check_high_cardinality_categoricals(
@@ -280,6 +285,8 @@ function check_high_cardinality_categoricals(
     end
 end
 
+check_high_cardinality_categoricals(dataref, args...; kwargs...) = NotAvailableCheck()
+
 const DEFAULT_NUMERIC_SCALE_THRESHOLD = 100
 function check_numeric_scale_imbalance(
         dataref::Base.RefValue{<:Tables.AbstractColumns},
@@ -314,9 +321,11 @@ function check_numeric_scale_imbalance(
     end
 end
 
+check_numeric_scale_imbalance(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const NEAR_ZERO_VARIANCE_ALGORITHMS = ["lm", "glm", "glmmTMB"]
 const DEFAULT_NZ_VARIANCE_THRESHOLD = 100
+
 function check_near_zero_variance_predictors(
         dataref::Base.RefValue{<:Tables.AbstractColumns},
         linting_ctx,
@@ -355,6 +364,7 @@ function check_near_zero_variance_predictors(
     end
 end
 
+check_near_zero_variance_predictors(dataref, args...; kwargs...) = NotAvailableCheck()
 
 const R_BASELINE_LINTERS = [
     # Imbalanced target variable in data (R code version)
