@@ -22,9 +22,7 @@ function client_main(args)
     linter_input = Dict(
         "context" => Dict(
             "data" => data,             # can be the data or a path to it
-            "data_type" => "dataset",   # "dataset" or "filepath"
             #"data" => data_path,
-            #"data_type" => "filepath",
             "linters" => ["all"],       # which linters to use: "google", "r", "extended" or "all"
             "data_delim" => ",",        # csv delimiter
             "data_header" => true,      # header
