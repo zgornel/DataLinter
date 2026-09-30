@@ -141,6 +141,7 @@ function has_duplicates(dataref::Base.RefValue{<:Tables.AbstractColumns}, args..
     end
 end
 
+has_duplicates(dataref, args...; kwargs...) = NotAvailableCheck(nothing)
 
 has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
