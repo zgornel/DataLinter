@@ -30,8 +30,8 @@ function client_main(args)
         ),
         "options" => Dict(
             "show_stats" => true,       # whether to print statistics
-            "show_passing" => false,    # show linters that passed (no issues)
-            "show_na" => false          # show linters that were not applicable
+            "show_passing" => true,    # show linters that passed (no issues)
+            "show_na" => true          # show linters that were not applicable
         )
     )
     request = Dict("linter_input" => linter_input)
