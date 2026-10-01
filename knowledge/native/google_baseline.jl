@@ -93,7 +93,7 @@ function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match
 end
 
 
-function is_empty_example(row, args...; kwargs...)
+function is_empty_example(row::T, args...; kwargs...) where T<:Tables.AbstractRow
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)
@@ -110,6 +110,7 @@ function is_empty_example(row, args...; kwargs...)
     end
 end
 
+is_empty_example(row, args...; kwargs...) = NotAvailableCheck()
 
 is_zipcode(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
