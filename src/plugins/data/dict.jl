@@ -1,18 +1,14 @@
-# Generic Dict data; this is the case when linters require multiple variables, such
+# Generic Dict or JSON-parsable to Dict data; this is the case when linters require multiple variables, such
 # as in the case of Python linters where data and targets are usually distict.
 module DataGenericDict
 
 using CSV, JSON
 import ..DataInterface: build_data_context, IOTypeDict
 
-#Note: we assume the implicit interface for this bit `build_data_context`
-#Note: in this case, the implementation re-uses the method
-
-process_io(input_type::Type{IOTypeDict}, input::AbstractString) = seekstart(IOBuffer(input))
-
-function csv_parse_function(table_type, input; kwargs...)
+# Specialized CSV parsing function
+function csv_parse_function(input; kwargs...)
     return CSV.read(
-        process_io(table_type, input),
+        seekstart(IOBuffer(input)),
         CSV.Tables.Columns;
         pool = true,                        # string pooling
         missingstring = ["", "NA", "NaN", "N/A", "NAN"],
@@ -22,24 +18,54 @@ function csv_parse_function(table_type, input; kwargs...)
     )
 end
 
+# Method for actual Dict data inputs
+build_data_context(
+    data_dict::JSON.Object,
+    kwargs...
+) = begin
+    object_dict = Dict(
+        try
+                k => csv_parse_function(v; kwargs...)
+        catch
+                @debug "Dict data plugin: could not parse key=\"$k\" as csv."
+                k => nothing
+        end
+            for (k, v) in data_dict
+    )
+    filter!(p -> !isnothing(p.second), object_dict)  # filter out keysd not parsed as CSV
+    return build_data_context(object_dict)  # calls method from DataInterface
+end
+
+# Method for JSON-like data inputs
 build_data_context(
     input::AbstractString,
     table_type::Type{IOTypeDict};
     kwargs...
 ) = begin
-    data_dict = JSON.parse(input)
+        data_dict = JSON.parse(input)
+        return build_data_context(data_dict; kwargs...)  # calls JSON.Object method above
+end
+
+# Method for actual Dict data inputs with code
+build_data_context(
+    data_dict::JSON.Object,
+    code::AbstractString;
+    kwargs...
+) = begin
     object_dict = Dict(
         try
-                k => csv_parse_function(table_type, v; kwargs...)
+                k => csv_parse_function(v; kwargs...)
         catch
-                @debug "Dict data plugin: could not parse key=\"k\" as csv."
+                @debug "Dict data plugin: could not parse key=\"$k\" as csv."
+                k => nothing
         end
             for (k, v) in data_dict
     )
-    filter!(p -> !isnothing(p.second), object_dict)  # filter out keysd not parsed as CSV
-    return build_data_context(object_dict)
+    filter!(p -> !isnothing(p.second), object_dict)  # filter out keys not parsed as CSV
+    return build_data_context(object_dict, code)  # calls method from DataInterface
 end
 
+# Method for JSON-like data inputs with code
 build_data_context(
     input::AbstractString,
     code::AbstractString,
@@ -47,16 +73,8 @@ build_data_context(
     kwargs...
 ) = begin
     data_dict = JSON.parse(input)
-    object_dict = Dict(
-        try
-                k => csv_parse_function(table_type, v; kwargs...)
-        catch
-                @debug "Dict data plugin: could not parse key=\"k\" as csv."
-        end
-            for (k, v) in data_dict
-    )
-    filter!(p -> !isnothing(p.second), object_dict)  # filter out keys not parsed as CSV
-    return build_data_context(object_dict, code)
+    return build_data_context(data_dict, code; kwargs...)  # Calls JSON.Object method above
 end
+
 
 end  # module
