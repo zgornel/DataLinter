@@ -241,6 +241,7 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     opts = _request["linter_input"]["options"]
 
     # Build data context directly from request data information
+    @debug "Building $(ifelse(isnothing(get(ctx, "code", nothing)),"data", "data+code")) context ..."
     data_ctx = DataLinter.DataInterface.build_data_context(
         get(ctx, "data", nothing),
         get(ctx, "code", nothing);
