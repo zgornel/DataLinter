@@ -20,7 +20,7 @@ build_data_iterator(tbl::T) where {T <: Tables.AbstractColumns} = begin
     )
 end
 
-build_data_iterator(generic_data::T) where {T <: AbstractDict{<:String}} = begin
+build_data_iterator(generic_data::T) where T<:AbstractDict = begin
     DataIterator{T}(
         column_iterator = [],
         row_iterator = [],
@@ -190,8 +190,8 @@ build_data_context(data::T, code) where {T <: Tables.AbstractColumns} = CodeAndD
 build_data_context(data::T) where {T <: Tables.AbstractColumns} = DataContext(; data)
 
 # Specific methods, get called by plugin-implemented methods
-build_data_context(data::T, code) where {T <: AbstractDict{<:AbstractString}} = CodeAndDataContext(; data, code)
-build_data_context(data::T) where {T <: Tables.AbstractDict{<:AbstractString}} = DataContext(; data)
+build_data_context(data::AbstractDict, code) = CodeAndDataContext(; data, code)
+build_data_context(data::AbstractDict) = DataContext(; data)
 
 # Access context data
 get_context_data(ctx::CodeAndDataContext) = ctx.data

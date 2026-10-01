@@ -5,13 +5,13 @@
         code = "x=1; foo = x=> x+ 1; foo(x) |> print"
 
         @testset "DataContext (from generic (JSON) Dict)" begin
-            context = DI.build_data_context("{\"a\":\"[1,2,3]\"}")
+            context = DI.build_data_context("{\"a\":\"[1,2,3]\"}", DI.IOTypeDict)
             @test context isa DI.DataContext
             @test DI.build_data_iterator(context) isa DataLinter.LinterCore.DataIterator{<:Dict{<:AbstractString}}
         end
 
         @testset "DataContext (from generic (JSON) Dict)" begin
-            context = DI.build_data_context("{\"a\":\"[1,2,3]\"}", code)
+            context = DI.build_data_context("{\"a\":\"[1,2,3]\"}", code, DI.IOTypeDict)
             @test context isa DI.CodeAndDataContext
             @test DI.build_data_iterator(context) isa DataLinter.LinterCore.DataIterator{<:Dict{<:AbstractString}}
         end
