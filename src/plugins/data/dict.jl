@@ -25,12 +25,12 @@ build_data_context(
 ) = begin
     object_dict = Dict(
         try
-                k => csv_parse_function(v; kwargs...)
+                k => csv_parse_function(v; kwargs..., header, delim)
         catch
                 @debug "Dict data plugin: could not parse key=\"$k\" as csv."
                 k => nothing
         end
-            for (k, v) in data_dict
+            for (k, (v, header, delim)) in data_dict
     )
     filter!(p -> !isnothing(p.second), object_dict)  # filter out keysd not parsed as CSV
     return build_data_context(object_dict)  # calls method from DataInterface
@@ -54,12 +54,12 @@ build_data_context(
 ) = begin
     object_dict = Dict(
         try
-                k => csv_parse_function(v; kwargs...)
+                k => csv_parse_function(v; kwargs..., header, delim)
         catch
                 @debug "Dict data plugin: could not parse key=\"$k\" as csv."
                 k => nothing
         end
-            for (k, v) in data_dict
+            for (k, (v, header, delim)) in data_dict
     )
     filter!(p -> !isnothing(p.second), object_dict)  # filter out keys not parsed as CSV
     return build_data_context(object_dict, code)  # calls method from DataInterface
