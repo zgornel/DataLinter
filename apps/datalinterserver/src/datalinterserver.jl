@@ -19,6 +19,8 @@ const ERROR_IN_REQ_HANDLING = -1
 # Linting request values
 const DEFAULT_LINTERS = ["all"]
 const DEFAULT_OUTPUT_TYPE = :text
+const DEFAULT_DATA_HEADER = false
+const DEFAULT_DATA_DELIM = ','
 const DEFAULT_SHOW_NA = false
 const DEFAULT_SHOW_STATS = true
 const DEFAULT_SHOW_PASSING = false
@@ -241,12 +243,14 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     opts = _request["linter_input"]["options"]
 
     # Build data context directly from request data information
+    _process_context_value(val, default=nothing) = ifelse(isnothing(val), default, val)
+
     @debug "Building $(ifelse(isnothing(get(ctx, "code", nothing)),"data", "data+code")) context ..."
     data_ctx = DataLinter.DataInterface.build_data_context(
-        get(ctx, "data", nothing),
-        get(ctx, "code", nothing);
-        delim = first(ctx["data_delim"]),
-        header = ctx["data_header"]
+        _process_context_value(get(ctx, "data", nothing), ""),
+        _process_context_value(get(ctx, "code", nothing), "");
+        delim = _process_context_value(get(ctx, "data_delim", nothing), DEFAULT_DATA_DELIM),
+        header = _process_context_value(get(ctx, "data_header", nothing), DEFAULT_DATA_HEADER)
     )
 
     @debug "Data context loaded and succesfully:\n$data_ctx"
