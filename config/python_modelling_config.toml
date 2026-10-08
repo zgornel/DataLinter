@@ -1,8 +1,8 @@
 # Section `experiment` describes the type of experiment and
 # related information such as target variables, data variables, etc.
 [experiment]
-    name = "Configuration for testing; all linters enabled"
-    target_variable = 4
+    name = "Configuration for Python modelling"
+    #target_variable = 4
 
 # Section `linters` enables or disables linters. The format is:
 # ```
@@ -15,37 +15,37 @@
 [linters]
     # Google linters
     datetime_as_string = true
-    tokenizable_string = true
+    tokenizable_string = false
     number_as_string = true
-    zipcodes_as_values = true
-    large_outliers = true
+    zipcodes_as_values = false
+    large_outliers = false
     int_as_float = true
-    enum_detector = true
-    uncommon_list_lengths = true
+    enum_detector = false
+    uncommon_list_lengths = false
     duplicate_examples = true
     empty_example = true
-    uncommon_signs = true
-    long_tailed_distrib = true
-    circular_domain = true
+    uncommon_signs = false
+    long_tailed_distrib = false
+    circular_domain = false
 
     # Additional linters
     many_missing_values = true
-    negative_values = true
-    imbalanced_target_variable = true
+    negative_values = false
+    imbalanced_target_variable = false
     vif_colinearity = true
     cnc_colinearity = true
 
     # Specific R linters
-    R_imbalanced_target_variable = true
-    R_glmmTMB_binomial_modelling = true
-    R_glm_modelling = true
-    R_colinearity_with_target = true
+    R_imbalanced_target_variable = false
+    R_glmmTMB_binomial_modelling = false
+    R_glm_modelling = false
+    R_colinearity_with_target = false
 
-    R_sample_size_adequacy = true
-    R_variables_present_in_data = true
-    R_high_cardinality_categoricals = true
-    R_numeric_scale_imbalance = true
-    R_near_zero_variance_predictors = true
+    R_sample_size_adequacy = false
+    R_variables_present_in_data = false
+    R_high_cardinality_categoricals = false
+    R_numeric_scale_imbalance = false
+    R_near_zero_variance_predictors = false
 
     # Specific Python linters
     Python_imbalanced_target_variable = true
@@ -67,7 +67,7 @@
     [parameters.tokenizable_string]
         min_tokens = 3    # minimum number of tokens in a string for lint to trigger
         #regexes = ["r\"\\s+\""]  # regexes that split the string into tokens (each regex match is applied separately)
-        unused_slot = "a"  # for **TESTING PURPOSES ONLY**, will not be used by the data linter
+        unused_slot = "a"  # for testing purposes only, will not be used by the data linter
 
     [parameters.number_as_string]
         match_perc = 0.5  # fraction of strings in column that can be converted to number for lint to trigger
@@ -116,10 +116,10 @@
         threshold = 0.1
 
     [parameters.vif_colinearity]
-        vif_threshold = 20.0
+        vif_threshold = 10.0
 
     [parameters.cnc_colinearity]
-        cnc_threshold = 150.0
+        cnc_threshold = 100.0
 
     # R modelling linters
     [parameters.R_imbalanced_target_variable]

@@ -7,17 +7,108 @@ on:
     tags:
       - '*'
   pull_request:
+
 jobs:
-  run:
-    runs-on: ubuntu-latest
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+
     steps:
+      # ──────────────────────────────────────────────────────────────
+      # 1. Install tree-sitter CLI (pinned to v0.25.0 on all platforms)
+      # ──────────────────────────────────────────────────────────────
+      - name: Install tree-sitter (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y wget
+          wget https://github.com/tree-sitter/tree-sitter/releases/download/v0.25.0/tree-sitter-linux-x64.gz
+          gunzip tree-sitter-linux-x64.gz
+          chmod +x tree-sitter-linux-x64
+          sudo mv tree-sitter-linux-x64 /usr/local/bin/tree-sitter
+          tree-sitter --version
+      # ──────────────────────────────────────────────────────────────
+      # 2. Prepare working directory for parser sources (works on all OS)
+      # ──────────────────────────────────────────────────────────────
+      - name: Create ~/src directory
+        shell: bash
+        run: mkdir -p ~/src/
+
+      # ──────────────────────────────────────────────────────────────
+      # 3. Install the required tree-sitter parsers (same on all OS)
+      # ──────────────────────────────────────────────────────────────
+      - name: install tree-sitter-r
+        shell: bash
+        run: |
+          git clone https://github.com/r-lib/tree-sitter-r ~/src/tree-sitter-r
+          cd ~/src/tree-sitter-r
+          tree-sitter generate
+
+      - name: install tree-sitter-python
+        shell: bash
+        run: |
+          git clone https://github.com/tree-sitter/tree-sitter-python ~/src/tree-sitter-python
+          cd ~/src/tree-sitter-python
+          tree-sitter generate
+
+      - name: install tree-sitter-julia
+        shell: bash
+        run: |
+          git clone https://github.com/tree-sitter/tree-sitter-julia ~/src/tree-sitter-julia
+          cd ~/src/tree-sitter-julia
+          tree-sitter generate
+
+      - name: install tree-sitter-c
+        shell: bash
+        run: |
+          git clone https://github.com/tree-sitter/tree-sitter-c ~/src/tree-sitter-c
+          cd ~/src/tree-sitter-c
+          tree-sitter generate
+
+      - name: install tree-sitter-csharp
+        shell: bash
+        run: |
+          git clone https://github.com/tree-sitter/tree-sitter-c-sharp ~/src/tree-sitter-c-sharp
+          cd ~/src/tree-sitter-c-sharp
+          tree-sitter generate
+
+      # ──────────────────────────────────────────────────────────────
+      # 4. Init tree-sitter config (works on all platforms)
+      # ──────────────────────────────────────────────────────────────
+      - name: Init tree-sitter
+        shell: bash
+        run: |
+          tree-sitter init-config
+          cat ~/.config/tree-sitter/config.json 2>/dev/null || echo "Config shown (Windows location may differ)"
+
+      # ──────────────────────────────────────────────────────────────
+      # 5. Checkout code + Julia setup (already cross-platform)
+      # ──────────────────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Julia 1.8.0
+
+      - name: Set up Julia 1.x
         uses: julia-actions/setup-julia@v1
         with:
           version: "1"
+
       - uses: julia-actions/julia-buildpkg@v1
+
+      # ──────────────────────────────────────────────────────────────
+      # 6. Verify setup
+      # ──────────────────────────────────────────────────────────────
+      - name: check tree-sitter languages
+        shell: bash
+        run: |
+          ls -al ~/src
+          tree-sitter dump-languages
+
+      # ──────────────────────────────────────────────────────────────
+      # 7. Run tests + coverage
+      # ──────────────────────────────────────────────────────────────
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
       - uses: codecov/codecov-action@v5
