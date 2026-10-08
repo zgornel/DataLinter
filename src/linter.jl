@@ -277,7 +277,11 @@ function lint(
                         for (i, col) in enumerate(datait.column_iterator)
                             _name = columnname(datait, i)
                             _type = columntype(datait, i)
-                            result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
+                            result = try
+                                linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
+                            catch ex
+                                NotAvailableCheck("Linter '$(linter.name)' failed for column='$_name' with a $(typeof(ex))")
+                            end
                             push!(lintout, (linter, "column='$_name'") => result)
                             progress && next!(_progress, spinner = SPINNER)
                         end
@@ -285,24 +289,32 @@ function lint(
                     # 2. Apply over rows
                     if applicable(linter, linting_ctx, :row)
                         irow = 1
-                        no_empty_rows = true
+                        no_problem_rows = true
                         for row in datait.row_iterator
-                            result = linter.f(row, linting_ctx; linter_kwargs...)
-                            if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
+                            result = try
+                                linter.f(row, linting_ctx; linter_kwargs...)
+                            catch
+                                NotAvailableCheck()  # no need to investigate failures, only failed checks recorded
+                            end
+                            if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed, N/A checks as there may be too many
                                 push!(lintout, (linter, "row=$irow") => result)
-                                no_empty_rows = false
+                                no_problem_rows = false
                                 progress && next!(_progress, spinner = SPINNER)
                             end
                             irow += 1
                         end
                         # if there are no empty rows add a single entry for all, mark the linter as
                         # N/A if there are no rows (data is not a table) or passed (data is a table)
-                        no_empty_rows && push!(lintout, (linter, "row='all'") =>
+                        no_problem_rows && push!(lintout, (linter, "row='all'") =>
                             ifelse(length(datait.row_iterator)==0, NotAvailableCheck(), PassedCheck()))
                     end
                     # 3. Apply over whole dataset
                     if applicable(linter, linting_ctx, :dataset)
-                        result = linter.f(datait.dataref, linting_ctx; linter_kwargs...)
+                        result = try
+                            linter.f(datait.dataref, linting_ctx; linter_kwargs...)
+                        catch ex
+                            NotAvailableCheck("Linter '$(linter.name)' failed for dataset with a $(typeof(ex))")
+                        end
                         push!(lintout, (linter, "dataset") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end
