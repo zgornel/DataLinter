@@ -243,14 +243,12 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     opts = _request["linter_input"]["options"]
 
     # Build data context directly from request data information
-    _process_context_value(val, default=nothing) = ifelse(isnothing(val), default, val)
-
-    @debug "Building $(ifelse(isnothing(get(ctx, "code", nothing)),"data", "data+code")) context ..."
+    @debug "Building $(ifelse(isempty(get(ctx, "code", "")),"data", "data+code")) context ..."
     data_ctx = DataLinter.DataInterface.build_data_context(
-        _process_context_value(get(ctx, "data", nothing), ""),
-        _process_context_value(get(ctx, "code", nothing), "");
-        delim = _process_context_value(get(ctx, "data_delim", nothing), DEFAULT_DATA_DELIM),
-        header = _process_context_value(get(ctx, "data_header", nothing), DEFAULT_DATA_HEADER)
+        get(ctx, "data", ""),
+        get(ctx, "code", "");
+        delim = get(ctx, "data_delim", DEFAULT_DATA_DELIM),
+        header = get(ctx, "data_header", DEFAULT_DATA_HEADER)
     )
 
     @debug "Data context loaded and succesfully:\n$data_ctx"
