@@ -93,7 +93,7 @@ function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match
 end
 
 
-function is_empty_example(row, args...; kwargs...)
+function is_empty_example(row::T, args...; kwargs...) where T<:Tables.AbstractRow
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)
@@ -110,6 +110,7 @@ function is_empty_example(row, args...; kwargs...)
     end
 end
 
+is_empty_example(row, args...; kwargs...) = NotAvailableCheck()
 
 is_zipcode(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 is_zipcode(::Type{<:FloatEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
@@ -132,8 +133,8 @@ function is_zipcode(
 end
 
 
-function has_duplicates(tblref::Base.RefValue{<:Tables.AbstractColumns}, args...; kwargs...)
-    _rows = Tables.rows(tblref[])
+function has_duplicates(dataref::Base.RefValue{<:Tables.AbstractColumns}, args...; kwargs...)
+    _rows = Tables.rows(dataref[])
     if length(unique(hash(r) for r in _rows)) != length(_rows)
         return FailedCheck(nothing)
     else
@@ -141,6 +142,7 @@ function has_duplicates(tblref::Base.RefValue{<:Tables.AbstractColumns}, args...
     end
 end
 
+has_duplicates(dataref, args...; kwargs...) = NotAvailableCheck(nothing)
 
 has_large_outliers(::Type{<:ListEltype}, args...; kwargs...) = NotAvailableCheck(nothing)
 has_large_outliers(::Type{<:StringEltype}, args...; kwargs...) = NotAvailableCheck(nothing)

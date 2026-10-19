@@ -18,7 +18,7 @@ function get_context_data end
 @Base.kwdef struct DataIterator{T}
     column_iterator     # iterate over columns with elements `((name, eltype), [values,...])`
     row_iterator        # iterate over rows with elements `[name => value, name=>value, ...]`
-    tblref::Ref{T}      # reference to the input data
+    dataref::Ref{T}      # reference to the input data
 end
 
 function columnname end # Returns the name of a 'column' element of the `DataIterator`
@@ -93,7 +93,7 @@ end
 
 const QUERY_HELPER_FUNCTIONS = Dict(
     ("r", ParSitter.TreeQueryExpr{String}) => (
-        target_tree_nodevalue = n -> strip(replace(n.content, r"[\s]" => "")),
+        target_tree_nodevalue = n -> string.(strip(replace(n.content, r"[\s]" => ""))),
         query_tree_nodevalue = n -> ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head, "@")[1]), n.head),
         capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
         node_comparison_yields_true = (tn, qn) -> ParSitter.is_capture_node(qn; capture_sym = "@").is_match || qn.head == "*",
@@ -118,16 +118,16 @@ const QUERY_HELPER_FUNCTIONS = Dict(
     ("python", ParSitter.TreeQueryExpr{ParSitter.TreeQueryNode}) => (
         target_tree_nodevalue = n -> (string.(strip(replace(n.content, r"[\s]" => ""))), n.name),
         query_tree_nodevalue = n -> (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
-        capture_function = n -> (v = strip(replace(n.content, r"[\s]" => "")), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
+        capture_function = n -> (v = string(strip(replace(n.content, r"[\s]" => ""))), srow = n["srow"], erow = n["erow"], scol = n["scol"], ecol = n["ecol"]),
         node_comparison_yields_true = (tn, qn) -> begin
             _target_nodevalue(n) = (string.(strip(replace(n.content, r"[\s]" => ""))), n.name)
-            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type),
-                return (
-                    (
-                        ParSitter.is_capture_node(qn; capture_sym = "@").is_match &&
+            _query_nodevalue(n) = (ifelse(ParSitter.is_capture_node(n).is_match, string(split(n.head.value, "@")[1]), n.head.value), n.head.type)
+            return (
+                (
+                    ParSitter.is_capture_node(qn; capture_sym = "@").is_match &&
                         isempty(first(_query_nodevalue(qn)))
-                    ) || first(_query_nodevalue(qn)) == "*"
-                ) && _target_nodevalue(tn)[2] == _query_nodevalue(qn)[2]
+                ) || first(_query_nodevalue(qn)) == "*"
+            ) && _target_nodevalue(tn)[2] == _query_nodevalue(qn)[2]
         end,
         node_equality_function = (tv, qv) -> tv[2] == qv[2] && tv[1] == qv[1],
     )
@@ -248,7 +248,6 @@ function lint(
     )
     lintout = Vector{Pair{Tuple{Linter, String}, AbstractCheck}}()
     datait = build_data_iterator(data_ctx)
-
     _progress = ProgressUnknown(desc = "Linting...", spinner = true, color = :white, showspeed = true)
     _terminal = REPL.Terminals.TTYTerminal("", stdin, stdout, stderr)
     for linter in build_linters(kb, data_ctx; linters)
@@ -278,7 +277,11 @@ function lint(
                         for (i, col) in enumerate(datait.column_iterator)
                             _name = columnname(datait, i)
                             _type = columntype(datait, i)
-                            result = linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
+                            result = try
+                                linter.f(_type, col, skipmissing(col), _name, linting_ctx; linter_kwargs...)
+                            catch ex
+                                NotAvailableCheck("Linter '$(linter.name)' failed for column='$_name' with a $(typeof(ex))")
+                            end
                             push!(lintout, (linter, "column='$_name'") => result)
                             progress && next!(_progress, spinner = SPINNER)
                         end
@@ -286,22 +289,32 @@ function lint(
                     # 2. Apply over rows
                     if applicable(linter, linting_ctx, :row)
                         irow = 1
-                        no_empty_rows = true
+                        no_problem_rows = true
                         for row in datait.row_iterator
-                            result = linter.f(row, linting_ctx; linter_kwargs...)
-                            if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed,failed checks as there may be too many
+                            result = try
+                                linter.f(row, linting_ctx; linter_kwargs...)
+                            catch
+                                NotAvailableCheck()  # no need to investigate failures, only failed checks recorded
+                            end
+                            if !isa(result, PassedCheck) && !isa(result, NotAvailableCheck)  # skip passed, N/A checks as there may be too many
                                 push!(lintout, (linter, "row=$irow") => result)
-                                no_empty_rows = false
+                                no_problem_rows = false
                                 progress && next!(_progress, spinner = SPINNER)
                             end
                             irow += 1
                         end
-                        # if there are no empty rows add a single entry for all, mark the linter as passed (true)
-                        no_empty_rows && push!(lintout, (linter, "row='all'") => PassedCheck(nothing))
+                        # if there are no empty rows add a single entry for all, mark the linter as
+                        # N/A if there are no rows (data is not a table) or passed (data is a table)
+                        no_problem_rows && push!(lintout, (linter, "row='all'") =>
+                            ifelse(length(datait.row_iterator)==0, NotAvailableCheck(), PassedCheck()))
                     end
                     # 3. Apply over whole dataset
                     if applicable(linter, linting_ctx, :dataset)
-                        result = linter.f(datait.tblref, linting_ctx; linter_kwargs...)
+                        result = try
+                            linter.f(datait.dataref, linting_ctx; linter_kwargs...)
+                        catch ex
+                            NotAvailableCheck("Linter '$(linter.name)' failed for dataset with a $(typeof(ex))")
+                        end
                         push!(lintout, (linter, "dataset") => result)
                         progress && next!(_progress, spinner = SPINNER)
                     end
