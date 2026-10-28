@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-
+        julia-version: ['1.12', '1.13']
     steps:
       # ──────────────────────────────────────────────────────────────
       # 1. Install tree-sitter CLI (pinned to v0.25.0 on all platforms)
@@ -93,7 +93,7 @@ jobs:
       - name: Set up Julia 1.x
         uses: julia-actions/setup-julia@v1
         with:
-          version: "1"
+          version: ${{ matrix.julia-version }}
 
       - uses: julia-actions/julia-buildpkg@v1
 
