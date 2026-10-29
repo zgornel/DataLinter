@@ -1,5 +1,8 @@
 # Debian (Trixie) Linux based commands
-
+#
+# Multi-stage build. Only the final stage ships: the C toolchain, git, node and
+# all apt lists stay behind in the `prep` stage.
+#
 # Example run of the datalinter server
 # `docker run -it --rm\
 #       -p 10000:10000\
@@ -9,117 +12,208 @@
 #               --config-path /datalinter/config/r_modelling_config.toml\
 #               --log-level debug`
 
+
+# Stage `apps`: stage the two compiled bundles and hard-link the files they
+# share (both carry a full copy of the same Julia runtime).
+# ----------------------------------------------------------------------------
+FROM debian:trixie-slim AS apps
+
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends rdfind && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Binaries
+COPY ./build/datalinter /out/apps/datalinter
+COPY ./build/datalinterserver /out/apps/datalinterserver
+# Other files
+COPY ./knowledge /out/apps/datalinter/knowledge
+COPY ./knowledge /out/apps/datalinterserver/knowledge
+COPY ./config /out/apps/datalinter/config
+COPY ./config /out/apps/datalinterserver/config
+
+# Replace duplicate files across the two bundles with hard links. The sysimages
+# differ and are left alone; the Julia runtime libraries are identical.
+# NOTE: the final stage must copy both bundles with a *single* COPY --from of
+#       the parent directory. Hard links are only preserved within one copy
+#       operation, so splitting it into two COPY lines silently loses this.
+RUN rdfind -makehardlinks true -outputname /dev/null \
+        /out/apps/datalinter /out/apps/datalinterserver && \
+    echo "hard-linked files: $(find /out/apps -type f -links +1 | wc -l)" && \
+    echo "apparent $(du -sh --apparent-size /out/apps | cut -f1), on disk $(du -sh /out/apps | cut -f1)"
+
+
+# Stage `prep`: tree-sitter CLI, grammars, and a pre-compiled parser cache.
+# The toolchain needed to produce all this lives and dies in this stage.
+# ----------------------------------------------------------------------------
+FROM debian:trixie-slim AS prep
+
+# Pin the lookup paths instead of relying on $HOME/XDG, so the cache that the
+# final stage ships is found regardless of which user the container runs as.
+ENV TREE_SITTER_DIR=/root/.config/tree-sitter \
+    TREE_SITTER_LIBDIR=/root/.cache/tree-sitter/lib
+
+# tree-sitter v0.26 is only in Debian Sid (unstable): add the repo, pin it, use
+# it, and drop it again, all in one layer.
+# `nodejs` is explicit because `tree-sitter generate` shells out to node; it
+# would otherwise arrive silently as a Recommends of tree-sitter-cli.
+RUN set -eux; \
+    echo "deb http://deb.debian.org/debian sid main contrib non-free" > /etc/apt/sources.list.d/sid.list; \
+    printf 'Package: *\nPin: release a=stable\nPin-Priority: 900\n\nPackage: libtree-sitter0.26 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990\n' > /etc/apt/preferences.d/tree-sitter; \
+    apt-get update; \
+    apt-get -y install --no-install-recommends \
+        ca-certificates git gcc g++ make nodejs tree-sitter-cli; \
+    rm -f /etc/apt/sources.list.d/sid.list /etc/apt/preferences.d/tree-sitter; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
+
+# Equivalent of `tree-sitter init-config`, written explicitly because the
+# generated file embeds the build user's home directory.
+RUN set -eux; \
+    mkdir -p "$TREE_SITTER_DIR" "$TREE_SITTER_LIBDIR" /root/dev; \
+    printf '{\n  "parser-directories": [\n    "/root/dev"\n  ]\n}\n' > "$TREE_SITTER_DIR/config.json"
+
+# Install parsers. Shallow, blobless clones: the full histories of these six
+# repos come to ~320MB and nothing here needs them.
+RUN set -eux; \
+    git clone --depth 1 --filter=blob:none \
+        "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r"; \
+    for parser in python julia c c-sharp javascript; do \
+      git clone --depth 1 --filter=blob:none \
+          "https://github.com/tree-sitter/tree-sitter-${parser}.git" \
+          "/root/dev/tree-sitter-${parser}"; \
+    done; \
+    for d in /root/dev/tree-sitter-*; do \
+      ( cd "$d" && tree-sitter generate ); \
+    done
+
+# Warm the parser cache. The CLI compiles each grammar into a shared object
+# lazily on first parse; doing it here is what lets the final image ship with
+# no C compiler, and it also removes a multi-second recompile from the first
+# parse in every new container.
+COPY ./docker/debian/smoke /out/smoke
+RUN set -eux; \
+    tr -d '\r' < /out/smoke/scopes.txt > /tmp/scopes; \
+    while read -r scope file; do \
+      tree-sitter parse -q -x --scope "$scope" "/out/smoke/$file" > /dev/null; \
+    done < /tmp/scopes; \
+    ls -l "$TREE_SITTER_LIBDIR"
+
+# Prune each grammar to the files `tree-sitter parse` actually reads once the
+# shared object exists: tree-sitter.json (the only manifest it consults) plus
+# src/parser.c, src/scanner.c and src/grammar.json. parser.c must stay -- the
+# CLI stats it on every parse and errors out if it is missing -- but its
+# contents are no longer needed.
+# NOTE: this has to run *after* the cache is warmed. src/tree_sitter/*.h are
+#       the include path for compiling parser.c, so pruning them first makes
+#       the compile fail with "tree_sitter/parser.h: No such file or directory".
+RUN set -eux; \
+    for d in /root/dev/tree-sitter-*; do \
+      test -f "$d/tree-sitter.json" || { echo "no tree-sitter.json in $d"; exit 1; }; \
+      test -f "$d/src/parser.c" || { echo "no src/parser.c in $d"; exit 1; }; \
+      find "$d" -mindepth 1 -maxdepth 1 \
+           ! -name tree-sitter.json ! -name src -exec rm -rf {} +; \
+      find "$d/src" -mindepth 1 -maxdepth 1 \
+           ! -name parser.c ! -name scanner.c ! -name grammar.json -exec rm -rf {} +; \
+    done
+
+# Make the warm cache durable:
+#  - the CLI recompiles when mtime(parser.c) > mtime(parser .so), so pin the
+#    sources strictly older than the shared objects (the comparison is `>`, so
+#    this stays correct even under a builder that rewrites timestamps);
+#  - a lock directory baked into the image is older than the CLI's 30s
+#    staleness threshold, so it is not shipped.
+RUN set -eux; \
+    find /root/dev \( -name 'parser.c' -o -name 'scanner.c' \) \
+         -exec touch -d '2020-01-01T00:00:00Z' {} +; \
+    touch -d '2020-01-02T00:00:00Z' "$TREE_SITTER_LIBDIR"/*.so; \
+    rm -rf /root/.cache/tree-sitter/lock; \
+    test ! -e /root/.cache/tree-sitter/lock; \
+    mkdir -p /out/ts; \
+    cp -a /root/dev /out/ts/grammars; \
+    cp -a "$TREE_SITTER_DIR" /out/ts/config; \
+    cp -a "$TREE_SITTER_LIBDIR" /out/ts/lib
+
+
+# Final stage: the shipped image.
+# ----------------------------------------------------------------------------
 FROM debian:trixie-slim
 LABEL org.opencontainers.image.source="https://github.com/zgornel/DataLinter"
 LABEL maintainer="zgornel"
 
-RUN apt-get update
-RUN apt-get -y install --no-install-recommends ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg
+ENV TREE_SITTER_DIR=/root/.config/tree-sitter \
+    TREE_SITTER_LIBDIR=/root/.cache/tree-sitter/lib
+
+# Runtime libraries only. libtree-sitter0.26 is deliberately absent: the CLI
+# links tree-sitter statically, and ParSitter shells out to the CLI rather than
+# loading the C library.
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends ca-certificates libxml2 libgcc-s1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create directories, copy files
 # ------------------------------
 
-# Directories
+# Directories (the documented mount points)
 RUN mkdir -p /_config \
              /_data \
              /_code \
              /output \
              /workspace \
-             /datalinter/knowledge \
-             /datalinter/config \
-             /datalinterserver/knowledge \
-             /datalinterserver/config \
              /tmp/test/data \
              /tmp/test/code \
              /root/dev/ \
              /root/src/
 
-# Copy binaries
 WORKDIR /
-COPY ./build/datalinter /datalinter
-COPY ./build/datalinterserver /datalinterserver
-# Copy other files
-COPY ./knowledge /datalinter/knowledge
-COPY ./knowledge /datalinterserver/knowledge
-COPY ./config /datalinter/config
-COPY ./config /datalinterserver/config
-COPY ./test/data /tmp/test/data
-COPY ./test/code /tmp/test/code
-COPY ./test/test_config.toml /tmp/test/test_config.toml
+
+# Copy binaries. Both bundles in ONE COPY, so that the hard links made in the
+# `apps` stage survive into this layer.
+COPY --from=apps /out/apps/ /
+
+# tree-sitter CLI. The Sid binary depends only on libc6 and libgcc-s1, so the
+# binary is copied instead of dragging the Sid repo into this image.
+COPY --from=prep /usr/bin/tree-sitter /usr/bin/tree-sitter
+COPY --from=prep /usr/share/doc/tree-sitter-cli/copyright /usr/share/doc/tree-sitter-cli/copyright
+COPY --from=prep /out/ts/grammars/ /root/dev/
+COPY --from=prep /out/ts/config/ /root/.config/tree-sitter/
 
 # Copy ParSitter repos (needed for the languages/ folder)
 COPY ./julia_packages/ParSitter /root/.julia/packages/ParSitter
 
-# Prime dependencies for top level script
-# datalinter
-RUN /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
-RUN /datalinter/bin/datalinter /tmp/test/data/correlated_data.csv --code-path /tmp/test/code/r_snippet_imbalanced.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
-RUN /datalinter/bin/datalinter /tmp/test/data/correlated_target_data.csv --code-path /tmp/test/code/r_snippet_binomial.r --config-path /tmp/test/test_config.toml --log-level debug > /dev/null
+# Test data and code, referenced from docs/src/examples.md
+COPY ./test/data /tmp/test/data
+COPY ./test/code /tmp/test/code
+COPY ./test/test_config.toml /tmp/test/test_config.toml
 
-# datalinterserver (no priming)
-RUN /datalinterserver/bin/datalinterserver -p 11000 -i 127.0.0.1 \
-        --config-path /tmp/test/test_config.toml \
-        --priming-data-path /tmp/test/data/correlated_data.csv \
-        --priming-code-path /tmp/test/code/r_snippet_imbalanced.r \
-        --log-level error &
+# Copied last: the parser objects must not end up older than the grammar
+# sources they shadow.
+COPY --from=prep /out/ts/lib/ /root/.cache/tree-sitter/lib/
+COPY ./docker/debian/smoke /tmp/test/smoke
+
+# Verify the shipped image rather than an intermediate one. No C compiler
+# exists here, so a missing or stale parser object, a stale lock file, an
+# over-pruned grammar or an unresolvable scope all fail the build instead of
+# shipping an image that breaks on first use. This is the check that was
+# missing when 34b7a20 removed gcc and had to be reverted by 5107559.
+RUN set -eux; \
+    for c in cc gcc g++ make git; do ! command -v "$c"; done; \
+    test ! -e /root/.cache/tree-sitter/lock; \
+    ldd /usr/bin/tree-sitter; \
+    tr -d '\r' < /tmp/test/smoke/scopes.txt > /tmp/scopes; \
+    while read -r scope file; do \
+      out=$(tree-sitter parse -q -x --scope "$scope" "/tmp/test/smoke/$file"); \
+      test -n "$out"; \
+      echo "parsed $scope"; \
+    done < /tmp/scopes; \
+    out=$(tree-sitter parse -q -x --scope source.R /tmp/test/code/r_snippet_imbalanced.r); \
+    test -n "$out"; \
+    out=$(tree-sitter parse -q -x --scope source.python /tmp/test/code/python_snippet_imbalanced.py); \
+    test -n "$out"
 
 # Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
 ### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
-
-
-# Tree sitter stuff
-# ----------------------------------------
-
-# Install tree-sitter from Debian Sid (unstable), v0.26
-RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
-RUN apt-get update
-RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.26 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990' > /etc/apt/preferences.d/tree-sitter
-RUN apt-get -y install libtree-sitter0.26 tree-sitter-cli
-
-# Other tree-sitter installs (disabled)
-# -------------------------------------
-# To install tree-sitter from Debian Trixie, v0.22, use line below
-### RUN apt-get -y install libtree-sitter0.22 tree-sitter-cli
-
-# Install tree-sitter from source
-### RUN apt-get -y install build-essential cmake pkg-config rustc
-### RUN git clone https://github.com/tree-sitter/tree-sitter.git /root/src/tree-sitter
-### WORKDIR /root/src/tree-sitter
-### RUN git checkout v0.26
-### RUN make
-### RUN make install
-### WORKDIR /root/src/tree-sitter/cli
-### RUN cargo build --release
-### RUN cargo install --path /usr/local/bin
-### RUN apt-get -y remove build-essential cmake pkg-config rustc
-### RUN apt-get autoremove
-
-
-# tree-sitter set-up and grammar installation
-# ------------------------------------------------
-# Generate /root/.config/tree-sitter/config.json with:
-# { "parser-directories": [
-#       "/root/dev/",
-#       "/root/src/"
-#   ], ... }
-WORKDIR /
-RUN tree-sitter init-config
-
-# Install parsers
-RUN git clone "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r" && \
-    cd "/root/dev/tree-sitter-r" && \
-    tree-sitter generate;
-
-RUN for parser in python julia c c-sharp javascript; do \
-      REPO_NAME=$(echo "tree-sitter-$parser"); \
-      git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
-      cd "/root/dev/${REPO_NAME}" && \
-      tree-sitter generate; \
-    done
-
-# Cleanup operations
-RUN apt-get -y autoclean
-RUN apt-get -y autoremove
 
 # Set up current directory to root
 WORKDIR /

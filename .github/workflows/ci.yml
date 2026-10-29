@@ -49,6 +49,19 @@ jobs:
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:latest
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.1.5
 
+      - id: report_datalinter-compiled_image_size
+        name:  Report datalinter-compiled image size
+        run: |
+          IMG=ghcr.io/zgornel/datalinter-compiled:debian
+          echo "image size: $(docker image inspect -f '{{.Size}}' $IMG) bytes"
+          docker history --format '{{.Size}}  {{.CreatedBy}}' $IMG
+          # The two app bundles share one Julia runtime through hard links made
+          # in the `apps` build stage. Those only survive if the final stage
+          # copies both bundles in a single COPY --from, so guard the regression.
+          LINKED=$(docker run --rm $IMG sh -c 'find /datalinter /datalinterserver -xdev -type f -links +1 | wc -l')
+          echo "hard-linked files across the two bundles: $LINKED"
+          test "$LINKED" -gt 0
+
       - id: push_datalinter-compiled_image
         name:  Push to ghcr.io datalinter-compiled image
         run: |

@@ -7,6 +7,12 @@
 FROM debian:trixie-slim
 LABEL maintainer="zgornel"
 
+ARG JULIA_VERSION=1.12.5
+
+# Lookup paths for the tree-sitter CLI, pinned rather than left to $HOME/XDG.
+ENV TREE_SITTER_DIR=/root/.config/tree-sitter \
+    TREE_SITTER_LIBDIR=/root/.cache/tree-sitter/lib
+
 RUN apt-get update && \
     apt-get -y install --no-install-recommends ca-certificates git wget gcc g++ jq curl make tar gzip libxml2 dpkg && \
     apt-get clean && \
@@ -29,14 +35,16 @@ COPY ./Project.toml ./
 
 # Julia stuff
 # ----------------------------------------
-# Install julia in /julia
+# Install julia in /julia. Download, unpack and delete the tarball in a single
+# layer, otherwise the ~290MB archive stays resident in the image history.
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz
-RUN tar zxf julia-1.12.5-linux-x86_64.tar.gz
-RUN ln -s /julia-1.12.5 /julia
-RUN rm julia-1.12.5-linux-x86_64.tar.gz
+RUN set -eux; \
+    wget -q "https://julialang-s3.julialang.org/bin/linux/x64/${JULIA_VERSION%.*}/julia-${JULIA_VERSION}-linux-x86_64.tar.gz"; \
+    tar zxf "julia-${JULIA_VERSION}-linux-x86_64.tar.gz"; \
+    ln -s "/julia-${JULIA_VERSION}" /julia; \
+    rm "julia-${JULIA_VERSION}-linux-x86_64.tar.gz"
 # Install builder
-RUN git clone https://github.com/zgornel/julia_app_builder
+RUN git clone --depth 1 https://github.com/zgornel/julia_app_builder
 
 
 # Tree sitter stuff
@@ -45,11 +53,18 @@ RUN mkdir -p /root/dev/ \
              /root/src/ \
              /workspace
 
-# Install tree-sitter from Debian Sid (unstable), v0.26
-RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
-RUN apt-get update
-RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.26 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990' > /etc/apt/preferences.d/tree-sitter
-RUN apt-get -y install libtree-sitter0.26 tree-sitter-cli
+# Install tree-sitter from Debian Sid (unstable), v0.26. Add the repo, pin it,
+# use it and drop it again in one layer, so the Sid package lists do not stay
+# behind. `nodejs` is explicit because `tree-sitter generate` shells out to
+# node; it would otherwise arrive silently as a Recommends of tree-sitter-cli.
+RUN set -eux; \
+    echo "deb http://deb.debian.org/debian sid main contrib non-free" > /etc/apt/sources.list.d/sid.list; \
+    printf 'Package: *\nPin: release a=stable\nPin-Priority: 900\n\nPackage: libtree-sitter0.26 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990\n' > /etc/apt/preferences.d/tree-sitter; \
+    apt-get update; \
+    apt-get -y install --no-install-recommends nodejs libtree-sitter0.26 tree-sitter-cli; \
+    rm -f /etc/apt/sources.list.d/sid.list /etc/apt/preferences.d/tree-sitter; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*
 
 # Other tree-sitter installs (disabled)
 # -------------------------------------
@@ -72,24 +87,36 @@ RUN apt-get -y install libtree-sitter0.26 tree-sitter-cli
 
 # tree-sitter set-up and grammar installation
 # ------------------------------------------------
-# Generate /root/.config/tree-sitter/config.json with:
-# { "parser-directories": [
-#       "/root/dev/",
-#       "/root/src/"
-#   ], ... }
+# Equivalent of `tree-sitter init-config`, written explicitly because the
+# generated file embeds the build user's home directory:
+# { "parser-directories": ["/root/dev"] }
 WORKDIR /
-RUN tree-sitter init-config
+RUN set -eux; \
+    mkdir -p "$TREE_SITTER_DIR" "$TREE_SITTER_LIBDIR"; \
+    printf '{\n  "parser-directories": [\n    "/root/dev"\n  ]\n}\n' > "$TREE_SITTER_DIR/config.json"
 
-# Install parsers
-RUN git clone "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r" && \
-    cd "/root/dev/tree-sitter-r" && \
-    tree-sitter generate;
-
-RUN for parser in python julia c c-sharp javascript; do \
-      REPO_NAME=$(echo "tree-sitter-$parser"); \
-      git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
-      cd "/root/dev/${REPO_NAME}" && \
-      tree-sitter generate; \
+# Install parsers. Shallow, blobless clones: the full histories of these repos
+# come to ~320MB and nothing in the build needs them.
+RUN set -eux; \
+    git clone --depth 1 --filter=blob:none \
+        "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r"; \
+    for parser in python julia c c-sharp javascript; do \
+      git clone --depth 1 --filter=blob:none \
+          "https://github.com/tree-sitter/tree-sitter-${parser}.git" \
+          "/root/dev/tree-sitter-${parser}"; \
+    done; \
+    for d in /root/dev/tree-sitter-*; do \
+      ( cd "$d" && tree-sitter generate ); \
     done
+
+# Pre-compile the parser shared objects, so neither `Pkg.test()` nor the app
+# build pays for compiling them (c-sharp alone is a 32MB parser.c at -O2).
+COPY ./docker/debian/smoke /root/smoke
+RUN set -eux; \
+    tr -d '\r' < /root/smoke/scopes.txt > /tmp/scopes; \
+    while read -r scope file; do \
+      tree-sitter parse -q -x --scope "$scope" "/root/smoke/$file" > /dev/null; \
+    done < /tmp/scopes; \
+    ls -l "$TREE_SITTER_LIBDIR"
 
 WORKDIR /
