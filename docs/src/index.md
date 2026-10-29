@@ -4,23 +4,25 @@ CurrentModule=DataLinter
 
 # Introduction
 
-DataLinter is a library for contextual linting of data and code. Its development started by rewriting a [data linter](https://github.com/brain-research/data-linter) written at Google in Julia. The aim of the redesign is to provide a richer and faster experience while also providing the baseline benefits outlined in the original [paper](http://learningsys.org/nips17/assets/papers/paper_19.pdf).
+**DataLinter** is a linter for data and code analysis. The aim is to address explicitly design issues that arise in ML/AI engineering. A distinct feature is that the linter supports simultaneous processing of multiple types of data: datasets, computer code etc. This is a more powerful approach for surfacing complex conceptual program design issues. The latter occur frequently in semantically rich workflows, such as in data science and ML/AI engineering.
 
-Its main ideea is that providing additional context leads to the detection of  more complex issues relating to data and code quality. These can arise due to both data structure as well as algorithmic or parameter choices.
+**DataLinter** is written in Julia. It partially mimics and significantly extends the functionality the original Google [work](https://github.com/brain-research/data-linter).
 
-*Context* here simply means additional information pertinent to the use of the data, available at runtime. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Context in this case could be the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language which uses the data. This provides a much higher degree of flexibility in the types of checks that can be implemented.
+## Linting
+The linter processes multiple data types for additional context. This supports the detection of more complex issues, such as those linked to interactions of semantically rich code and data. In machine learning for example, such interactions can generate ML models, code, datasets and new interactions. The rate of errors in each of these is dependent on input data properties, the algorithmic and input parameter choices as well as a good understanding of these from the part of the coder.
+
+The *context* is additional information useful to linting data, available at compile or run time. For example, the classical way of linting a dataset is without any prior information on what the data will be used for. Hence, the assumptions about what the data will be used for are implicit. Context in this case could be the type of analysis or modelling the data is used for i.e. classification or, the code in a given programming language which uses the data. This provides a much higher degree of flexibility in the types of checks that can be implemented.
 
 ## Features
 
-Features at a glance:
-- 27 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
-- Docker image with compiled binaries, production ready
-- CLI and HTTP server modes with zero-config
+- [High-level](https://github.com/zgornel/ParSitter.jl) code querying and pattern-matching, built on top of [tree-sitter](https://tree-sitter.github.io/tree-sitter/) parsers
+- Supported languages and libraries: **R** (glm), **Python** (scikit)
+- 27 [linters](https://zgornel.github.io/DataLinter/dev/linters_config/) for data, code that target runtime anti-patterns and include the original Google linters.
+- Linters are [configurable](https://zgornel.github.io/DataLinter/dev): can be enabled or disabled and some expose working parameters.
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
 - Text / JSON / HTML output support
-- Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
-- First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
-- Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
+- Docker image with compiled x86-64 binaries; CI/CD and production ready
+- CLI and HTTP server modes
 
 ## Installation
 
@@ -63,17 +65,16 @@ git clone https://github.com/zgornel/DataLinter
 
 ## Architecture
 
-The diagram below shows the current architecture, found also on the [the wiki](https://github.com/zgornel/DataLinter/wiki/DataLinter-architecture).
-
- - The full system follows a [micro-kernel](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) pattern: core system + plugins (arrows indicate **dependencies**):
+ - The linter follows a [micro-kernel](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) architecture pattern. It is made out of a `Core` system - control flow and abstractions - and `plugins`, which provide input/output processing and linting functionality. In the architectural diagram below, arrows indicate **dependencies**:
 ```mermaid
 graph LR
    A1[<b>CSV</b> plugin] --> DI[DataInterface]
    DI --> C[Core System]
    A2[<b>Parquet</b> plugin] --> DI
    A3[<b>Arrow</b> plugin] --> DI
+   A4[<b>GenericDict</b> plugin] --> DI
    KN[<b>KnowledgeBaseNative</b> plugin] --> KI[KnowledgeBaseInterface]
-   KN --> J[Julia code]
+   KN --> J[linters code (julia)]
    KI --> C
    O1[<b>Text</b> plugin] --> OI[OutputInterface]
    OI --> C
@@ -81,7 +82,7 @@ graph LR
    O3[<b>HTML</b> plugin] --> OI
 ```
 
- - The `Core` system follows a [pipes & filters](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) architecture (arrows indicate **data flow**
+ - The `Core` system follows a [pipes & filters](https://en.wikipedia.org/wiki/List_of_software_architecture_styles_and_patterns#List_of_software_architecture_styles) architecture pattern. In the diagram below, arrows indicate **data flow**:
 ```mermaid
 graph LR
    D[DataInterface] --> L[LinterCore]
@@ -97,10 +98,11 @@ The modules and corresponding implementations are shown below:
 - [`CSV` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/csv.jl)
 - [`Parquet` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/parquet.jl)
 - [`Arrow` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/arrow.jl)
+- [`GenericDict` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/data/dict.jl)
 - [`KnowledgeBaseInterface`](https://github.com/zgornel/DataLinter/blob/master/src/kb.jl)
 - [`KnowledgeBaseNative` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/kb/native.jl)
 - [`OutputInterface`](https://github.com/zgornel/DataLinter/blob/master/src/output.jl)
 - [`Text` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/text.jl)
 - [`JSON` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/json.jl)
 - [`HTML` plugin](https://github.com/zgornel/DataLinter/blob/master/src/plugins/output/html.jl)
-- [`Julia code`](https://github.com/zgornel/DataLinter/blob/master/knowledge/native)
+- [`Linters code (julia)`](https://github.com/zgornel/DataLinter/blob/master/knowledge/native)
