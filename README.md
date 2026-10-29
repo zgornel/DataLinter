@@ -4,12 +4,12 @@ Linter libraries and tools for ML/AI engineering.
 
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/zgornel/DataLinter?label=Release&color=success)](https://github.com/zgornel/DataLinter/releases/latest)
-[![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker&logoColor=white)](https://ghcr.io/zgornel/datalinter-compiled)
-[![Tests](https://github.com/zgornel/DataLinter/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/test.yml?query=branch%3Amaster)
 [![CI](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Tests](https://github.com/zgornel/DataLinter/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/test.yml?query=branch%3Amaster)
 [![Coverage](https://codecov.io/gh/zgornel/DataLinter/graph/badge.svg?token=GWKJKBZ5FB)](https://codecov.io/gh/zgornel/DataLinter)
-[![code style: runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/DataLinter/dev)
+[![code style: runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker&logoColor=white)](https://ghcr.io/zgornel/datalinter-compiled)
 
 ![til](./gifs/cli.gif)
 
@@ -25,23 +25,25 @@ Linter libraries and tools for ML/AI engineering.
 - [References](#references)
 - [Acknowledgements](#acknowledgements)
 
+## Introduction
+
 > “A runtime anti-pattern is a problem in software design that manifests statistically, function of the program complexity. This does not imply the stopping or halting of the program, only the altering of correct or expected functioning.”
 
-**DataLinter** is a linter for data and code. The aim is to address explicitly issues that arise in ML/AI engineering and extend the linting capabilitis of the original [work](http://learningsys.org/nips17/assets/papers/paper_19.pdf). For this, it performs linting on multiple data soruces such as datasets, code, metadata. This represents a more powerful method for surfacing complex conceptual issues that pure data checks or pure code linters miss.
+**DataLinter** is a linter for data and code analysis. The aim is to address explicitly design issues that arise in ML/AI engineering. A distinct feature is that the linter supports simultaneous processing of multiple types of data: datasets, computer code etc. This is a more powerful approach for surfacing complex conceptual program design issues. The latter occur frequently in semantically rich workflows, such as in data science and ML/AI engineering.
 
-**DataLinter** is written in [Julia](https://julialang.org/) and based on Google's [data linter](https://github.com/brain-research/data-linter).
+**DataLinter** is written in Julia. It partially mimics and significantly extends the functionality the original Google [work](https://github.com/brain-research/data-linter).
 
 
 ### Features
 
-- Support for R code analysis via [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based parsing
- - High-level code querying mechanism, based on [abstract syntax tree pattern matching](https://github.com/zgornel/ParSitter.jl)
+- [High-level](https://github.com/zgornel/ParSitter.jl) code querying and pattern-matching, built on top of [tree-sitter](https://tree-sitter.github.io/tree-sitter/) parsers
+- Supported languages and libraries: **R** (glm), **Python** (scikit)
 - 27 [linters](https://zgornel.github.io/DataLinter/dev/linters_config/) for data, code that target runtime anti-patterns and include the original Google linters.
-- Linters are [configurable](https://zgornel.github.io/DataLinter/dev)): can be enabled or disabled and some expose working parameters.
+- Linters are [configurable](https://zgornel.github.io/DataLinter/dev): can be enabled or disabled and some expose working parameters.
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
 - Text / JSON / HTML output support
-- Docker image with compiled CLI and HTTP server linter binaries; CI/CD and production ready
-- CLI and HTTP server tools
+- Docker image with compiled x86-64 binaries; CI/CD and production ready
+- CLI and HTTP server modes
 
 ### Integrations
 - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
