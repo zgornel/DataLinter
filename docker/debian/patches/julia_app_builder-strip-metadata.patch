@@ -1,0 +1,26 @@
+diff --git a/build.jl b/build.jl
+index eb5e755..b201f7d 100644
+--- a/build.jl
++++ b/build.jl
+@@ -60,6 +60,11 @@ function build_context(project_dir)
+             #"PackageCompiler"=>("https://github.com/JuliaLang/PackageCompiler.jl", "master"),
+         ),
+         CPU_TARGET = "generic",
++        # Extra arguments forwarded to the sysimage compilation. `--strip-metadata`
++        # drops docstrings, source-location and other reflection metadata from the
++        # sysimage; it does not remove compiled code or IR, so runtime behaviour is
++        # unchanged apart from less informative reflection output.
++        SYSIMAGE_BUILD_ARGS = `--strip-metadata`,
+         PRECOMPILE_FILES = Dict(t=>joinpath(apps_path, t, "precompile.jl") for t in build_targets)
+     )
+     return ctx
+@@ -149,7 +154,8 @@ function build(ctx)
+                    joinpath(ctx.COMPILED_PATH, target);
+                    precompile_execution_file=ctx.PRECOMPILE_FILES[target],
+                    force=true,
+-                   cpu_target=ctx.CPU_TARGET)
++                   cpu_target=ctx.CPU_TARGET,
++                   sysimage_build_args=ctx.SYSIMAGE_BUILD_ARGS)
+      end
+      printstyled("• Build complete.\n", bold=true)
+ end

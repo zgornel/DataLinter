@@ -1,6 +1,8 @@
 # Reducing the size of `datalinter-compiled`: design, findings and results
 
-Status: Milestone 1 implemented and verified. Milestone 2 not started.
+Status: Milestone 1 implemented and verified. Milestone 2 partially done —
+`--strip-metadata` implemented and measured; `filter_stdlibs` and the shared
+sysimage deferred by choice.
 Date: 2026-10-29.
 
 Covers `docker/debian/Dockerfile.datalinter-compiled.debian` (the image published
@@ -235,6 +237,32 @@ was already-compressed packfiles, which is why removing it moved the compressed
 number so much. Relevant to A3, and to any future decision about which grammars
 to ship.
 
+### 4.7 `--strip-metadata` is safe here, but it was worth testing properly
+
+`src/config.jl:70` discovers each linter's keyword arguments **at run time**:
+
+```julia
+f_kwargs = unique(v for v in vcat(Base.kwarg_decl.(methods(linter.f))...) if !in(v, SKIP_KWARGS))
+```
+
+and then keeps only the config `[parameters]` entries whose names appear in
+`f_kwargs`. Those names come from method slot names, which is exactly the kind of
+metadata `--strip-metadata` targets. Had it stripped them, `linter_kwargs` would
+have come back empty and **every linter would have silently fallen back to default
+parameters, ignoring the user's config** — and the mismatch is reported only via
+`@debug`, so at default log level it would have been invisible. A silent
+wrong-results mode, not a crash.
+
+Tested with a differential: two configs identical except
+`[parameters.large_outliers] tukey_fences_k`, set to 0.001 and 100000.0, run
+against `test/data/data.csv` (which has obvious outliers). The baseline build
+produced different output for the two configs, proving the test is sensitive; the
+stripped build produced *the same two different outputs*, byte for byte. So slot
+names survive `--strip-metadata` in Julia 1.12.5 and the reflection path is intact.
+
+This is the test to re-run before adopting `--strip-ir` (task 2.6) or
+`filter_stdlibs` (task 2.2), both of which are likelier to disturb it.
+
 ## 5. Results
 
 ### 5.1 Verified by building
@@ -284,14 +312,17 @@ The same set of layers in the published image totals **625.96 MB compressed**.
 |---|---|
 | Baseline, published | 1217.67 MB |
 | Non-bundle payload, before → after | 625.96 → 39.4 MB |
-| Two app bundles, before dedup | 591.52 MB |
-| **Projected total** | **~480–530 MB (−56% to −61%)** |
+| Two app bundles, as built | 591.0 MB |
+| Two app bundles, hardlink-deduped | 472.7 MB |
+| Two app bundles, deduped + `--strip-metadata` | 413.0 MB |
+| **Total after Milestone 1** | **512.1 MB (−57.9%)** |
+| **Total after Milestone 1 + task 2.3** | **452.4 MB (−62.8%)** |
 
-The dedup ratio on the *real* bundles is the one unmeasured quantity; the estimate
-of 100–150 MB comes from the shared Julia runtime. With stand-in bundles, 46 MB
-collapsed to 27 MB and 20 files were linked (which included the duplicated
-`knowledge/` and `config/` trees — an unplanned small bonus). The new CI step
-prints the real figure on the first run.
+Every figure above is measured. The dedup ratio was initially estimated from
+stand-in bundles (46 MB collapsing to 27 MB, 20 files linked, which included the
+duplicated `knowledge/` and `config/` trees); it has since been measured on the
+real bundles at 118.3 MB compressed (§5.4). The CI step still prints it per build,
+as a regression guard.
 
 ### 5.3 Files changed
 
@@ -308,6 +339,44 @@ prints the real figure on the first run.
 - `.github/workflows/ci.yml` — new `report_datalinter-compiled_image_size` step
   prints size and layer breakdown, and **fails** if no hardlinks survived.
 - `.gitattributes` — pins LF for `docker/**`. See action point A4.
+
+### 5.4 Milestone 2: `--strip-metadata`, measured
+
+Built twice in the builder image on this machine — once with the unmodified
+`build.jl`, once with the patched one — sharing a warm depot so the only
+difference is the flag.
+
+| Variant | Raw | gzip | + hardlink dedup, raw | + dedup, gzip |
+|---|---|---|---|---|
+| as built today | 2218.2 MB | **591.0 MB** | 1859.9 MB | 472.7 MB |
+| `--strip-metadata` | 1970.3 MB | 531.3 MB | 1611.9 MB | **413.0 MB** |
+
+- `sys.so`: **749.2 → 625.5 MB** per bundle (−16.5%); the server bundle's goes
+  752.4 → 628.2 MB.
+- Hardlink dedup on the real bundles: **358 MiB raw / 118.3 MB compressed**,
+  928 links over 1600 files. This replaces the earlier 100–150 MB estimate and
+  closes action point A1 without waiting for CI.
+- `--strip-metadata` on top of dedup: **−59.7 MB compressed**.
+
+**Method cross-check:** the bundles as built here tar+gzip to 591.0 MB, against
+591.52 MB for the same two layers in the published manifest — so these local
+numbers are directly comparable to the baseline in §2.
+
+**Correctness, baseline vs stripped — all byte-identical:**
+
+| Check | Result |
+|---|---|
+| Runtime kwarg discovery honours `tukey_fences_k` (§4.7) | both builds honour it |
+| Data linting output, two different configs | byte-identical |
+| R code linting through ParSitter + tree-sitter | byte-identical |
+| Python code linting | byte-identical |
+| `datalinter --help` (ArgParse) | byte-identical |
+| `datalinterserver --help` | byte-identical |
+
+**Incidental finding:** each bundle ships a **54 MB `thrift` executable** under
+`share/julia/artifacts/` (a Parquet/Thrift_jll artifact). Dedup collapses the
+second copy, but whether the CLI binary is needed at run time at all is worth
+checking — see action point A9.
 
 ## 6. Remaining action points
 
@@ -355,37 +424,47 @@ prints the real figure on the first run.
   empty strings), but confirm with `--version` before and after rather than
   assuming.
 
-### Milestone 2 — the app bundles (~290 MB more)
+### Milestone 2 — the app bundles
 
-`julia_app_builder/build.jl` calls `PackageCompiler.create_app` with only
-`precompile_execution_file`, `force=true`, `cpu_target="generic"`. Three unused
-levers, in increasing order of risk:
+**Done: `--strip-metadata` (§5.4).** Implemented as a patch to
+`zgornel/julia_app_builder`, since that repo owns the `create_app` call. Measured
+−59.7 MB compressed, with byte-identical output across every check.
 
-- **B1 — `filter_stdlibs=true`.** Drops unused stdlibs from each sysimage. The
-  documented caveats are real (a package can use `Random`/`LinearAlgebra` without
-  declaring it), and the failure mode is a runtime `MethodError` in a rarely-hit
-  linter, so it needs a full functional pass over all linters.
-- **B2 — `sysimage_build_args` with `--strip-metadata` / `--strip-ir`.** 10–30% of
-  a sysimage. `--strip-ir` removes the IR needed to compile new specializations at
-  run time; with ArgParse and plugin-style dispatch that is high risk. Try
-  `--strip-metadata` alone first.
-- **B3 — One shared sysimage**, via
+Remaining levers, in increasing order of risk:
+
+- **B1 / task 2.2 — `filter_stdlibs=true`.** Drops unused stdlibs from each
+  sysimage. The documented caveats are real (a package can use
+  `Random`/`LinearAlgebra` without declaring it), and the failure mode is a runtime
+  `MethodError` in a rarely-hit linter, so it needs a full functional pass over all
+  linters. Deferred by choice.
+- **B2b / task 2.6 — `--strip-ir` on top of `--strip-metadata`.** Removes the IR
+  needed to compile new specializations at run time. Higher risk here than the
+  plan assumed, because `src/config.jl:70` does runtime reflection over method
+  signatures (§5.4).
+- **New / task 2.5 — `compress_sysimage`.** PackageCompiler 2.4.5's `create_app`
+  accepts this keyword; it was not in the original plan and is not yet evaluated.
+  With `sys.so` still 625.5 MB per bundle after stripping, it is the most
+  promising untried lever. Needs a startup-latency measurement, since the sysimage
+  would be decompressed on load.
+- **B3 / task 2.4 — one shared sysimage**, via
   `create_app(..., executables=["datalinter"=>"julia_main", "datalinterserver"=>"server_main"])`.
-  The largest remaining item (~290 MB compressed, a whole bundle), but it requires
-  merging `apps/datalinter` and `apps/datalinterserver` into one Julia package
-  (separate `Project.toml`s today, each calling `Base.set_active_project`), and the
-  documented path contract would have to be preserved by making
-  `/datalinterserver` a **directory symlink** to the single app root — the one
-  place where `/proc/self/exe` symlink resolution works *for* us rather than
-  against us (§3).
+  Still the largest remaining item, but **smaller than the plan estimated**: at
+  ~290 MB the plan assumed a whole duplicated bundle, whereas hardlink dedup
+  already collapses everything the two bundles share. What remains unique is
+  `sys.so` (625.5 MB raw each after stripping), so a single shared sysimage is
+  worth roughly **155 MB compressed**, not 290. It requires merging
+  `apps/datalinter` and `apps/datalinterserver` into one package (separate
+  `Project.toml`s today with different dependency sets, each calling
+  `Base.set_active_project`), and preserving the documented paths by making
+  `/datalinterserver` a directory symlink — the one place where `/proc/self/exe`
+  symlink resolution works *for* us rather than against us (§3).
 
-**B0 — Decide where build logic lives, first.** The external repo enters only via
-`RUN git clone …/julia_app_builder` in the builder Dockerfile and
-`/julia/bin/julia /julia_app_builder/build.jl /DataLinter` in
-`.github/workflows/ci.yml`. An in-repo `scripts/build_app.jl` calling `create_app`
-with the desired flags, with those two lines repointed, unblocks B1–B3 without
-touching the external repo. That is a decision about where build logic belongs, not
-a technical barrier.
+**Note on the external repo.** `build.jl` has a latent bug worth fixing while
+there: `build_targets = filter(!isdir, readdir(apps_path))` is meant to exclude
+directories, but `isdir` resolves the bare names against the process's current
+working directory rather than `apps_path`, so both app directories pass a filter
+designed to reject them. It works only because the relative paths do not resolve.
+Left alone in the patch to keep the diff minimal.
 
 ## 7. How to re-verify
 
