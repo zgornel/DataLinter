@@ -19,7 +19,7 @@
             for codepath in CODE_PATHS
                 config_path = joinpath(TEST_PATH, "test_config.toml")
                 config = DataLinter.LinterCore.load_config(config_path)
-                ctx = DataLinter.DataInterface.build_data_context(filepath, read(codepath, String); header=true)
+                ctx = DataLinter.DataInterface.build_data_context(filepath, read(codepath, String); header = true)
                 out = DataLinter.lint(ctx, kb; config = config)
                 # Basic functionality test: output works and type assertion
                 @test !isempty(out)

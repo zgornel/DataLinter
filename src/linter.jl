@@ -305,8 +305,10 @@ function lint(
                         end
                         # if there are no empty rows add a single entry for all, mark the linter as
                         # N/A if there are no rows (data is not a table) or passed (data is a table)
-                        no_problem_rows && push!(lintout, (linter, "row='all'") =>
-                            ifelse(length(datait.row_iterator)==0, NotAvailableCheck(), PassedCheck()))
+                        no_problem_rows && push!(
+                            lintout, (linter, "row='all'") =>
+                                ifelse(length(datait.row_iterator) == 0, NotAvailableCheck(), PassedCheck())
+                        )
                     end
                     # 3. Apply over whole dataset
                     if applicable(linter, linting_ctx, :dataset)
