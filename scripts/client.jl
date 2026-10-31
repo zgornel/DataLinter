@@ -22,9 +22,7 @@ function client_main(args)
     linter_input = Dict(
         "context" => Dict(
             "data" => data,             # can be the data or a path to it
-            "data_type" => "dataset",   # "dataset" or "filepath"
             #"data" => data_path,
-            #"data_type" => "filepath",
             "linters" => ["all"],       # which linters to use: "google", "r", "extended" or "all"
             "data_delim" => ",",        # csv delimiter
             "data_header" => true,      # header
@@ -32,8 +30,8 @@ function client_main(args)
         ),
         "options" => Dict(
             "show_stats" => true,       # whether to print statistics
-            "show_passing" => false,    # show linters that passed (no issues)
-            "show_na" => false          # show linters that were not applicable
+            "show_passing" => true,    # show linters that passed (no issues)
+            "show_na" => true          # show linters that were not applicable
         )
     )
     request = Dict("linter_input" => linter_input)
@@ -42,9 +40,11 @@ function client_main(args)
 
     # Send to server
     reply = try
-        HTTP.post("http://0.0.0.0:10000/api/lint",
-                    headers = ["Content-Type" => "application/json"],
-                    body=JSON.json(request))
+        HTTP.post(
+            "http://0.0.0.0:10000/api/lint",
+            headers = ["Content-Type" => "application/json"],
+            body = JSON.json(request)
+        )
     catch e
         @warn "Something went wrong with request processing $e"
         nothing

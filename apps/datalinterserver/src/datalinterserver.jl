@@ -19,6 +19,8 @@ const ERROR_IN_REQ_HANDLING = -1
 # Linting request values
 const DEFAULT_LINTERS = ["all"]
 const DEFAULT_OUTPUT_TYPE = :text
+const DEFAULT_DATA_HEADER = false
+const DEFAULT_DATA_DELIM = ','
 const DEFAULT_SHOW_NA = false
 const DEFAULT_SHOW_STATS = true
 const DEFAULT_SHOW_PASSING = false
@@ -177,7 +179,7 @@ function linting_server(addr = LOCALHOST_IP, port = SERVER_HTTP_PORT; config = n
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    HTTP.serve(ROUTER, addr, port; read_timeout = 60)
+    return HTTP.serve(ROUTER, addr, port; read_timeout = 60)
 end
 
 
@@ -241,11 +243,12 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     opts = _request["linter_input"]["options"]
 
     # Build data context directly from request data information
+    @debug "Building $(ifelse(isempty(get(ctx, "code", "")), "data", "data+code")) context ..."
     data_ctx = DataLinter.DataInterface.build_data_context(
-        get(ctx, "data", nothing),
-        get(ctx, "code", nothing);
-        delim = first(ctx["data_delim"]),
-        header = ctx["data_header"]
+        get(ctx, "data", ""),
+        get(ctx, "code", "");
+        delim = get(ctx, "data_delim", DEFAULT_DATA_DELIM),
+        header = get(ctx, "data_header", DEFAULT_DATA_HEADER)
     )
 
     @debug "Data context loaded and succesfully:\n$data_ctx"

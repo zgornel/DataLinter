@@ -1,15 +1,15 @@
-# `data | linter`
+# `DataLinter`
 
-Linting library and tools for machine learning, statistical modelling, data, code.
+Linter libraries and tools for ML/AI engineering.
 
 [![License](http://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](LICENSE.md)
 [![Release](https://img.shields.io/github/v/release/zgornel/DataLinter?label=Release&color=success)](https://github.com/zgornel/DataLinter/releases/latest)
-[![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker&logoColor=white)](https://ghcr.io/zgornel/datalinter-compiled)
-[![Tests](https://github.com/zgornel/DataLinter/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/test.yml?query=branch%3Amaster)
 [![CI](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/ci.yml?query=branch%3Amaster)
+[![Tests](https://github.com/zgornel/DataLinter/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/zgornel/DataLinter/actions/workflows/test.yml?query=branch%3Amaster)
 [![Coverage](https://codecov.io/gh/zgornel/DataLinter/graph/badge.svg?token=GWKJKBZ5FB)](https://codecov.io/gh/zgornel/DataLinter)
-[![code style: runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
 [![Documentation](https://img.shields.io/badge/docs-dev-blue.svg)](https://zgornel.github.io/DataLinter/dev)
+[![code style: runic](https://img.shields.io/badge/code_style-%E1%9A%B1%E1%9A%A2%E1%9A%BE%E1%9B%81%E1%9A%B2-black)](https://github.com/fredrikekre/Runic.jl)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue?logo=docker&logoColor=white)](https://ghcr.io/zgornel/datalinter-compiled)
 
 ![til](./gifs/cli.gif)
 
@@ -27,31 +27,39 @@ Linting library and tools for machine learning, statistical modelling, data, cod
 
 ## Introduction
 
-**DataLinter** is a library for contextual linting of data and code. Its development started by rewriting Google's [data linter](https://github.com/brain-research/data-linter), in [Julia](https://julialang.org/). The aim of the redesign was to provide a richer and faster experience while also providing the baseline benefits outlined in the original [paper](http://learningsys.org/nips17/assets/papers/paper_19.pdf). **DataLinter** adds on top support for data *contexts*, such as code snippets or information about the type of analysis, which can lead to the detection of more complex, conceptual issues relating to data and code quality.
+> “A runtime anti-pattern is a problem in software design that manifests statistically, function of the program complexity. This does not imply the stopping or halting of the program, only the altering of correct or expected functioning.”
 
-### Key Features
-- 27 [data+code linters](https://zgornel.github.io/DataLinter/dev/linters_config/) (including the [Google linters](https://github.com/brain-research/data-linter))
-- Docker image with compiled binaries, production ready
-- CLI and HTTP server modes with zero-config
+**DataLinter** is a linter for data and code analysis. The aim is to address explicitly design issues that arise in ML/AI engineering. A distinct feature is that the linter supports simultaneous processing of multiple types of data: datasets, computer code etc. This is a more powerful approach for surfacing complex conceptual program design issues. The latter occur frequently in semantically rich workflows, such as in data science and ML/AI engineering.
+
+**DataLinter** is written in Julia. It partially mimics and significantly extends the functionality the original Google [work](https://github.com/brain-research/data-linter).
+
+
+### Features
+
+- [High-level](https://github.com/zgornel/ParSitter.jl) code querying and pattern-matching, built on top of [tree-sitter](https://tree-sitter.github.io/tree-sitter/) parsers
+- Supported languages and libraries: **R** (glm), **Python** (scikit)
+- 27 [linters](https://zgornel.github.io/DataLinter/dev/linters_config/) for data, code that target runtime anti-patterns and include the original Google linters.
+- Linters are [configurable](https://zgornel.github.io/DataLinter/dev): can be enabled or disabled and some expose working parameters.
 - [CSV](https://github.com/JuliaData/CSV.jl)/[Parquet](https://parquet.apache.org/)/[Arrow](https://arrow.apache.org/) dataset support
 - Text / JSON / HTML output support
-- Flexible code querying through [ParSitter.jl](https://github.com/zgornel/ParSitter.jl)
-- First-class R language support by [tree-sitter](https://tree-sitter.github.io/tree-sitter/)-based code parsing
-- Fully customizable rule engine (see [configuration docs](https://zgornel.github.io/DataLinter/dev))
+- Docker image with compiled x86-64 binaries; CI/CD and production ready
+- CLI and HTTP server modes
 
 ### Integrations
- - [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
- - [VSCode](https://marketplace.visualstudio.com/items?itemName=OxoaResearch.vscode-extension-datalinter-r)
- - [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
- - [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
- - [Gitlab CI](https://github.com/OxoaResearch/datalinter-gitlab-ci)
-
+- [RStudio](https://github.com/zgornel/Rstudio-Addin-DataLinter)
+- [VSCode](https://marketplace.visualstudio.com/items?itemName=OxoaResearch.vscode-extension-datalinter-r)
+- [Jupyter Notebooks](https://github.com/zgornel/Ipython-datalinter)
+- [Github Actions](https://github.com/OxoaResearch/datalinter-github-action)
+- [Gitlab CI](https://github.com/OxoaResearch/datalinter-gitlab-ci)
 
 ## Quick Start
-Try it in seconds with Docker (no installation required):
 
+To run DataLinter:
+ - pull the Docker image (see [installation](#installation))
+ - `git clone` this repository
+ - `cd` to repository root directory and run:
 ```bash
-# Lint a dataset (from the root directory of the repository)
+# Lint a dataset + modelling code for runtime anti-patterns
 ./datalinter ./test/data/imbalanced_data.csv \
     --code-path ./test/code/r_snippet_imbalanced.r \
     --config-path ./config/r_modelling_config.toml \
@@ -91,11 +99,11 @@ using Pkg; Pkg.add(url="https://github.com/zgornel/DataLinter")
 
 ## Configuration
 
-Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters.
+Check out the [documentation](https://zgornel.github.io/DataLinter/dev) for information on configuring, running and integrating the linters. Enable only the checks relevant to the runtime anti-patterns you care about.
 
 ## Lint Catalog
 
-**DataLinter** ships with **27 built-in linters**. Description available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
+**DataLinter** ships with **27 built-in linters** covering data-quality issues and modelling-assumption violations that commonly appear as runtime anti-patterns: imbalanced targets, multicollinearity, violated GLM assumptions, silent type/coercion problems, outliers that distort models, etc. Full descriptions are available [here](https://zgornel.github.io/DataLinter/dev/linters_config/).
 
 ## License
 
@@ -119,4 +127,4 @@ Recent changes can be found in [CHANGELOG.md](CHANGELOG.md).
 
 ## Acknowledgements
 
-The initial version of **DataLinter** was fully inspired by [this work](https://github.com/brain-research/data-linter) written by Google brain research.
+The initial version of **DataLinter** was fully inspired by [this work](https://github.com/brain-research/data-linter) written by Google Brain research.
