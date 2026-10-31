@@ -20,7 +20,7 @@ build_data_iterator(tbl::T) where {T <: Tables.AbstractColumns} = begin
     )
 end
 
-build_data_iterator(generic_data::T) where T<:AbstractDict = begin
+build_data_iterator(generic_data::T) where {T <: AbstractDict} = begin
     DataIterator{T}(
         column_iterator = [],
         row_iterator = [],

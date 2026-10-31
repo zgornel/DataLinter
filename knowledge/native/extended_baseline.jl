@@ -50,9 +50,9 @@ function is_imbalanced_target_variable(
         n = length(tc)
         cm = countmap(tc)
         vals = []
-        if length(cm)/n >= unique_val_threshold
+        if length(cm) / n >= unique_val_threshold
             # we have many unique values (more than the unique_val_threhsold)
-            return PassedCheck("Unique values represent $(unique_val_threshold*100)% of the values.")
+            return PassedCheck("Unique values represent $(unique_val_threshold * 100)% of the values.")
         end
         for (val, cnt) in cm
             cnt / n < threshold && push!(vals, val)
