@@ -470,7 +470,7 @@ const R_BASELINE_LINTERS = [
         name = :R_numeric_scale_imbalance,
         description = """Detects numeric predictors with vastly different magnitudes/scales""",
         f = check_numeric_scale_imbalance,
-        failure_message = (name, result) -> "Found numerical predictors $(result.info) with magnitude/scale imbalance" ,
+        failure_message = (name, result) -> "Found numerical predictors $(result.info) with magnitude/scale imbalance",
         correct_message = (name, args...) -> "No numerical predictors with magnitude/scale imbalance found",
         warn_level = "warning",
         query = "{{::IDENTIFIER}}({{target_variable::IDENTIFIER}}~{{predictor_variables::IDENTIFIER}}, {{::IDENTIFIER}}={{::IDENTIFIER}})",

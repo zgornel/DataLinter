@@ -42,8 +42,8 @@ build_data_context(
     table_type::Type{IOTypeDict};
     kwargs...
 ) = begin
-        data_dict = JSON.parse(input)
-        return build_data_context(data_dict; kwargs...)  # calls JSON.Object method above
+    data_dict = JSON.parse(input)
+    return build_data_context(data_dict; kwargs...)  # calls JSON.Object method above
 end
 
 # Method for actual Dict data inputs with code

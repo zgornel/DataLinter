@@ -93,7 +93,7 @@ function is_number_as_string(::Type{<:StringEltype}, v, vm, name, args...; match
 end
 
 
-function is_empty_example(row::T, args...; kwargs...) where T<:Tables.AbstractRow
+function is_empty_example(row::T, args...; kwargs...) where {T <: Tables.AbstractRow}
     empty_checker(::Missing) = true
     empty_checker(v::FloatEltype) = isnan(v)
     empty_checker(v::NumericEltype) = isnan(v)

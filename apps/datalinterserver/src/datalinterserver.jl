@@ -179,7 +179,7 @@ function linting_server(addr = LOCALHOST_IP, port = SERVER_HTTP_PORT; config = n
 
     # Start serving requests
     @info "• Data linting server online @$addr:$port..."
-    HTTP.serve(ROUTER, addr, port; read_timeout = 60)
+    return HTTP.serve(ROUTER, addr, port; read_timeout = 60)
 end
 
 
@@ -243,7 +243,7 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     opts = _request["linter_input"]["options"]
 
     # Build data context directly from request data information
-    @debug "Building $(ifelse(isempty(get(ctx, "code", "")),"data", "data+code")) context ..."
+    @debug "Building $(ifelse(isempty(get(ctx, "code", "")), "data", "data+code")) context ..."
     data_ctx = DataLinter.DataInterface.build_data_context(
         get(ctx, "data", ""),
         get(ctx, "code", "");

@@ -1,5 +1,10 @@
 # Changelog
 
+v0.2.0
+------
+ - Python linter support
+ - bugfixes
+
 v0.1.5
 ------
  - update to HTTP.jl v2.x, CSV.jl v1.x
