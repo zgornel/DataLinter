@@ -210,7 +210,7 @@ noop_req_handler(req::HTTP.Request) = nothing
 
 kill_req_handler(req::HTTP.Request) = begin
     @info "Kill request received. Exiting in 1s..."
-    @async begin
+    Threads.@spawn begin
         sleep(1)  # some time to send back HTTP response
         exit()
     end
@@ -262,7 +262,7 @@ linting_handler_wrapper(config, kb) = (req::HTTP.Request) -> begin
     pretty_print = get(opts, "pretty_print", DEFAULT_PRETTY_PRINT)
     buffer = IOBuffer()
     try
-        lintout = DataLinter.lint(data_ctx, kb; config, linters)
+        lintout = fetch(Threads.@spawn :default DataLinter.lint(data_ctx, kb; config, linters))
         process_output(lintout; output_type, buffer, show_passing, show_stats, show_na, pretty_print)
         string_buf = read(seekstart(buffer), String)
         if output_type == :text
