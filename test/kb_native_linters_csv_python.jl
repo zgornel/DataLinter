@@ -42,5 +42,13 @@
         (linter, _), result = only(out)
         @test linter.name == :Python_imbalanced_target_variable
         @test result isa PassedCheck  # many unique values, no imbalance
+
+        # Test proper extraction of values from data reference
+        target_var = "y"
+        imbalanced_json = """{"$(target_var)":["1$(repeat("\\n1",98))\\n0\\n0", false, ","]}"""
+        ctx = DataLinter.DataInterface.build_data_context(imbalanced_json, "random_code")
+        datait = DataLinter.LinterCore.build_data_iterator(ctx)
+        vals = DataLinter.KnowledgeBaseNative.select_dataref_column(datait.dataref, target_var)
+        @test vals == [ones(Int, 99)..., 0, 0]
     end
 end
