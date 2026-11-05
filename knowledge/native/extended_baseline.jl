@@ -34,7 +34,16 @@ end
 
 # This is the case for multiple variables passed as JSON through HTTP, target column col is always a String
 function select_dataref_column(dataref::Base.RefValue{<:AbstractDict}, col::String)
-    return dataref[][col]
+    val = dataref[][col]  # here, col is the name of a Python variable
+    # Dict plugin stores each variable as a Tables.Columns (from CSV.read).
+    # Extract the column vector so length/countmap see the actual values.
+    if Tables.istable(val)
+        names = Tables.columnnames(val)
+        # Prefer a column whose name matches the key; otherwise take the first
+        # (the normal case for a target variable is a single-column table).
+        idx = findfirst(==(Symbol(col)), names)
+        return Tables.getcolumn(val, something(idx, 1))
+    end
 end
 
 function is_imbalanced_target_variable(
