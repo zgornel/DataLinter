@@ -83,7 +83,7 @@ Optional arguments:
  - `--config-path`, path for the `.toml` configuration file (default: `""`)
  - `--output-type`, output type `"text"`, `"json"` or `"html"` (default: `"text"`)
  - `--log-level`, logging level (default: `"error"`)
- - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"all"` (default: `"all"`)
+ - `--linters`, list of linter groups to use. Avaliable: `"google"`, `"extended"`, `"r"`, `"python"`, `"all"` (default: `"all"`)
  - `--show-stats`, shows statistics
  - `--show-passing` shows linters that passed
  - `--show-na`, shows linters that were not applicable
@@ -244,13 +244,13 @@ outputs:
 
 Data can also be sent to the linting server with generic tools. For example, using `wget` and `jq`. The following command sends reads data and code, interpolates them in a JSON string and sends it to the server.
 ```bash
-$ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --rawfile zz ./test/data/imbalanced_data.csv '$zz'), \"data_type\" : \"dataset\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile zz ./test/code/r_snippet_imbalanced.r '$zz')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" \
+$ wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":$(jq -n --rawfile zz ./test/data/imbalanced_data.csv '$zz'), \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile zz ./test/code/r_snippet_imbalanced.r '$zz')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" \
   --header='Content-Type:application/json' \
   'http://0.0.0.0:10000/api/lint'
 ```
 Alternatively, the server supports sending only the data file path
 ```bash
-wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"/tmp/test/data/imbalanced_data.csv\", \"data_type\" : \"filepath\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile codevar ./test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint'
+wget -O- --post-data="{\"linter_input\" : {\"context\" : {\"data\":\"/tmp/test/data/imbalanced_data.csv\", \"linters\" : [\"all\"], \"data_delim\" : \",\", \"data_header\" : true, \"code\" :$(jq -n --rawfile codevar ./test/code/r_snippet_imbalanced.r '$codevar')}, \"options\" : {\"show_stats\":true, \"show_passing\":false, \"show_na\":false}}}" --header='Content-Type:application/json' 'http://0.0.0.0:10000/api/lint'
 ```
 
 To stop the server remotely, run
@@ -280,7 +280,6 @@ For lint requests, a representative example of the `body` of the request is show
     "context" : {
         "data_header" : true,
         "data_delim" : ",",
-        "data_type" : "dataset",
         "data" : "a,b,c\n1,2,3\n4,5,6",
         "code" : "",
         "linters" : ["all"]
@@ -296,8 +295,7 @@ The available fields for `options` are:
 The available fields for `context` are:
  - `data_header` boolean that indicates whether the data has a header
  - `data_delim` string that sets the data delimiter
- - `data_type` string that indicates data source: if `"dataset"`, the `"data"` field contains the data; if `"filepath"`, the `"data"` field is a path to the data file
- - `data` a string that can contain either a path to the data or a string with the raw data, depending on the value of `data_type` whether the data has a header
+ - `data` a string that can contain either a path to the data or a string with the raw data
  - `code` a string which contains any relevant code
  - `linters` a list which selects linters. Available values are `"all"` for all linters, `"r"` for r linters, `"google"` for the Google linters and `"extended"` for new data-only linters. The default is `"all"`.
 

@@ -25,7 +25,6 @@ LINTER_INPUTS = [
     Dict(
         "context" => Dict(
             "data" => read(csvdatapath, String),
-            "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
             "data_header" => true,
@@ -41,7 +40,6 @@ LINTER_INPUTS = [
     Dict(
         "context" => Dict(
             "data" => read(csvdatapath, String),
-            "data_type" => "dataset",
             "linters" => ["all"],
             "data_delim" => ",",
             "data_header" => true,
@@ -58,7 +56,6 @@ LINTER_INPUTS = [
         Dict(
                 "context" => Dict(
                     "data" => datapath,
-                    "data_type" => "filepath",
                     "linters" => ["all"],
                     "data_delim" => ",",
                     "data_header" => true,
@@ -80,9 +77,11 @@ for linter_input in LINTER_INPUTS
 
     # Send to server
     reply = try
-        HTTP.post("http://$IP:$PORT/api/lint",
-                 headers = ["Content-Type" => "application/json"],
-                 body = JSON.json(request))
+        HTTP.post(
+            "http://$IP:$PORT/api/lint",
+            headers = ["Content-Type" => "application/json"],
+            body = JSON.json(request)
+        )
     catch e
         @warn "Something went wrong with request processing $e"
         nothing
@@ -93,6 +92,8 @@ for linter_input in LINTER_INPUTS
     end
 end
 
-HTTP.get("http://$IP:$PORT/api/kill",
-        headers = ["Content-Type" => "application/json"],
-        body = JSON.json(Dict()))
+HTTP.get(
+    "http://$IP:$PORT/api/kill",
+    headers = ["Content-Type" => "application/json"],
+    body = JSON.json(Dict())
+)
