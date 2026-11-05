@@ -55,13 +55,13 @@ function is_imbalanced_target_variable(
     )
     try
         col = linting_ctx.target_variable
-        tc = select_dataref_column(dataref, col)
+        tc = collect(skipmissing(select_dataref_column(dataref, col)))
         n = length(tc)
         cm = countmap(tc)
         vals = []
         if length(cm) / n >= unique_val_threshold
             # we have many unique values (more than the unique_val_threhsold)
-            return PassedCheck("Unique values represent $(unique_val_threshold * 100)% of the values.")
+            return PassedCheck("More than  $(unique_val_threshold * 100)% of values are unique.")
         end
         for (val, cnt) in cm
             cnt / n < threshold && push!(vals, val)
