@@ -356,7 +356,7 @@ function check_near_zero_variance_predictors(
         if isempty(nz_variances)
             return PassedCheck()
         else
-            return FailedCheck(info = process_for_printing(nz_variances))
+            return FailedCheck(info = process_for_printing(collect(keys(nz_variances))))
         end
     catch e
         @debug "check_near_zero_variance_predictors: Failed\n$e"

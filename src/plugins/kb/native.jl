@@ -53,9 +53,15 @@ _LINTERS = Dict(
 
 # Print large iterables up to a certain length of characters
 function process_for_printing(iterable; joinchar = ", ", maxlen = 50)
-    output = join(string.(iterable), joinchar)
+    _preprocess(s::AbstractString) = "\"" * s * "\""
+    _preprocess(s) = string(s)  # any other value gets turned into String
+    output = try
+            join(_preprocess.(iterable), joinchar)
+        catch
+            string(iterable)
+        end
     if length(output) > maxlen
-        output = output[1:maxlen] * "..."
+        output = output[1:maxlen] * "... (" * string(length(iterable)) *" in total)"
     end
     return output
 end
