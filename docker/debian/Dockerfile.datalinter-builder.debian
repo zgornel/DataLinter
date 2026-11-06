@@ -15,7 +15,11 @@ RUN apt-get update && \
 # Set up local folder structure and copy files for DataLinter
 # (This assumes local directory is the root of DataLinter/)
 # -----------------------------------------------------------
-RUN mkdir -p /DataLinter/build
+RUN mkdir -p /DataLinter/build \
+             /output \
+             /workspace \
+             /tmp/test/data \
+             /tmp/test/code \
 WORKDIR /DataLinter
 COPY ./.git ./.git/
 COPY ./apps ./apps/
@@ -26,70 +30,19 @@ COPY ./knowledge ./knowledge
 COPY ./workload ./workload
 COPY ./Project.toml ./
 
-
-# Julia stuff
-# ----------------------------------------
 # Install julia in /julia
 WORKDIR /
-RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.12/julia-1.12.5-linux-x86_64.tar.gz
-RUN tar zxf julia-1.12.5-linux-x86_64.tar.gz
-RUN ln -s /julia-1.12.5 /julia
-RUN rm julia-1.12.5-linux-x86_64.tar.gz
-# Install builder
+RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.13/julia-1.13.1-linux-x86_64.tar.gz
+RUN tar zxf julia-1.13.1-linux-x86_64.tar.gz
+RUN ln -s /julia-1.13.1 /julia
+RUN rm julia-1.13.5-linux-x86_64.tar.gz
+
+# Install builder script
 RUN git clone https://github.com/zgornel/julia_app_builder
 
+# Cleanup operations
+RUN apt-get -y autoclean
+RUN apt-get -y autoremove
 
-# Tree sitter stuff
-# ----------------------------------------
-RUN mkdir -p /root/dev/ \
-             /root/src/ \
-             /workspace
-
-# Install tree-sitter from Debian Sid (unstable), v0.26
-RUN echo "deb http://deb.debian.org/debian sid main contrib non-free" | tee /etc/apt/sources.list.d/sid.list
-RUN apt-get update
-RUN echo 'Package: *\nPin: release a=stable\nPin-Priority: 900\nPackage: libtree-sitter0.26 tree-sitter-cli librust-tree-sitter*\nPin: release a=unstable\nPin-Priority: 990' > /etc/apt/preferences.d/tree-sitter
-RUN apt-get -y install libtree-sitter0.26 tree-sitter-cli
-
-# Other tree-sitter installs (disabled)
-# -------------------------------------
-    # To install tree-sitter from Debian Trixie, v0.22, use line below
-    ### RUN apt-get -y install libtree-sitter0.22 tree-sitter-cli
-
-    # Install tree-sitter from source
-    ### RUN apt-get -y install build-essential cmake pkg-config rustc
-    ### RUN git clone https://github.com/tree-sitter/tree-sitter.git /root/src/tree-sitter
-    ### WORKDIR /root/src/tree-sitter
-    ### RUN git checkout v0.26
-    ### RUN make
-    ### RUN make install
-    ### WORKDIR /root/src/tree-sitter/cli
-    ### RUN cargo build --release
-    ### RUN cargo install --path /usr/local/bin
-    ### RUN apt-get -y remove build-essential cmake pkg-config rustc
-    ### RUN apt-get autoremove
-
-
-# tree-sitter set-up and grammar installation
-# ------------------------------------------------
-# Generate /root/.config/tree-sitter/config.json with:
-# { "parser-directories": [
-#       "/root/dev/",
-#       "/root/src/"
-#   ], ... }
-WORKDIR /
-RUN tree-sitter init-config
-
-# Install parsers
-RUN git clone "https://github.com/r-lib/tree-sitter-r" "/root/dev/tree-sitter-r" && \
-    cd "/root/dev/tree-sitter-r" && \
-    tree-sitter generate;
-
-RUN for parser in python julia c c-sharp javascript; do \
-      REPO_NAME=$(echo "tree-sitter-$parser"); \
-      git clone "https://github.com/tree-sitter/${REPO_NAME}.git" "/root/dev/${REPO_NAME}" && \
-      cd "/root/dev/${REPO_NAME}" && \
-      tree-sitter generate; \
-    done
-
+# Set up current directory to root
 WORKDIR /
