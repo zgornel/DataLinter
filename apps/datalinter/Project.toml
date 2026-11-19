@@ -11,5 +11,5 @@ ParSitter = "bdeffda0-9f75-4d6c-9dad-1bfd8db84b8f"
 Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [compat]
-DataLinter = "0.1.0"
+DataLinter = "0.2"
 ParSitter = "0.2.0"

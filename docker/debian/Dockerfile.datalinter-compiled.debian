@@ -13,23 +13,26 @@ FROM debian:trixie-slim
 LABEL org.opencontainers.image.source="https://github.com/zgornel/DataLinter"
 LABEL maintainer="zgornel"
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# Runtime dependencies only. The compiled apps bundle their own Julia runtime,
+# libraries and artifacts (tree-sitter CLI and prebuilt grammars, from
+# ParSitter >= 0.2.5), so no compiler or build tooling is needed at runtime.
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create directories, copy files
 # ------------------------------
 
-# Directories
+# Directories (mount points documented in docs/src/examples.md)
 RUN mkdir -p /_config \
              /_data \
              /_code \
              /output \
              /workspace \
-             /datalinter/knowledge \
-             /datalinter/config \
-             /datalinterserver/knowledge \
-             /datalinterserver/config \
              /tmp/test/data \
-             /tmp/test/code \
+             /tmp/test/code
+
 # Copy binaries
 WORKDIR /
 COPY ./build/datalinter /datalinter
@@ -43,8 +46,25 @@ COPY ./test/data /tmp/test/data
 COPY ./test/code /tmp/test/code
 COPY ./test/test_config.toml /tmp/test/test_config.toml
 
-# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
-### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
+# Build-time smoke test: the image must lint data and R/Python code without a
+# C compiler. Fails the build if a code linter produced no result, or if a
+# build-machine depot path (/root/.julia/...) was baked into the sysimage.
+# Note: a ProcessFailedException alone is not an error here, linters of other
+# languages also try to parse the snippet and tree-sitter exits 1 on syntax errors.
+RUN set -e; \
+    if command -v cc >/dev/null; then echo "A C compiler is present in the runtime image"; exit 1; fi; \
+    for pair in "r_snippet_imbalanced.r:^FAIL:R_imbalanced_target_variable" \
+                "python_snippet_imbalanced.py:^FAIL:Python_imbalanced_target_variable"; do \
+        code="${pair%%:*}"; expected="${pair#*:}"; \
+        /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv \
+            --code-path "/tmp/test/code/$code" \
+            --config-path /tmp/test/test_config.toml \
+            --log-level debug > /tmp/smoke.txt 2>&1 || true; \
+        if ! grep -q "$expected" /tmp/smoke.txt || grep -q "/root/.julia/" /tmp/smoke.txt; then \
+            cat /tmp/smoke.txt; echo "Smoke test failed for $code"; exit 1; \
+        fi; \
+    done; \
+    rm -rf /tmp/smoke.txt /root/.cache
 
 # Set up current directory to root
 WORKDIR /
