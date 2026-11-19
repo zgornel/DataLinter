@@ -1,0 +1,4 @@
+# Executables built into the single `datalinter` app bundle (read by julia_app_builder).
+# Both share one sysimage. Format: <executable name> = "<function in module datalinter>"
+datalinter = "julia_main"
+datalinterserver = "julia_main_server"

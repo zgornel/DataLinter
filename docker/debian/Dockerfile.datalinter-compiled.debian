@@ -33,15 +33,15 @@ RUN mkdir -p /_config \
              /tmp/test/data \
              /tmp/test/code
 
-# Copy binaries
+# Copy binaries: one app bundle with both executables (bin/datalinter and
+# bin/datalinterserver) sharing one sysimage. /datalinterserver is a symlink
+# to the bundle so the documented /datalinterserver/... paths keep working.
 WORKDIR /
 COPY ./build/datalinter /datalinter
-COPY ./build/datalinterserver /datalinterserver
+RUN ln -s /datalinter /datalinterserver
 # Copy other files
 COPY ./knowledge /datalinter/knowledge
-COPY ./knowledge /datalinterserver/knowledge
 COPY ./config /datalinter/config
-COPY ./config /datalinterserver/config
 COPY ./test/data /tmp/test/data
 COPY ./test/code /tmp/test/code
 COPY ./test/test_config.toml /tmp/test/test_config.toml
@@ -53,6 +53,7 @@ COPY ./test/test_config.toml /tmp/test/test_config.toml
 # languages also try to parse the snippet and tree-sitter exits 1 on syntax errors.
 RUN set -e; \
     if command -v cc >/dev/null; then echo "A C compiler is present in the runtime image"; exit 1; fi; \
+    /datalinterserver/bin/datalinterserver --help > /dev/null; \
     for pair in "r_snippet_imbalanced.r:^FAIL:R_imbalanced_target_variable" \
                 "python_snippet_imbalanced.py:^FAIL:Python_imbalanced_target_variable"; do \
         code="${pair%%:*}"; expected="${pair#*:}"; \
