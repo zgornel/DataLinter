@@ -1,0 +1,10 @@
+# Build-context filter for Dockerfile.datalinter-builder.debian (BuildKit picks up
+# "<Dockerfile name>.dockerignore" next to the Dockerfile).
+# Do NOT exclude .git: the builder copies it (src/version.jl reads the commit).
+
+# Compiled app output (about 1 GB): created by the builder, never an input to it
+build/
+# Documentation, demo gifs, editor files
+docs/
+gifs/
+*.code-workspace
