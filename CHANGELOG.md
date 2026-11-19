@@ -2,7 +2,7 @@
 
 v0.1.6
 ------
- - use ParSitter v0.2.4 i.e. artifact mechanism
+ - use ParSitter v0.2.5 i.e. artifact mechanism
  - optimized Docker images
  - build with julia v1.13.1
 
