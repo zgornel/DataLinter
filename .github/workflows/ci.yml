@@ -48,6 +48,23 @@ jobs:
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:latest
           docker tag ghcr.io/zgornel/datalinter-compiled:debian ghcr.io/zgornel/datalinter-compiled:v0.2.0
 
+      - id: check_datalinter-compiled_size
+        name: Check datalinter-compiled image size
+        env:
+          # Uncompressed size ceiling in bytes. The image is ~1.04 GB (2026-11-19);
+          # the ceiling leaves room for growth but catches a duplicated bundle or
+          # a toolchain coming back. Raise it deliberately if the growth is expected.
+          MAX_IMAGE_SIZE: "1300000000"
+        run: |
+          : "${MAX_IMAGE_SIZE:?MAX_IMAGE_SIZE is not set}"
+          size=$(docker image inspect -f '{{.Size}}' ghcr.io/zgornel/datalinter-compiled:debian)
+          echo "datalinter-compiled:debian is $size bytes (ceiling $MAX_IMAGE_SIZE)"
+          docker history --format '{{.Size}}\t{{.CreatedBy}}' ghcr.io/zgornel/datalinter-compiled:debian | cut -c1-160
+          if [ "$size" -gt "$MAX_IMAGE_SIZE" ]; then
+            echo "::error::datalinter-compiled image is $size bytes, above the $MAX_IMAGE_SIZE ceiling"
+            exit 1
+          fi
+
       - id: push_datalinter-compiled_image
         name:  Push to ghcr.io datalinter-compiled image
         run: |

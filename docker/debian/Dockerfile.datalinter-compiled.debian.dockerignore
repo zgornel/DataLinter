@@ -1,0 +1,11 @@
+# Build-context filter for Dockerfile.datalinter-compiled.debian (BuildKit picks up
+# "<Dockerfile name>.dockerignore" next to the Dockerfile).
+# Allow-list: only what the Dockerfile COPYs. A new COPY source must be added here,
+# otherwise the build fails with "not found".
+*
+!build/datalinter
+!knowledge
+!config
+!test/data
+!test/code
+!test/test_config.toml
