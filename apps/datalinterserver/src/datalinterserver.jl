@@ -81,7 +81,7 @@ function real_main()
     # If version present, print and exit
     ask_version = args["version"]
     if ask_version
-        println(DataLinter.printable_version(; commit = "192fce5*", ver = DataLinter.DEFAULT_VERSION))
+        println(DataLinter.printable_version())
         return 0
     end
     # Logging

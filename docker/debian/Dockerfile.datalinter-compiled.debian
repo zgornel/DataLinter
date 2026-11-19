@@ -30,7 +30,6 @@ RUN mkdir -p /_config \
              /datalinterserver/config \
              /tmp/test/data \
              /tmp/test/code \
-
 # Copy binaries
 WORKDIR /
 COPY ./build/datalinter /datalinter
