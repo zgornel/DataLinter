@@ -38,7 +38,7 @@ jobs:
         name:  Build DataLinter
         run: |
           cd ${{ env.REPOSITORY_DIR }}-${{ steps.dateb64.outputs.date }}
-          docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
+          docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /datalinter_builder/build.jl /DataLinter
 
       - id: build_datalinter-compiled_image
         name:  Build datalinter-compiled image
