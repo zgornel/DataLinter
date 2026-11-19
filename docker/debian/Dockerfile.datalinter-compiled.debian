@@ -9,6 +9,18 @@
 #               --config-path /datalinter/config/r_modelling_config.toml\
 #               --log-level debug`
 
+# Stage 1: trim the app bundle before it becomes an image layer
+# (deleting files in a later layer of the final image would not reduce its size).
+FROM debian:trixie-slim AS bundle
+COPY ./build/datalinter /datalinter
+# `thrift` (55 MB) is the Thrift IDL-to-Julia code generator from
+# ThriftJuliaCompiler_jll. Only `Thrift.generate` runs it; reading Parquet files
+# does not, so it is not needed at runtime (the smoke test below lints a Parquet file).
+RUN set -e; \
+    thrift_bin=$(find /datalinter/share/julia/artifacts -path '*/bin/thrift' -type f); \
+    if [ -n "$thrift_bin" ]; then rm -v $thrift_bin; else echo "WARNING: no thrift binary found in the bundle"; fi
+
+# Stage 2: runtime image
 FROM debian:trixie-slim
 LABEL org.opencontainers.image.source="https://github.com/zgornel/DataLinter"
 LABEL maintainer="zgornel"
@@ -37,7 +49,7 @@ RUN mkdir -p /_config \
 # bin/datalinterserver) sharing one sysimage. /datalinterserver is a symlink
 # to the bundle so the documented /datalinterserver/... paths keep working.
 WORKDIR /
-COPY ./build/datalinter /datalinter
+COPY --from=bundle /datalinter /datalinter
 RUN ln -s /datalinter /datalinterserver
 # Copy other files
 COPY ./knowledge /datalinter/knowledge
@@ -65,6 +77,11 @@ RUN set -e; \
             cat /tmp/smoke.txt; echo "Smoke test failed for $code"; exit 1; \
         fi; \
     done; \
+    /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.parquet \
+        --config-path /tmp/test/test_config.toml > /tmp/smoke.txt 2>&1 || true; \
+    if ! grep -q "^FAIL:imbalanced_target_variable" /tmp/smoke.txt; then \
+        cat /tmp/smoke.txt; echo "Smoke test failed for Parquet data"; exit 1; \
+    fi; \
     rm -rf /tmp/smoke.txt /root/.cache
 
 # Set up current directory to root
