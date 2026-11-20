@@ -1,5 +1,10 @@
 # Changelog
 
+v0.2.0
+------
+ - Python linter support
+ - bugfixes
+
 v0.1.6
 ------
  - use ParSitter v0.2.5 i.e. artifact mechanism

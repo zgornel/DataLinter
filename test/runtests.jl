@@ -16,6 +16,7 @@ include("version.jl")
 # csv and r
 include("data_csv.jl")
 include("kb_native_linters_csv_r.jl")
+include("kb_native_linters_csv_python.jl")
 
 # arrow and r
 include("data_arrow.jl")
@@ -24,3 +25,6 @@ include("kb_native_linters_arrow_r.jl")
 # parquet and r
 include("data_parquet.jl")
 include("kb_native_linters_parquet_r.jl")
+
+# Dict (multiple objects)
+include("data_dict.jl")

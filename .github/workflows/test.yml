@@ -7,16 +7,24 @@ on:
     tags:
       - '*'
   pull_request:
+
 jobs:
-  run:
-    runs-on: ubuntu-latest
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        julia-version: ['1.12', '1.13']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+    
       - name: Set up Julia
         uses: julia-actions/setup-julia@v1
         with:
-          version: "1"
+          version: ${{ matrix.julia-version }}
+
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
