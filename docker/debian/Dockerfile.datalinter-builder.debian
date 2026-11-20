@@ -2,7 +2,7 @@
 
 # WARNING!
 #   The container needs to be run with --volume:build:/DataLinter/build
-#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /julia_app_builder/build.jl /DataLinter
+#   `docker run --rm --volume=./build:/DataLinter/build ghcr.io/zgornel/datalinter-builder:latest /julia/bin/julia /datalinter_builder/build.jl /DataLinter
 #
 # Build context: the DataLinter root, filtered by
 # Dockerfile.datalinter-builder.debian.dockerignore (excludes build/, docs/, gifs/).
@@ -27,9 +27,9 @@ RUN wget -q https://julialang-s3.julialang.org/bin/linux/x64/1.13/julia-1.13.1-l
     ln -s /julia-1.13.1 /julia
 
 # Install builder script: OxoaResearch/datalinter_builder (julia_app_builder with
-# executables.toml support), cloned to /julia_app_builder so the build command
-# stays the same. Shallow clone of the default branch.
-RUN git clone --depth 1 https://github.com/OxoaResearch/datalinter_builder /julia_app_builder
+# executables.toml support), cloned to /datalinter_builder (the path used by
+# .github/workflows/ci.yml). Shallow clone of the default branch.
+RUN git clone --depth 1 https://github.com/OxoaResearch/datalinter_builder /datalinter_builder
 
 # Set up local folder structure and copy files for DataLinter
 # (This assumes local directory is the root of DataLinter/)
