@@ -33,9 +33,10 @@ and
 ```bash
 $ docker run -it --rm \
     ghcr.io/zgornel/datalinter-compiled:latest \
-        /datalinterserver/datalinterserver --help
+        /datalinterserver/bin/datalinterserver --help
 ```
-respectively.
+respectively. Both executables are part of one app bundle in `/datalinter`
+(`/datalinterserver` is a link to it), so `/datalinter/bin/datalinterserver` works too.
 
 The commands are meant to show the help of the two executables and exit. Before running the linter, make sure that the Docker container has mapped all the relevant directories.
 

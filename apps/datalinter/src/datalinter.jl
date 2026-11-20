@@ -10,6 +10,10 @@ using Logging
 using ArgParse
 using DataLinter
 
+# HTTP server (submodule), built as the `datalinterserver` executable
+include("server.jl")
+julia_main_server()::Cint = datalinterserver.julia_main()
+
 function get_arguments(args::Vector{String})
     s = ArgParseSettings()
     @add_arg_table! s begin

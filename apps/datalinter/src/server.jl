@@ -1,3 +1,7 @@
+# DataLinter HTTP server. Included as a submodule of the `datalinter` app so
+# that the `datalinter` and `datalinterserver` executables share one bundle
+# (see apps/datalinter/executables.toml). Can also be run as a script:
+#   julia apps/datalinter/src/server.jl --help
 module datalinterserver
 
 project_root_path = abspath(joinpath(splitpath(@__FILE__)[1:(end - 4)]...))

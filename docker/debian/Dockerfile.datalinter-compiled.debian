@@ -9,42 +9,82 @@
 #               --config-path /datalinter/config/r_modelling_config.toml\
 #               --log-level debug`
 
+# Stage 1: trim the app bundle before it becomes an image layer
+# (deleting files in a later layer of the final image would not reduce its size).
+FROM debian:trixie-slim AS bundle
+COPY ./build/datalinter /datalinter
+# `thrift` (55 MB) is the Thrift IDL-to-Julia code generator from
+# ThriftJuliaCompiler_jll. Only `Thrift.generate` runs it; reading Parquet files
+# does not, so it is not needed at runtime (the smoke test below lints a Parquet file).
+RUN set -e; \
+    thrift_bin=$(find /datalinter/share/julia/artifacts -path '*/bin/thrift' -type f); \
+    if [ -n "$thrift_bin" ]; then rm -v $thrift_bin; else echo "WARNING: no thrift binary found in the bundle"; fi
+
+# Stage 2: runtime image
 FROM debian:trixie-slim
 LABEL org.opencontainers.image.source="https://github.com/zgornel/DataLinter"
 LABEL maintainer="zgornel"
 
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# Runtime dependencies only. The compiled apps bundle their own Julia runtime,
+# libraries and artifacts (tree-sitter CLI and prebuilt grammars, from
+# ParSitter >= 0.2.5), so no compiler or build tooling is needed at runtime.
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create directories, copy files
 # ------------------------------
 
-# Directories
+# Directories (mount points documented in docs/src/examples.md)
 RUN mkdir -p /_config \
              /_data \
              /_code \
              /output \
              /workspace \
-             /datalinter/knowledge \
-             /datalinter/config \
-             /datalinterserver/knowledge \
-             /datalinterserver/config \
              /tmp/test/data \
-             /tmp/test/code \
-# Copy binaries
+             /tmp/test/code
+
+# Copy binaries: one app bundle with both executables (bin/datalinter and
+# bin/datalinterserver) sharing one sysimage. /datalinterserver is a symlink
+# to the bundle so the documented /datalinterserver/... paths keep working.
 WORKDIR /
-COPY ./build/datalinter /datalinter
-COPY ./build/datalinterserver /datalinterserver
+COPY --from=bundle /datalinter /datalinter
+RUN ln -s /datalinter /datalinterserver
 # Copy other files
 COPY ./knowledge /datalinter/knowledge
-COPY ./knowledge /datalinterserver/knowledge
 COPY ./config /datalinter/config
-COPY ./config /datalinterserver/config
 COPY ./test/data /tmp/test/data
 COPY ./test/code /tmp/test/code
 COPY ./test/test_config.toml /tmp/test/test_config.toml
 
-# Entrypoint (from https://docs.docker.com/reference/dockerfile/#entrypoint)
-### ENTRYPOINT ["/datalinter/bin/datalinter", "--kb-path /datalinter/knowledge/linting.toml", "--print-exceptions", "--log-level info", "-t"]
+# Build-time smoke test: the image must lint data and R/Python code without a
+# C compiler. Fails the build if a code linter produced no result, or if a
+# build-machine depot path (/root/.julia/...) was baked into the sysimage.
+# Note: a ProcessFailedException alone is not an error here, linters of other
+# languages also try to parse the snippet and tree-sitter exits 1 on syntax errors.
+# A code snippet missing from test/code (e.g. Python before Python linting is merged) is skipped.
+RUN set -e; \
+    if command -v cc >/dev/null; then echo "A C compiler is present in the runtime image"; exit 1; fi; \
+    /datalinterserver/bin/datalinterserver --help > /dev/null; \
+    for pair in "r_snippet_imbalanced.r:^FAIL:R_imbalanced_target_variable" \
+                "python_snippet_imbalanced.py:^FAIL:Python_imbalanced_target_variable"; do \
+        code="${pair%%:*}"; expected="${pair#*:}"; \
+        if [ ! -f "/tmp/test/code/$code" ]; then echo "Smoke test: $code not in this version, skipped"; continue; fi; \
+        /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv \
+            --code-path "/tmp/test/code/$code" \
+            --config-path /tmp/test/test_config.toml \
+            --log-level debug > /tmp/smoke.txt 2>&1 || true; \
+        if ! grep -q "$expected" /tmp/smoke.txt || grep -q "/root/.julia/" /tmp/smoke.txt; then \
+            cat /tmp/smoke.txt; echo "Smoke test failed for $code"; exit 1; \
+        fi; \
+    done; \
+    /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.parquet \
+        --config-path /tmp/test/test_config.toml > /tmp/smoke.txt 2>&1 || true; \
+    if ! grep -q "^FAIL:imbalanced_target_variable" /tmp/smoke.txt; then \
+        cat /tmp/smoke.txt; echo "Smoke test failed for Parquet data"; exit 1; \
+    fi; \
+    rm -rf /tmp/smoke.txt /root/.cache
 
 # Set up current directory to root
 WORKDIR /
