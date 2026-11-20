@@ -63,12 +63,14 @@ COPY ./test/test_config.toml /tmp/test/test_config.toml
 # build-machine depot path (/root/.julia/...) was baked into the sysimage.
 # Note: a ProcessFailedException alone is not an error here, linters of other
 # languages also try to parse the snippet and tree-sitter exits 1 on syntax errors.
+# A code snippet missing from test/code (e.g. Python before Python linting is merged) is skipped.
 RUN set -e; \
     if command -v cc >/dev/null; then echo "A C compiler is present in the runtime image"; exit 1; fi; \
     /datalinterserver/bin/datalinterserver --help > /dev/null; \
     for pair in "r_snippet_imbalanced.r:^FAIL:R_imbalanced_target_variable" \
                 "python_snippet_imbalanced.py:^FAIL:Python_imbalanced_target_variable"; do \
         code="${pair%%:*}"; expected="${pair#*:}"; \
+        if [ ! -f "/tmp/test/code/$code" ]; then echo "Smoke test: $code not in this version, skipped"; continue; fi; \
         /datalinter/bin/datalinter /tmp/test/data/imbalanced_data.csv \
             --code-path "/tmp/test/code/$code" \
             --config-path /tmp/test/test_config.toml \
